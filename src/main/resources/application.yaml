@@ -1,0 +1,21 @@
+application:
+management:
+  server:
+    port: 8080
+  endpoints:
+    enabled-by-default: true
+    web:
+      exposure:
+        include: "*"
+spring:
+  h2:
+    console:
+      enabled: true
+  datasource:
+    url: jdbc:h2:file:./database;DB_CLOSE_ON_EXIT=FALSE;AUTO_RECONNECT=TRUE
+    username: admin
+    password: password
+    driver-class-name: org.h2.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
