@@ -6,6 +6,7 @@ import io.papermc.patchroulette.model.PatchRouletteUser;
 import io.papermc.patchroulette.model.Status;
 import io.papermc.patchroulette.repository.PatchRepository;
 import java.util.List;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -14,6 +15,7 @@ public class PatchService {
 
     private final PatchRepository patchRepository;
 
+    @Autowired
     public PatchService(final PatchRepository patchRepository) {
         this.patchRepository = patchRepository;
     }
