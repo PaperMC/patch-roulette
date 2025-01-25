@@ -8,3 +8,4 @@ build
 .kotlin/
 
 database.mv.db
+database.trace.db
