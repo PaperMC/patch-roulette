@@ -28,7 +28,7 @@ public class AuthFilterConfiguration {
     public SecurityFilterChain filterChain(final HttpSecurity http) throws Exception {
         http.addFilterBefore(this.authFilter, UsernamePasswordAuthenticationFilter.class);
         return http
-            .authorizeHttpRequests(configurer -> configurer.anyRequest().authenticated())
+            .authorizeHttpRequests(configurer -> configurer.anyRequest().permitAll())
             .cors(Customizer.withDefaults())
             .csrf(AbstractHttpConfigurer::disable)
             .formLogin(AbstractHttpConfigurer::disable)

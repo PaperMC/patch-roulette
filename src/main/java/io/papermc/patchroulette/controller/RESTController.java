@@ -14,6 +14,7 @@ import java.util.Optional;
 import java.util.stream.StreamSupport;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -34,6 +35,7 @@ public class RESTController {
         this.mapper = new ObjectMapper();
     }
 
+    @PreAuthorize("hasRole('PATCH')")
     @GetMapping(
         value = "/get-available-patches",
         consumes = "text/plain",
@@ -52,6 +54,7 @@ public class RESTController {
         }
     }
 
+    @PreAuthorize("hasRole('PATCH')")
     @GetMapping(
         value = "/get-all-patches",
         consumes = "text/plain",
@@ -77,6 +80,7 @@ public class RESTController {
         }
     }
 
+    @PreAuthorize("hasRole('PATCH')")
     @PostMapping(
         value = "/set-patches",
         consumes = "application/json",
@@ -96,6 +100,7 @@ public class RESTController {
         }
     }
 
+    @PreAuthorize("hasRole('PATCH')")
     @PostMapping(
         value = "/clear-patches",
         consumes = "text/plain",
@@ -116,6 +121,7 @@ public class RESTController {
         return user.orElseThrow();
     }
 
+    @PreAuthorize("hasRole('PATCH')")
     @PostMapping(
         value = "/start-patch",
         consumes = "application/json",
@@ -134,6 +140,7 @@ public class RESTController {
         }
     }
 
+    @PreAuthorize("hasRole('PATCH')")
     @PostMapping(
         value = "/complete-patch",
         consumes = "application/json",
@@ -152,6 +159,7 @@ public class RESTController {
         }
     }
 
+    @PreAuthorize("hasRole('PATCH')")
     @PostMapping(
         value = "/cancel-patch",
         consumes = "application/json",
