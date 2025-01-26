@@ -33,7 +33,7 @@ public class SecurityConfiguration {
             .cors(Customizer.withDefaults())
             .csrf(AbstractHttpConfigurer::disable)
             .formLogin(AbstractHttpConfigurer::disable)
-            .httpBasic(AbstractHttpConfigurer::disable)
+            .httpBasic(Customizer.withDefaults())
             .logout(AbstractHttpConfigurer::disable)
             .sessionManagement(configurer -> configurer.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .build();
