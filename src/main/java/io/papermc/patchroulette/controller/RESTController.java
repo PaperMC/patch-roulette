@@ -6,11 +6,8 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.papermc.patchroulette.model.Patch;
 import io.papermc.patchroulette.model.PatchId;
-import io.papermc.patchroulette.model.PatchRouletteUser;
 import io.papermc.patchroulette.service.PatchService;
-import io.papermc.patchroulette.service.UserService;
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.StreamSupport;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -25,13 +22,11 @@ import org.springframework.web.bind.annotation.RestController;
 public class RESTController {
 
     private final PatchService patchService;
-    private final UserService userService;
     private final ObjectMapper mapper;
 
     @Autowired
-    public RESTController(final PatchService patchService, final UserService userService) {
+    public RESTController(final PatchService patchService) {
         this.patchService = patchService;
-        this.userService = userService;
         this.mapper = new ObjectMapper();
     }
 
@@ -70,7 +65,7 @@ public class RESTController {
                 patchNode.put("status", patch.getStatus().name());
                 patchNode.put(
                     "responsibleUser",
-                    patch.getResponsibleUser() != null ? patch.getResponsibleUser().getUsername() : null
+                    patch.getResponsibleUser()
                 );
                 response.add(patchNode);
             }
@@ -115,10 +110,8 @@ public class RESTController {
         }
     }
 
-    private PatchRouletteUser getUser(final Authentication authentication) {
-        final Optional<PatchRouletteUser> user = this.userService.getUserRepository()
-            .findOneByToken(authentication.getCredentials().toString());
-        return user.orElseThrow();
+    private String getUser(final Authentication authentication) {
+        return authentication.getPrincipal().toString();
     }
 
     @PreAuthorize("hasRole('PATCH')")
@@ -129,7 +122,7 @@ public class RESTController {
     )
     public ResponseEntity<String> startPatch(final Authentication auth, @RequestBody final String input) {
         try {
-            final PatchRouletteUser user = this.getUser(auth);
+            final String user = this.getUser(auth);
             final JsonNode tree = this.mapper.readTree(input);
             final String minecraftVersion = tree.get("minecraftVersion").asText();
             final String path = tree.get("path").asText();
@@ -148,7 +141,7 @@ public class RESTController {
     )
     public ResponseEntity<String> completePatch(final Authentication auth, @RequestBody final String input) {
         try {
-            final PatchRouletteUser user = this.getUser(auth);
+            final String user = this.getUser(auth);
             final JsonNode tree = this.mapper.readTree(input);
             final String minecraftVersion = tree.get("minecraftVersion").asText();
             final String path = tree.get("path").asText();

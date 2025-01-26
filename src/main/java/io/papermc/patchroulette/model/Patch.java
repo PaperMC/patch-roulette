@@ -6,7 +6,6 @@ import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
 import jakarta.persistence.IdClass;
-import jakarta.persistence.ManyToOne;
 
 @Entity
 @IdClass(PatchId.class)
@@ -22,8 +21,7 @@ public class Patch {
     @Enumerated(EnumType.ORDINAL)
     private Status status;
 
-    @ManyToOne
-    private PatchRouletteUser responsibleUser;
+    private String responsibleUser;
 
     public Patch() {
     }
@@ -52,11 +50,11 @@ public class Patch {
         this.status = status;
     }
 
-    public PatchRouletteUser getResponsibleUser() {
+    public String getResponsibleUser() {
         return this.responsibleUser;
     }
 
-    public void setResponsibleUser(final PatchRouletteUser responsibleUser) {
+    public void setResponsibleUser(final String responsibleUser) {
         this.responsibleUser = responsibleUser;
     }
 }

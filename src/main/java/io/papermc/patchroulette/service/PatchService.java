@@ -2,7 +2,6 @@ package io.papermc.patchroulette.service;
 
 import io.papermc.patchroulette.model.Patch;
 import io.papermc.patchroulette.model.PatchId;
-import io.papermc.patchroulette.model.PatchRouletteUser;
 import io.papermc.patchroulette.model.Status;
 import io.papermc.patchroulette.repository.PatchRepository;
 import java.util.List;
@@ -42,7 +41,7 @@ public class PatchService {
     }
 
     @Transactional
-    public void startWorkOnPatch(final PatchId patchId, final PatchRouletteUser user) {
+    public void startWorkOnPatch(final PatchId patchId, final String user) {
         final Patch patch = this.patchRepository.getReferenceById(patchId);
         if (patch.getStatus() != Status.AVAILABLE) {
             throw new IllegalStateException("Patch " + patchId + " is not available");
@@ -67,13 +66,13 @@ public class PatchService {
     }
 
     @Transactional
-    public void finishWorkOnPatch(final PatchId patchId, final PatchRouletteUser user) {
+    public void finishWorkOnPatch(final PatchId patchId, final String user) {
         final Patch patch = this.patchRepository.getReferenceById(patchId);
         if (patch.getStatus() != Status.WIP) {
             throw new IllegalStateException("Patch " + patchId + " is not WIP");
         }
-        if (patch.getResponsibleUser().getUserId() != user.getUserId()) {
-            throw new IllegalStateException("User " + user.getUsername() + " is not responsible for patch " + patchId);
+        if (!patch.getResponsibleUser().equals(user)) {
+            throw new IllegalStateException("User " + user + " is not responsible for patch " + patchId);
         }
         patch.setStatus(Status.DONE);
         this.patchRepository.save(patch);
