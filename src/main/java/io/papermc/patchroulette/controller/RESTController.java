@@ -31,7 +31,7 @@ public class RESTController {
     }
 
     @PreAuthorize("hasRole('PATCH')")
-    @GetMapping(
+    @PostMapping(
         value = "/get-available-patches",
         consumes = "text/plain",
         produces = "application/json"
@@ -50,7 +50,7 @@ public class RESTController {
     }
 
     @PreAuthorize("hasRole('PATCH')")
-    @GetMapping(
+    @PostMapping(
         value = "/get-all-patches",
         consumes = "text/plain",
         produces = "application/json"
