@@ -1,7 +1,11 @@
+import java.time.Instant
+
 plugins {
     id("net.kyori.indra") version "3.1.3"
+    id("net.kyori.indra.git") version "3.1.3"
     id("org.springframework.boot") version "3.4.2"
     id("io.spring.dependency-management") version "1.1.7"
+    id("com.google.cloud.tools.jib") version "3.4.4"
 }
 
 indra {
@@ -21,4 +25,58 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-security")
     runtimeOnly("com.h2database:h2:2.3.232")
     testImplementation("org.springframework.boot:spring-boot-starter-test")
+}
+
+buildscript {
+  dependencies {
+    classpath("com.google.cloud.tools:jib-spring-boot-extension-gradle:0.1.0")
+  }
+}
+
+jib {
+  pluginExtensions {
+    pluginExtension {
+      implementation = "com.google.cloud.tools.jib.gradle.extension.springboot.JibSpringBootExtension"
+    }
+  }
+
+  container {
+    args = listOf("--spring.config.additional-location=optional:file:/app/config/application.yaml")
+    ports = listOf("8080")
+  }
+
+  from {
+    image = "azul/zulu-openjdk-alpine:${indra.javaVersions().target().get()}-jre"
+    platforms {
+      // We can only build multi-arch images when pushing to a registry, not when building locally
+      val requestedTasks = gradle.startParameter.taskNames
+      if ("jibBuildTar" in requestedTasks || "jibDockerBuild" in requestedTasks) {
+        platform {
+          // todo: better logic
+          architecture = when (System.getProperty("os.arch")) {
+            "aarch64" -> "arm64"
+            else -> "amd64"
+          }
+          os = "linux"
+        }
+      } else {
+        platform {
+          architecture = "amd64"
+          os = "linux"
+        }
+        platform {
+          architecture = "arm64"
+          os = "linux"
+        }
+      }
+    }
+  }
+
+  to {
+    image = "ghcr.io/papermc/patch-roulette"
+    tags = setOf(
+      "latest",
+      "${indraGit.branchName()}-${indraGit.commit()?.name()?.take(7)}-${Instant.now().epochSecond}"
+    )
+  }
 }

@@ -26,18 +26,4 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
       - name: Build with Gradle
-        run: ./gradlew bootJar --stacktrace
-      - name: Generate tag
-        id: tag
-        run: |
-          ts=$(date +%s)
-          branch=${GITHUB_REF##*/}
-          echo "IMAGE_ID=${branch}-${GITHUB_SHA::8}-${ts}" >> "$GITHUB_OUTPUT"
-      - name: Publish Docker image
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          push: true
-          tags: |
-            ghcr.io/papermc/patch-roulette:latest
-            ghcr.io/papermc/patch-roulette:${{ steps.tag.outputs.IMAGE_ID }}
+        run: ./gradlew jib --stacktrace
