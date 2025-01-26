@@ -96,6 +96,20 @@ public class RESTController {
         }
     }
 
+    @PostMapping(
+        value = "/clear-patches",
+        consumes = "text/plain",
+        produces = "text/plain"
+    )
+    public ResponseEntity<String> clearPatches(@RequestBody final String minecraftVersion) {
+        try {
+            this.patchService.clearPatches(minecraftVersion);
+            return ResponseEntity.ok("Patches cleared.");
+        } catch (final Exception e) {
+            return ResponseEntity.internalServerError().body(e.getMessage());
+        }
+    }
+
     private PatchRouletteUser getUser(final Authentication authentication) {
         final Optional<PatchRouletteUser> user = this.userService.getUserRepository()
             .findOneByToken(authentication.getCredentials().toString());

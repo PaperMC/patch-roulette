@@ -15,4 +15,7 @@ public interface PatchRepository extends JpaRepository<Patch, PatchId> {
 
     @Transactional(readOnly = true)
     List<Patch> getPatchesByMinecraftVersion(String minecraftVersion);
+
+    @Transactional
+    void deleteAllByMinecraftVersion(String minecraftVersion);
 }

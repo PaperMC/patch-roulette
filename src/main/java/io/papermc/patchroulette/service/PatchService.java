@@ -78,4 +78,8 @@ public class PatchService {
         patch.setStatus(Status.DONE);
         this.patchRepository.save(patch);
     }
+
+    public void clearPatches(final String minecraftVersion) {
+        this.patchRepository.deleteAllByMinecraftVersion(minecraftVersion);
+    }
 }

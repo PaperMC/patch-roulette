@@ -20,7 +20,7 @@ public class AuthFilterConfiguration {
     private final AuthFilter authFilter;
 
     @Autowired
-    public AuthFilterConfiguration(AuthFilter authFilter) {
+    public AuthFilterConfiguration(final AuthFilter authFilter) {
         this.authFilter = authFilter;
     }
 
