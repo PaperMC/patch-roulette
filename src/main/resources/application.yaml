@@ -15,7 +15,7 @@ application:
     - Spottedleaf
 management:
   server:
-    port: 8080
+    port: 8081
   endpoints:
     enabled-by-default: true
     web:
@@ -23,7 +23,7 @@ management:
         include: "*"
 spring:
   datasource:
-    url: jdbc:h2:file:./database;DB_CLOSE_ON_EXIT=FALSE;AUTO_RECONNECT=TRUE
+    url: jdbc:h2:file:./db/database;DB_CLOSE_ON_EXIT=FALSE;AUTO_RECONNECT=TRUE
     username: admin
     password: password
     driver-class-name: org.h2.Driver
