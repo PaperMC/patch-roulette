@@ -1,11 +1,6 @@
 package io.papermc.patchroulette.config;
 
-import java.nio.charset.StandardCharsets;
-import java.util.Base64;
 import java.util.List;
-import java.util.UUID;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.Customizer;
@@ -26,8 +21,6 @@ import org.springframework.security.web.SecurityFilterChain;
 @EnableWebSecurity
 @EnableMethodSecurity
 public class SecurityConfiguration {
-    private static final Logger LOGGER = LoggerFactory.getLogger(SecurityConfiguration.class);
-
     @Bean
     public PasswordEncoder passwordEncoder() {
         return PasswordEncoderFactories.createDelegatingPasswordEncoder();
@@ -51,19 +44,13 @@ public class SecurityConfiguration {
         final ApplicationConfig config,
         final PasswordEncoder encoder
     ) {
-        final List<UserDetails> users = config.usernames().stream()
-            .map(username -> {
-                final String pw = UUID.randomUUID().toString();
+        final List<UserDetails> users = config.users().stream()
+            .map(user -> {
                 final User.UserBuilder builder = User.builder()
-                    .username(username)
+                    .username(user.username())
                     .passwordEncoder(encoder::encode)
-                    .password(pw)
+                    .password(user.password())
                     .roles("PATCH");
-                LOGGER.info(
-                    "Loaded user {}: {}",
-                    username,
-                    Base64.getEncoder().encodeToString((username + ":" + pw).getBytes(StandardCharsets.UTF_8))
-                );
                 return builder.build();
             })
             .toList();

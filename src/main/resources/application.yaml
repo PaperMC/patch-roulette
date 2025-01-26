@@ -1,18 +1,5 @@
 application:
-  usernames:
-    - jpenilla
-    - kennytv
-    - Machine-Maker
-    - Owen1212055
-    - lynxplay
-    - Lulu13022002
-    - NoahvdAa
-    - aikar
-    - electronicboy
-    - DenWav
-    - MiniDigger
-    - kashike
-    - Spottedleaf
+  users: []
 management:
   server:
     port: 8081
