@@ -13,7 +13,6 @@ application:
     - MiniDigger
     - kashike
     - Spottedleaf
-    - MiniDigger
 management:
   server:
     port: 8080
