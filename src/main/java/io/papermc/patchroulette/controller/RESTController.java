@@ -5,11 +5,16 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.papermc.patchroulette.model.Patch;
+import io.papermc.patchroulette.model.PatchId;
+import io.papermc.patchroulette.model.PatchRouletteUser;
 import io.papermc.patchroulette.service.PatchService;
+import io.papermc.patchroulette.service.UserService;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.StreamSupport;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -19,11 +24,13 @@ import org.springframework.web.bind.annotation.RestController;
 public class RESTController {
 
     private final PatchService patchService;
+    private final UserService userService;
     private final ObjectMapper mapper;
 
     @Autowired
-    public RESTController(final PatchService patchService) {
+    public RESTController(final PatchService patchService, final UserService userService) {
         this.patchService = patchService;
+        this.userService = userService;
         this.mapper = new ObjectMapper();
     }
 
@@ -89,13 +96,28 @@ public class RESTController {
         }
     }
 
+    private PatchRouletteUser getUser(final Authentication authentication) {
+        final Optional<PatchRouletteUser> user = this.userService.getUserRepository()
+            .findOneByToken(authentication.getCredentials().toString());
+        return user.orElseThrow();
+    }
+
     @PostMapping(
         value = "/start-patch",
         consumes = "application/json",
         produces = "text/plain"
     )
-    public ResponseEntity<String> startPatch(@RequestBody final String input) {
-        throw new UnsupportedOperationException(); // TODO
+    public ResponseEntity<String> startPatch(final Authentication auth, @RequestBody final String input) {
+        try {
+            final PatchRouletteUser user = this.getUser(auth);
+            final JsonNode tree = this.mapper.readTree(input);
+            final String minecraftVersion = tree.get("minecraftVersion").asText();
+            final String path = tree.get("path").asText();
+            this.patchService.startWorkOnPatch(new PatchId(minecraftVersion, path), user);
+            return ResponseEntity.ok("Patch started.");
+        } catch (final Exception e) {
+            return ResponseEntity.internalServerError().body(e.getMessage());
+        }
     }
 
     @PostMapping(
@@ -103,8 +125,17 @@ public class RESTController {
         consumes = "application/json",
         produces = "text/plain"
     )
-    public ResponseEntity<String> completePatch(@RequestBody final String input) {
-        throw new UnsupportedOperationException(); // TODO
+    public ResponseEntity<String> completePatch(final Authentication auth, @RequestBody final String input) {
+        try {
+            final PatchRouletteUser user = this.getUser(auth);
+            final JsonNode tree = this.mapper.readTree(input);
+            final String minecraftVersion = tree.get("minecraftVersion").asText();
+            final String path = tree.get("path").asText();
+            this.patchService.finishWorkOnPatch(new PatchId(minecraftVersion, path), user);
+            return ResponseEntity.ok("Patch finished.");
+        } catch (final Exception e) {
+            return ResponseEntity.internalServerError().body(e.getMessage());
+        }
     }
 
     @PostMapping(
@@ -113,7 +144,15 @@ public class RESTController {
         produces = "text/plain"
     )
     public ResponseEntity<String> cancelPatch(@RequestBody final String input) {
-        throw new UnsupportedOperationException(); // TODO
+        try {
+            final JsonNode tree = this.mapper.readTree(input);
+            final String minecraftVersion = tree.get("minecraftVersion").asText();
+            final String path = tree.get("path").asText();
+            this.patchService.cancelWorkOnPatch(new PatchId(minecraftVersion, path));
+            return ResponseEntity.ok("Patch cancelled.");
+        } catch (final Exception e) {
+            return ResponseEntity.internalServerError().body(e.getMessage());
+        }
     }
 
 }

@@ -1,4 +1,19 @@
 application:
+  usernames:
+    - jpenilla
+    - kennytv
+    - Machine-Maker
+    - Owen1212055
+    - lynxplay
+    - Lulu13022002
+    - NoahvdAa
+    - aikar
+    - electronicboy
+    - DenWav
+    - MiniDigger
+    - kashike
+    - Spottedleaf
+    - MiniDigger
 management:
   server:
     port: 8080

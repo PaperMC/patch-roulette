@@ -12,6 +12,8 @@ public class PatchRouletteUser {
 
     private String username;
 
+    private String token;
+
     public long getUserId() {
         return this.userId;
     }
@@ -22,5 +24,13 @@ public class PatchRouletteUser {
 
     public String getUsername() {
         return this.username;
+    }
+
+    public String getToken() {
+        return this.token;
+    }
+
+    public void setToken(final String token) {
+        this.token = token;
     }
 }
