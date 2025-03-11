@@ -43,6 +43,7 @@ jib {
   container {
     args = listOf("--spring.config.additional-location=optional:file:/app/config/application.yaml")
     ports = listOf("8080")
+    workingDirectory = "/app"
   }
 
   from {
