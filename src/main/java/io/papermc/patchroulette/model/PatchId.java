@@ -1,5 +1,8 @@
 package io.papermc.patchroulette.model;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 import java.io.Serializable;
 import java.util.Objects;
 
@@ -10,7 +13,9 @@ public class PatchId implements Serializable {
     public PatchId() {
     }
 
-    public PatchId(final String minecraftVersion, final String path) {
+    @JsonCreator
+    public PatchId(@JsonProperty("minecraftVersion") final String minecraftVersion,
+                   @JsonProperty("path") final String path) {
         this.minecraftVersion = minecraftVersion;
         this.path = path;
     }
