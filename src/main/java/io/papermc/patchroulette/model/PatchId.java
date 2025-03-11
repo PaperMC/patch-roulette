@@ -28,4 +28,12 @@ public class PatchId implements Serializable {
     public int hashCode() {
         return Objects.hash(this.minecraftVersion, this.path);
     }
+
+    @Override
+    public String toString() {
+        return "PatchId{" +
+            "minecraftVersion='" + minecraftVersion + '\'' +
+            ", path='" + path + '\'' +
+            '}';
+    }
 }
