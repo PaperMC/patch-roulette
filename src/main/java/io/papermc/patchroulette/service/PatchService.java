@@ -11,6 +11,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import static io.papermc.patchroulette.controller.RESTController.PatchInfo;
+
 @Service
 public class PatchService {
 
@@ -22,10 +24,11 @@ public class PatchService {
     }
 
     @Transactional
-    public void setPatches(final String minecraftVersion, final List<String> paths) {
-        final List<Patch> patches = paths.stream().map(path -> {
+    public void setPatches(final String minecraftVersion, final List<PatchInfo> patchInfos) {
+        final List<Patch> patches = patchInfos.stream().map(patchInfo -> {
             final Patch patch = new Patch();
-            patch.setPath(path);
+            patch.setPath(patchInfo.path());
+            patch.setSize(patchInfo.size());
             patch.setStatus(Status.AVAILABLE);
             patch.setMinecraftVersion(minecraftVersion);
             return patch;

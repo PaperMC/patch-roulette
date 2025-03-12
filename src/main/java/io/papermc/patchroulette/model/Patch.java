@@ -22,6 +22,7 @@ public class Patch {
     private Status status;
 
     private String responsibleUser;
+    private Integer size;
 
     public Patch() {
     }
@@ -56,5 +57,13 @@ public class Patch {
 
     public void setResponsibleUser(final String responsibleUser) {
         this.responsibleUser = responsibleUser;
+    }
+
+    public Integer getSize() {
+        return size;
+    }
+
+    public void setSize(Integer size) {
+        this.size = size;
     }
 }
