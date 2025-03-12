@@ -78,6 +78,17 @@ public class PatchService {
         this.patchRepository.save(patch);
     }
 
+    @Transactional
+    public void undoPatch(final PatchId patchId, final String user) {
+        final Patch patch = this.patchRepository.getReferenceById(patchId);
+        if (patch.getStatus() != Status.DONE) {
+            throw new IllegalStateException("Patch " + patchId + " is not DONE");
+        }
+        patch.setStatus(Status.WIP);
+        patch.setResponsibleUser(user);
+        this.patchRepository.save(patch);
+    }
+
     public void clearPatches(final String minecraftVersion) {
         this.patchRepository.deleteAllByMinecraftVersion(minecraftVersion);
     }

@@ -115,4 +115,15 @@ public class RESTController {
         return ResponseEntity.ok("Patch cancelled.");
     }
 
+    @PreAuthorize("hasRole('PATCH')")
+    @PostMapping(
+            value = "/undo-patch",
+            consumes = "application/json",
+            produces = "text/plain"
+    )
+    public ResponseEntity<String> undoPatch(final Authentication auth, @RequestBody final PatchId input) {
+        final String user = this.getUser(auth);
+        this.patchService.undoPatch(input, user);
+        return ResponseEntity.ok("Patch moved to WIP.");
+    }
 }
