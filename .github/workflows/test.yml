@@ -23,3 +23,6 @@ jobs:
         uses: gradle/actions/setup-gradle@v4
       - name: Build with Gradle
         run: ./gradlew test --stacktrace
+      - uses: oven-sh/setup-bun@v2
+      - run: cd web && bun install
+      - run: cd web && bun run lint
