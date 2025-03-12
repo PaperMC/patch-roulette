@@ -115,4 +115,13 @@ public class RESTController {
         return ResponseEntity.ok("Patch cancelled.");
     }
 
+    @PreAuthorize("hasRole('PATCH')")
+    @PostMapping(
+		value = "/login",
+		produces = "text/plain"
+    )
+	public ResponseEntity<String> login() {
+		return ResponseEntity.ok("Your credentials are valid.");
+	}
+
 }
