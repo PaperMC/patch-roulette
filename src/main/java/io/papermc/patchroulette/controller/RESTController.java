@@ -3,7 +3,11 @@ package io.papermc.patchroulette.controller;
 import io.papermc.patchroulette.model.Patch;
 import io.papermc.patchroulette.model.PatchId;
 import io.papermc.patchroulette.service.PatchService;
+
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -165,6 +169,37 @@ public class RESTController {
 	public ResponseEntity<String> login() {
 		return ResponseEntity.ok("Your credentials are valid.");
 	}
+
+    public record Stats(long total, long available, long wip, long done, Map<String, Long> users) {}
+
+    @PreAuthorize("hasRole('PATCH')")
+    @GetMapping(
+            value = "/stats",
+            produces = "application/json"
+    )
+    public ResponseEntity<Stats> stats(@RequestParam final String minecraftVersion) {
+        final List<Patch> allPatches = this.patchService.getAllPatches(minecraftVersion);
+        final long total = allPatches.size();
+        long available = 0;
+        long wip = 0;
+        long done = 0;
+        final Map<String, Long> users = new HashMap<>();
+
+        for (Patch patch : allPatches) {
+            switch (patch.getStatus()) {
+                case AVAILABLE -> available++;
+                case WIP -> wip++;
+                case DONE -> {
+                    done++;
+                    if (patch.getResponsibleUser() != null) {
+                        users.merge(patch.getResponsibleUser(), 1L, Long::sum);
+                    }
+                }
+            }
+        }
+
+        return ResponseEntity.ok(new Stats(total, available, wip, done, users));
+    }
 
     @ExceptionHandler(IllegalStateException.class)
     public ResponseEntity<String> handleException(final IllegalStateException e) {
