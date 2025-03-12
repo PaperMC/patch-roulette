@@ -1,6 +1,5 @@
 package io.papermc.patchroulette.controller;
 
-import io.papermc.patchroulette.model.Patch;
 import io.papermc.patchroulette.model.PatchId;
 import io.papermc.patchroulette.service.PatchService;
 import java.util.List;
@@ -26,20 +25,22 @@ public class RESTController {
         this.patchService = patchService;
     }
 
+    public record PatchInfo(String path, Integer size) {}
+
     @PreAuthorize("hasRole('PATCH')")
     @GetMapping(
         value = "/get-available-patches",
         produces = "application/json"
     )
-    public ResponseEntity<List<String>> getAvailablePatches(@RequestParam final String minecraftVersion) {
+    public ResponseEntity<List<PatchInfo>> getAvailablePatches(@RequestParam final String minecraftVersion) {
         return ResponseEntity.ok(
             this.patchService.getAvailablePatches(minecraftVersion).stream()
-                .map(Patch::getPath)
+                .map(patch -> new PatchInfo(patch.getPath(), patch.getSize()))
                 .toList()
         );
     }
 
-    public record PatchDetails(String path, String status, String responsibleUser) {}
+    public record PatchDetails(String path, String status, String responsibleUser, Integer size) {}
 
     @PreAuthorize("hasRole('PATCH')")
     @GetMapping(
@@ -49,12 +50,12 @@ public class RESTController {
     public ResponseEntity<List<PatchDetails>> getAllPatches(@RequestParam final String minecraftVersion) {
         return ResponseEntity.ok(
             this.patchService.getAllPatches(minecraftVersion).stream()
-                .map(patch -> new PatchDetails(patch.getPath(), patch.getStatus().name(), patch.getResponsibleUser()))
+                .map(patch -> new PatchDetails(patch.getPath(), patch.getStatus().name(), patch.getResponsibleUser(), patch.getSize()))
                 .toList()
         );
     }
 
-    public record Patches(String minecraftVersion, List<String> paths) {}
+    public record Patches(String minecraftVersion, List<PatchInfo> patches) {}
 
     @PreAuthorize("hasRole('PATCH')")
     @PostMapping(
@@ -63,7 +64,7 @@ public class RESTController {
         produces = "text/plain"
     )
     public ResponseEntity<String> setPatches(@RequestBody final Patches input) {
-        this.patchService.setPatches(input.minecraftVersion(), input.paths());
+        this.patchService.setPatches(input.minecraftVersion(), input.patches());
         return ResponseEntity.ok("Patches set.");
     }
 
@@ -97,15 +98,17 @@ public class RESTController {
         return ResponseEntity.ok("Patch started.");
     }
 
+    public record PatchList(String minecraftVersion, List<String> patches) {}
+
     @PreAuthorize("hasRole('PATCH')")
     @PostMapping(
             value = "/start-patches",
             consumes = "application/json",
             produces = "application/json"
     )
-    public ResponseEntity<?> startPatch(final Authentication auth, @RequestBody final Patches input) {
+    public ResponseEntity<?> startPatch(final Authentication auth, @RequestBody final PatchList input) {
         final String user = this.getUser(auth);
-        final List<String> result = this.patchService.startWorkOnPatches(input.minecraftVersion(), input.paths(), user);
+        final List<String> result = this.patchService.startWorkOnPatches(input.minecraftVersion(), input.patches(), user);
         if (result.isEmpty()) {
             return ResponseEntity.status(HttpStatus.CONFLICT).body("None of the patches are available.");
         }
