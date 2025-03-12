@@ -5,9 +5,11 @@ import io.papermc.patchroulette.model.PatchId;
 import io.papermc.patchroulette.service.PatchService;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -136,4 +138,8 @@ public class RESTController {
 		return ResponseEntity.ok("Your credentials are valid.");
 	}
 
+    @ExceptionHandler(IllegalStateException.class)
+    public ResponseEntity<String> handleException(final IllegalStateException e) {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(e.getMessage());
+    }
 }
