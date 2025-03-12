@@ -13,6 +13,14 @@ public class PatchId implements Serializable {
     public PatchId() {
     }
 
+    public String getMinecraftVersion() {
+        return minecraftVersion;
+    }
+
+    public String getPath() {
+        return path;
+    }
+
     @JsonCreator
     public PatchId(@JsonProperty("minecraftVersion") final String minecraftVersion,
                    @JsonProperty("path") final String path) {

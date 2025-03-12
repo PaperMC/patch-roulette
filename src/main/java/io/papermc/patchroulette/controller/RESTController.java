@@ -90,8 +90,26 @@ public class RESTController {
     )
     public ResponseEntity<String> startPatch(final Authentication auth, @RequestBody final PatchId input) {
         final String user = this.getUser(auth);
-        this.patchService.startWorkOnPatch(input, user);
+        final List<String> result = this.patchService.startWorkOnPatches(input.getMinecraftVersion(), List.of(input.getPath()), user);
+        if (result.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body("Patch not available.");
+        }
         return ResponseEntity.ok("Patch started.");
+    }
+
+    @PreAuthorize("hasRole('PATCH')")
+    @PostMapping(
+            value = "/start-patches",
+            consumes = "application/json",
+            produces = "application/json"
+    )
+    public ResponseEntity<?> startPatch(final Authentication auth, @RequestBody final Patches input) {
+        final String user = this.getUser(auth);
+        final List<String> result = this.patchService.startWorkOnPatches(input.minecraftVersion(), input.paths(), user);
+        if (result.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body("None of the patches are available.");
+        }
+        return ResponseEntity.ok(result);
     }
 
     @PreAuthorize("hasRole('PATCH')")
