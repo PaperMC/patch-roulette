@@ -100,4 +100,8 @@ public class PatchService {
     public void clearPatches(final String minecraftVersion) {
         this.patchRepository.deleteAllByMinecraftVersion(minecraftVersion);
     }
+
+    public List<String> getMinecraftVersions() {
+        return this.patchRepository.getMinecraftVersions();
+    }
 }

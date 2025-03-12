@@ -148,6 +148,16 @@ public class RESTController {
     }
 
     @PreAuthorize("hasRole('PATCH')")
+    @GetMapping(
+            value = "/get-minecraft-versions",
+            produces = "application/json"
+    )
+    public ResponseEntity<List<String>> getMinecraftVersions() {
+        final List<String> minecraftVersions = this.patchService.getMinecraftVersions();
+        return ResponseEntity.ok(minecraftVersions);
+    }
+
+    @PreAuthorize("hasRole('PATCH')")
     @PostMapping(
 		value = "/login",
 		produces = "text/plain"
