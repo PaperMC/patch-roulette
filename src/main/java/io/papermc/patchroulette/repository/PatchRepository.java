@@ -5,6 +5,7 @@ import io.papermc.patchroulette.model.PatchId;
 import io.papermc.patchroulette.model.Status;
 import java.util.List;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -18,4 +19,8 @@ public interface PatchRepository extends JpaRepository<Patch, PatchId> {
 
     @Transactional
     void deleteAllByMinecraftVersion(String minecraftVersion);
+
+    @Transactional(readOnly = true)
+    @Query("SELECT DISTINCT minecraftVersion FROM Patch")
+    List<String> getMinecraftVersions();
 }
