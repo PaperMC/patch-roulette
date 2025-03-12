@@ -4,6 +4,8 @@ import io.papermc.patchroulette.model.Patch;
 import io.papermc.patchroulette.model.PatchId;
 import io.papermc.patchroulette.model.Status;
 import io.papermc.patchroulette.repository.PatchRepository;
+
+import java.util.ArrayList;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -41,17 +43,23 @@ public class PatchService {
     }
 
     @Transactional
-    public void startWorkOnPatch(final PatchId patchId, final String user) {
-        final Patch patch = this.patchRepository.getReferenceById(patchId);
-        if (patch.getStatus() != Status.AVAILABLE) {
-            throw new IllegalStateException("Patch " + patchId + " is not available");
+    public List<String> startWorkOnPatches(final String minecraftVersion, final List<String> patches, final String user) {
+        final List<String> startedPatches = new ArrayList<>();
+        for (final String path : patches) {
+            final PatchId patchId = new PatchId(minecraftVersion, path);
+            final Patch patch = this.patchRepository.getReferenceById(patchId);
+            if (patch.getStatus() != Status.AVAILABLE) {
+                continue;
+            }
+            if (patch.getResponsibleUser() != null) {
+                continue;
+            }
+            patch.setStatus(Status.WIP);
+            patch.setResponsibleUser(user);
+            this.patchRepository.save(patch);
+            startedPatches.add(path);
         }
-        if (patch.getResponsibleUser() != null) {
-            throw new IllegalStateException("Patch " + patchId + " is already claimed by another user");
-        }
-        patch.setStatus(Status.WIP);
-        patch.setResponsibleUser(user);
-        this.patchRepository.save(patch);
+        return startedPatches;
     }
 
     @Transactional
