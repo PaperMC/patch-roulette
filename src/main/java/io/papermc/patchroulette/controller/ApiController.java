@@ -13,29 +13,17 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
-import org.springframework.web.bind.annotation.ExceptionHandler;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.servlet.View;
-import org.springframework.web.servlet.view.RedirectView;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
-public class RESTController {
+@RequestMapping("/api")
+public class ApiController {
 
     private final PatchService patchService;
 
     @Autowired
-    public RESTController(final PatchService patchService) {
+    public ApiController(final PatchService patchService) {
         this.patchService = patchService;
-    }
-
-    @GetMapping("/")
-    public View index() {
-        // no clue why the fallback is not working for / 🤷‍♂️
-        return new RedirectView("/login");
     }
 
     @PreAuthorize("hasRole('PATCH')")

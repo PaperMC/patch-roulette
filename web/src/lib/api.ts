@@ -1,5 +1,3 @@
-import { getApiUrl } from "$lib/config";
-
 interface FetchOptions extends RequestInit {
     params?: Record<string, string>;
     token?: string;
@@ -8,10 +6,7 @@ interface FetchOptions extends RequestInit {
 export async function fetchApi(endpoint: string, options: FetchOptions = {}): Promise<Response> {
     const { params = {}, token, ...fetchOptions } = options;
 
-    const apiUrl = getApiUrl();
-    const baseUrl = apiUrl.startsWith("http") ? apiUrl : window.location.origin + apiUrl;
-
-    const url = new URL(`${baseUrl}${endpoint}`);
+    const url = new URL(`${window.location.origin}/api${endpoint}`);
     Object.keys(params).forEach((key) => url.searchParams.append(key, params[key]));
 
     const init = {
