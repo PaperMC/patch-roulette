@@ -28,6 +28,7 @@
 
 <div id="login-container" class="flex h-screen items-center justify-center p-4">
     <form id="login-form" class="w-full max-w-md rounded-lg bg-white p-6 shadow-md" onsubmit={submit}>
+        <h1 class="mb-6 w-full text-center text-2xl font-bold">Patch Roulette</h1>
         <div class="mb-4">
             <label for="username" class="mb-2 block text-sm font-bold text-gray-700">Username</label>
             <input
