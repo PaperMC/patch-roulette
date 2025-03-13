@@ -33,6 +33,14 @@ buildscript {
   }
 }
 
+tasks.register<Copy>("copyFrontend") {
+    from("web/build")
+    into("build/resources/main/public")
+}
+tasks.getByName("processResources") {
+    dependsOn("copyFrontend")
+}
+
 jib {
   pluginExtensions {
     pluginExtension {

@@ -12,7 +12,7 @@
         const password = (document.getElementById("password") as HTMLInputElement).value;
         const encoded = btoa(username + ":" + password);
 
-        const response = await fetchApi("/login", {
+        const response = await fetchApi("/test-login", {
             method: "POST",
             token: encoded,
         });

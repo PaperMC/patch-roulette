@@ -19,6 +19,8 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.servlet.View;
+import org.springframework.web.servlet.view.RedirectView;
 
 @RestController
 public class RESTController {
@@ -28,6 +30,12 @@ public class RESTController {
     @Autowired
     public RESTController(final PatchService patchService) {
         this.patchService = patchService;
+    }
+
+    @GetMapping("/")
+    public View index() {
+        // no clue why the fallback is not working for / 🤷‍♂️
+        return new RedirectView("/login");
     }
 
     @PreAuthorize("hasRole('PATCH')")
@@ -163,10 +171,10 @@ public class RESTController {
 
     @PreAuthorize("hasRole('PATCH')")
     @PostMapping(
-		value = "/login",
+		value = "/test-login",
 		produces = "text/plain"
     )
-	public ResponseEntity<String> login() {
+	public ResponseEntity<String> testLogin() {
 		return ResponseEntity.ok("Your credentials are valid.");
 	}
 
