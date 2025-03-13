@@ -21,6 +21,6 @@ public interface PatchRepository extends JpaRepository<Patch, PatchId> {
     void deleteAllByMinecraftVersion(String minecraftVersion);
 
     @Transactional(readOnly = true)
-    @Query("SELECT DISTINCT minecraftVersion FROM Patch")
+    @Query("SELECT p.minecraftVersion FROM Patch p GROUP BY p.minecraftVersion ORDER BY MAX(p.lastUpdated)")
     List<String> getMinecraftVersions();
 }
