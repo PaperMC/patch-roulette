@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { getUsername, onVersionSelect, patches, token } from "$lib/index.svelte";
+    import { getUsername, onVersionSelect, patches, token, stats } from "$lib/index.svelte";
     import { onMount } from "svelte";
     import { goto } from "$app/navigation";
     import { fetchApi } from "$lib/api";
@@ -125,7 +125,7 @@
                 </div>
             {:else if currentView === "stats"}
                 <div class="flex h-full">
-                    <PatchesStats data={patches} gridClass="ag-theme-quartz w-full"></PatchesStats>
+                    <PatchesStats data={stats} gridClass="ag-theme-quartz w-full"></PatchesStats>
                 </div>
             {/if}
         </div>

@@ -1,8 +1,9 @@
 import { fetchApi } from "./api";
-import type { PatchDetails } from "$lib/types";
+import type { PatchDetails, Stats } from "$lib/types";
 
 export const token: { value: string | null } = $state({ value: null });
 export const patches: { value: PatchDetails[] } = $state({ value: [] });
+export const stats: { value: Stats | null } = $state({ value: null });
 
 export function getUsername() {
     if (token.value == null) {
@@ -17,14 +18,25 @@ export async function onVersionSelect(mcVersion: string) {
         return;
     }
 
-    const response = await fetchApi(`/get-all-patches?minecraftVersion=${mcVersion}`, {
+    const patchResponse = await fetchApi(`/get-all-patches?minecraftVersion=${mcVersion}`, {
         method: "GET",
         token: localStorage.getItem("token")!,
     });
 
-    if (response.ok) {
-        patches.value = await response.json();
+    if (patchResponse.ok) {
+        patches.value = await patchResponse.json();
     } else {
         alert("Failed to fetch patches. Please try again.");
+    }
+
+    const statsResponse = await fetchApi(`/stats?minecraftVersion=${mcVersion}`, {
+        method: "GET",
+        token: localStorage.getItem("token")!,
+    });
+
+    if (statsResponse.ok) {
+        stats.value = await statsResponse.json();
+    } else {
+        alert("Failed to fetch stats. Please try again.");
     }
 }

@@ -2,8 +2,11 @@ package io.papermc.patchroulette.controller;
 
 import io.papermc.patchroulette.model.Patch;
 import io.papermc.patchroulette.model.PatchId;
+import io.papermc.patchroulette.model.Status;
 import io.papermc.patchroulette.service.PatchService;
 
+import java.time.Duration;
+import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -39,7 +42,7 @@ public class ApiController {
         );
     }
 
-    public record PatchDetails(String path, String status, String responsibleUser) {}
+    public record PatchDetails(String path, String status, String responsibleUser, LocalDateTime lastUpdated, Duration duration) {}
 
     @PreAuthorize("hasRole('PATCH')")
     @GetMapping(
@@ -49,7 +52,7 @@ public class ApiController {
     public ResponseEntity<List<PatchDetails>> getAllPatches(@RequestParam final String minecraftVersion) {
         return ResponseEntity.ok(
             this.patchService.getAllPatches(minecraftVersion).stream()
-                .map(patch -> new PatchDetails(patch.getPath(), patch.getStatus().name(), patch.getResponsibleUser()))
+                .map(patch -> new PatchDetails(patch.getPath(), patch.getStatus().name(), patch.getResponsibleUser(), patch.getLastUpdated(), patch.getDuration()))
                 .toList()
         );
     }
@@ -166,7 +169,22 @@ public class ApiController {
 		return ResponseEntity.ok("Your credentials are valid.");
 	}
 
-    public record Stats(long total, long available, long wip, long done, Map<String, Long> users) {}
+    public record Stats(long total, long available, long wip, long done, List<UserStats> users, Duration timeSpent) {
+    }
+
+    public static class UserStats {
+        public String user;
+        public long wip;
+        public long done;
+        public Duration timeSpent;
+
+        public UserStats(String user, long wip, long done, Duration timeSpent) {
+            this.user = user;
+            this.wip = wip;
+            this.done = done;
+            this.timeSpent = timeSpent;
+        }
+    }
 
     @PreAuthorize("hasRole('PATCH')")
     @GetMapping(
@@ -179,22 +197,39 @@ public class ApiController {
         long available = 0;
         long wip = 0;
         long done = 0;
-        final Map<String, Long> users = new HashMap<>();
+        final Map<String, UserStats> users = new HashMap<>();
+        Duration timeSpent = Duration.ZERO;
 
         for (Patch patch : allPatches) {
             switch (patch.getStatus()) {
                 case AVAILABLE -> available++;
                 case WIP -> wip++;
-                case DONE -> {
-                    done++;
-                    if (patch.getResponsibleUser() != null) {
-                        users.merge(patch.getResponsibleUser(), 1L, Long::sum);
+                case DONE -> done++;
+            }
+            if (patch.getResponsibleUser() != null) {
+                users.compute(patch.getResponsibleUser(), (user, userStats) -> {
+                    if (userStats == null) {
+                        userStats = new UserStats(patch.getResponsibleUser(), 0, 0, Duration.ZERO);
                     }
-                }
+                    if (patch.getStatus() == Status.WIP) {
+                        userStats.wip++;
+                    } else if (patch.getStatus() == Status.DONE) {
+                        userStats.done++;
+                    }
+                    userStats.timeSpent = userStats.timeSpent.plus(patch.getDuration());
+                    return userStats;
+                });
+            }
+            if (patch.getDuration() != null) {
+                timeSpent = timeSpent.plus(patch.getDuration());
             }
         }
 
-        return ResponseEntity.ok(new Stats(total, available, wip, done, users));
+        final List<UserStats> sortedUsers = users.values().stream()
+                .sorted((u1, u2) -> Long.compare(u2.done + u2.wip, u1.done + u1.wip))
+                .toList();
+
+        return ResponseEntity.ok(new Stats(total, available, wip, done, sortedUsers, timeSpent));
     }
 
     @ExceptionHandler(IllegalStateException.class)

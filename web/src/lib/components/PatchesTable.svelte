@@ -4,6 +4,7 @@
     import { themeQuartz } from "@ag-grid-community/theming";
     import { type GridOptions } from "@ag-grid-community/core";
     import type { PatchDetails } from "$lib/types";
+    import { Duration, DateTime } from "luxon";
 
     let { data = { value: [] }, gridClass = "ag-theme-quartz" } = $props<{
         data: { value: PatchDetails[] };
@@ -37,6 +38,20 @@
                 },
             },
             { field: "responsibleUser", flex: 1, filter: true, floatingFilter: true },
+            {
+                field: "duration",
+                flex: 1,
+                filter: true,
+                floatingFilter: true,
+                valueFormatter: (params) => (params.data?.duration ? Duration.fromISO(params.data.duration).toFormat("hh:mm:ss.SSS") : ""),
+            },
+            {
+                field: "lastUpdated",
+                flex: 1,
+                filter: true,
+                floatingFilter: true,
+                valueFormatter: (params) => (params.data?.lastUpdated ? DateTime.fromISO(params.data.lastUpdated).toLocaleString(DateTime.DATETIME_SHORT) : ""),
+            },
         ],
         getRowId: (params) => params.data.path,
         theme: themeQuartz,

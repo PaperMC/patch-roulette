@@ -7,6 +7,9 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
 import jakarta.persistence.IdClass;
 
+import java.time.Duration;
+import java.time.LocalDateTime;
+
 @Entity
 @IdClass(PatchId.class)
 public class Patch {
@@ -22,6 +25,8 @@ public class Patch {
     private Status status;
 
     private String responsibleUser;
+    private LocalDateTime lastUpdated;
+    private Duration duration;
 
     public Patch() {
     }
@@ -56,5 +61,32 @@ public class Patch {
 
     public void setResponsibleUser(final String responsibleUser) {
         this.responsibleUser = responsibleUser;
+    }
+
+    public LocalDateTime getLastUpdated() {
+        return lastUpdated;
+    }
+
+    public void setLastUpdated(LocalDateTime lastUpdated) {
+        this.lastUpdated = lastUpdated;
+    }
+
+    public Duration getDuration() {
+        return duration;
+    }
+
+    public void setDuration(Duration duration) {
+        this.duration = duration;
+    }
+
+    public void updateDuration() {
+        if (this.lastUpdated != null) {
+            final Duration duration = Duration.between(this.lastUpdated, LocalDateTime.now());
+            if (this.duration == null) {
+                this.duration = duration;
+            } else {
+                this.duration = this.duration.plus(duration);
+            }
+        }
     }
 }
