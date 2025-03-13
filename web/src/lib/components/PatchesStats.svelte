@@ -118,20 +118,18 @@
         </div>
 
         <div class="mb-4">
-            <div class="mb-4">
-                <div class="mb-1 flex">
-                    <span class="text-sm font-semibold">
-                        {getProgressPercentage(counts.done, counts.total)}% Applied |
-                        {getProgressPercentage(counts.wip, counts.total)}% WIP |
-                        {getProgressPercentage(counts.available, counts.total)}% Todo
-                    </span>
-                </div>
-                <div class="h-4 w-full overflow-hidden rounded-full bg-gray-200 shadow">
-                    <div class="flex h-full w-full">
-                        <div class="h-full bg-green-500" style="width: {getProgressPercentage(counts.done, counts.total)}%"></div>
-                        <div class="h-full bg-orange-500" style="width: {getProgressPercentage(counts.wip, counts.total)}%"></div>
-                        <div class="h-full bg-yellow-500" style="width: {getProgressPercentage(counts.available, counts.total)}%"></div>
-                    </div>
+            <div class="mb-1 flex">
+                <span class="text-sm font-semibold">
+                    {getProgressPercentage(counts.done, counts.total)}% Applied |
+                    {getProgressPercentage(counts.wip, counts.total)}% WIP |
+                    {getProgressPercentage(counts.available, counts.total)}% Todo
+                </span>
+            </div>
+            <div class="h-4 w-full overflow-hidden rounded-full bg-gray-200 shadow">
+                <div class="flex h-full w-full">
+                    <div class="h-full bg-green-500" style="width: {getProgressPercentage(counts.done, counts.total)}%"></div>
+                    <div class="h-full bg-orange-500" style="width: {getProgressPercentage(counts.wip, counts.total)}%"></div>
+                    <div class="h-full bg-yellow-500" style="width: {getProgressPercentage(counts.available, counts.total)}%"></div>
                 </div>
             </div>
         </div>
@@ -149,7 +147,7 @@
                         </thead>
                         <tbody>
                             {#each getCounts() as [user, counts], index (user)}
-                                <tr class="{userClasses(index)}">
+                                <tr class={userClasses(index)}>
                                     <td class="px-4 py-2">{user}</td>
                                     <td class="px-4 py-2">{counts.wip}</td>
                                     <td class="px-4 py-2">{counts.done}</td>
