@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { getUsername, onVersionSelect, patches, stats, token } from "$lib/index.svelte";
+    import { getUsername, onVersionSelect, patches, refreshing, stats, token } from "$lib/index.svelte";
     import { onMount } from "svelte";
     import { goto } from "$app/navigation";
     import { fetchApi } from "$lib/api";
@@ -49,6 +49,32 @@
         selectedVersion = minecraftVersions[minecraftVersions.length - 1];
         await onVersionSelect(selectedVersion);
     });
+
+    // start: Auto refresh
+    let autoRefresh = $state(false);
+    let refreshTask: ReturnType<typeof setInterval> | null = $state(null);
+    const refreshInterval = 1;
+
+    $effect(() => {
+        if (autoRefresh && selectedVersion) {
+            refreshTask = setInterval(() => {
+                onVersionSelect(selectedVersion);
+            }, refreshInterval * 60000); // interval is in minutes
+        } else if (refreshTask) {
+            clearInterval(refreshTask);
+            refreshTask = null;
+        }
+    });
+
+    // cleanup on component destruction
+    onMount(() => {
+        return () => {
+            if (refreshTask) {
+                clearInterval(refreshTask);
+            }
+        };
+    });
+    // end: Auto refresh
 </script>
 
 <div class="flex min-h-screen flex-row justify-center px-2 py-2 lg:py-6">
@@ -97,26 +123,49 @@
             class:hidden={selectedVersion === "" || selectedVersion === null}
             class:flex={selectedVersion !== "" && selectedVersion !== null}
         >
-            <div class="mb-2 flex flex-row items-center">
-                <h3 class="text-xl font-semibold text-gray-800">Patches{selectedVersion === null ? "" : " for " + selectedVersion}</h3>
-                <button
-                    class="focus:shadow-outline ms-4 rounded bg-blue-500 px-2 py-1 text-white hover:bg-blue-700 focus:outline-none"
-                    onclick={() => onVersionSelect(selectedVersion)}
-                >
-                    Refresh
-                </button>
-                <div class="ms-2 flex rounded bg-blue-300 text-white">
-                    {#each views as view, index (view)}
-                        <button
-                            class="px-2 py-1 text-white hover:bg-blue-700 focus:outline-none"
-                            class:bg-blue-500={currentView === view}
-                            class:rounded-l={index === 0}
-                            class:rounded-r={index === views.length - 1}
-                            onclick={() => (currentView = view)}
+            <div class="mb-2 flex flex-wrap items-center">
+                <h3 class="me-4 text-xl font-semibold text-gray-800">Patches{selectedVersion === null ? "" : " for " + selectedVersion}</h3>
+                <div class="me-2 flex flex-row items-center">
+                    <button
+                        class="focus:shadow-outline me-2 rounded bg-blue-500 px-2 py-1 text-white hover:bg-blue-700 focus:outline-none"
+                        onclick={() => onVersionSelect(selectedVersion)}
+                    >
+                        {#if refreshing.value}
+                            Refreshing...
+                        {:else}
+                            Refresh
+                        {/if}
+                    </button>
+                    <div class="flex rounded bg-blue-300 text-white">
+                        {#each views as view, index (view)}
+                            <button
+                                class="px-2 py-1 text-white hover:bg-blue-700 focus:outline-none"
+                                class:bg-blue-500={currentView === view}
+                                class:rounded-l={index === 0}
+                                class:rounded-r={index === views.length - 1}
+                                onclick={() => (currentView = view)}
+                            >
+                                {view.charAt(0).toUpperCase() + view.slice(1)}
+                            </button>
+                        {/each}
+                    </div>
+                </div>
+                <div class="flex items-center">
+                    <label for="auto-refresh" class="me-2 text-sm text-nowrap text-gray-700">Auto refresh</label>
+                    <div class="relative inline-block w-10 align-middle select-none">
+                        <input id="auto-refresh" type="checkbox" class="hidden" autocomplete="off" bind:checked={autoRefresh} />
+                        <label
+                            for="auto-refresh"
+                            class="block h-6 cursor-pointer overflow-hidden rounded-full p-0.5 transition-colors ease-in-out"
+                            class:bg-gray-300={!autoRefresh}
+                            class:bg-blue-500={autoRefresh}
                         >
-                            {view.charAt(0).toUpperCase() + view.slice(1)}
-                        </button>
-                    {/each}
+                            <span
+                                class="block h-5 w-5 transform rounded-full bg-white transition-transform duration-200 ease-in"
+                                class:translate-x-4={autoRefresh}
+                            ></span>
+                        </label>
+                    </div>
                 </div>
             </div>
             {#if currentView === "table"}

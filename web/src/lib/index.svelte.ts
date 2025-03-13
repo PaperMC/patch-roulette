@@ -4,6 +4,7 @@ import type { PatchDetails, Stats } from "$lib/types";
 export const token: { value: string | null } = $state({ value: null });
 export const patches: { value: PatchDetails[] } = $state({ value: [] });
 export const stats: { value: Stats | null } = $state({ value: null });
+export const refreshing: { value: boolean } = $state({ value: false });
 
 export function getUsername() {
     if (token.value == null) {
@@ -13,6 +14,15 @@ export function getUsername() {
 }
 
 export async function onVersionSelect(mcVersion: string) {
+    try {
+        refreshing.value = true;
+        await onVersionSelect_(mcVersion);
+    } finally {
+        refreshing.value = false;
+    }
+}
+
+async function onVersionSelect_(mcVersion: string) {
     if (!mcVersion) {
         alert("Please enter a Minecraft version.");
         return;
