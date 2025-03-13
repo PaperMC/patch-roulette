@@ -22,4 +22,4 @@ export type UserStats = {
     wip: number;
     done: number;
     timeSpent: string;
-}
+};
