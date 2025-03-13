@@ -6,7 +6,8 @@
     import PatchesTable from "$lib/components/PatchesTable.svelte";
     import PatchesStats from "$lib/components/PatchesStats.svelte";
 
-    type View = "table" | "stats";
+    const views = ["table", "stats"] as const;
+    type View = (typeof views)[number];
     let currentView: View = $state("stats");
 
     let minecraftVersions: string[] = $state([]);
@@ -105,20 +106,17 @@
                         Refresh
                     </button>
                     <div class="ms-2 flex rounded bg-blue-300 text-white">
-                        <button
-                            class=" rounded px-2 py-1 text-white hover:bg-blue-700 focus:outline-none"
-                            class:bg-blue-500={currentView === "table"}
-                            onclick={() => (currentView = "table")}
-                        >
-                            Table
-                        </button>
-                        <button
-                            class="rounded px-2 py-1 text-white hover:bg-blue-700 focus:outline-none"
-                            class:bg-blue-500={currentView === "stats"}
-                            onclick={() => (currentView = "stats")}
-                        >
-                            Stats
-                        </button>
+                        {#each views as view, index (view)}
+                            <button
+                                class="px-2 py-1 text-white hover:bg-blue-700 focus:outline-none"
+                                class:bg-blue-500={currentView === view}
+                                class:rounded-l={index === 0}
+                                class:rounded-r={index === views.length - 1}
+                                onclick={() => (currentView = view)}
+                            >
+                                {view.charAt(0).toUpperCase() + view.slice(1)}
+                            </button>
+                        {/each}
                     </div>
                 </div>
                 {#if currentView === "table"}
