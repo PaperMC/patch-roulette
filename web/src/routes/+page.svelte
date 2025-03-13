@@ -57,7 +57,7 @@
 </script>
 
 <div class="flex min-h-screen flex-row justify-center px-2 py-2 lg:py-6">
-    <div class="flex h-fit max-w-7xl grow flex-col rounded-lg bg-white p-6 shadow-md">
+    <div class="flex min-h-[500px] max-w-7xl grow flex-col rounded-lg bg-white p-6 shadow-md">
         <div class="mb-2 flex flex-row items-center justify-between">
             <h2 class="flex text-2xl font-bold text-gray-800">Patch Roulette</h2>
 
@@ -120,11 +120,13 @@
                 </div>
             </div>
             {#if currentView === "table"}
-                <div class="flex h-72">
+                <div class="flex h-full">
                     <PatchesTable data={patches} gridClass="ag-theme-quartz w-full"></PatchesTable>
                 </div>
             {:else if currentView === "stats"}
-                <PatchesStats data={patches}></PatchesStats>
+                <div class="flex h-full">
+                    <PatchesStats data={patches} gridClass="ag-theme-quartz w-full"></PatchesStats>
+                </div>
             {/if}
         </div>
     </div>

@@ -1,11 +1,16 @@
 <script lang="ts">
     import type { PatchDetails } from "$lib/types";
+    import {AgGrid} from "ag-grid-svelte5-extended";
+    import type {GridOptions} from "@ag-grid-community/core";
+    import {themeQuartz} from "@ag-grid-community/theming";
+    import { ClientSideRowModelModule } from "@ag-grid-community/client-side-row-model";
 
-    let { data = { value: [] } } = $props<{
+    let { data = { value: [] }, gridClass = "ag-theme-quartz" } = $props<{
         data: { value: PatchDetails[] };
+        gridClass?: string;
     }>();
 
-    function getStatusCounts() {
+    let counts = $derived.by(() => {
         const counts = {
             total: data.value.length,
             wip: 0,
@@ -28,7 +33,7 @@
         });
 
         return counts;
-    }
+    });
 
     function getProgressPercentage(count: number, total: number): number {
         if (total === 0) return 0;
@@ -38,11 +43,12 @@
     }
 
     type Counts = {
+        user: string;
         done: number;
         wip: number;
     };
 
-    function getCounts(): [string, Counts][] {
+    let userCounts = $derived.by(() => {
         const counts = new Map<string, Counts>();
         data.value.forEach((patch: PatchDetails) => {
             if (patch.responsibleUser) {
@@ -50,7 +56,7 @@
                 if (counts.has(patch.responsibleUser)) {
                     userCounts = counts.get(patch.responsibleUser)!;
                 } else {
-                    userCounts = { done: 0, wip: 0 };
+                    userCounts = { done: 0, wip: 0, user: patch.responsibleUser };
                     counts.set(patch.responsibleUser, userCounts);
                 }
                 switch (patch.status) {
@@ -64,23 +70,34 @@
             }
         });
 
-        return Array.from(counts.entries()).sort((a, b) => {
-            const totalA = a[1].wip + a[1].done;
-            const totalB = b[1].wip + b[1].done;
+        return Array.from(counts.values()).sort((a, b) => {
+            const totalA = a.wip + a.done;
+            const totalB = b.wip + b.done;
             return totalB - totalA;
         });
-    }
+    });
 
-    function userClasses(index: number): string {
-        if (index === 0) {
-            return "bg-[#EFBF04] font-semibold";
-        } else if (index === 1) {
-            return "bg-[#C0C0C0] font-semibold";
-        } else if (index === 2) {
-            return "bg-[#CE8946] font-semibold";
-        }
-        return "";
-    }
+    const gridOptions: GridOptions<Counts> = {
+        columnDefs: [
+            { field: "user", flex: 2, sortable: false },
+            { field: "wip", flex: 1, sortable: false },
+            { field: "done", flex: 1, sortable: false },
+        ],
+        getRowId: (params) => params.data.user,
+        getRowClass: (params) => {
+            if (params.rowIndex === 0) {
+                return "bg-[#EFBF04]! font-semibold";
+            } else if (params.rowIndex === 1) {
+                return "bg-[#C0C0C0]! font-semibold";
+            } else if (params.rowIndex === 2) {
+                return "bg-[#CE8946]! font-semibold";
+            }
+            return "";
+        },
+        theme: themeQuartz,
+        loadThemeGoogleFonts: false,
+    };
+    const modules = [ClientSideRowModelModule];
 </script>
 
 <div class="flex w-full flex-1 flex-col">
@@ -89,8 +106,6 @@
             <p class="text-gray-500">No patch data available</p>
         </div>
     {:else}
-        {@const counts = getStatusCounts()}
-
         <div class="mb-4">
             <div class="grid grid-cols-2 gap-4 md:grid-cols-4">
                 <div class="rounded bg-gray-100 p-4 text-center shadow">
@@ -129,29 +144,8 @@
             </div>
         </div>
 
-        <div class="flex h-56 overflow-y-auto rounded border border-gray-300">
-            {#if data.value.length > 0}
-                <table class="w-full">
-                    <thead class="bg-gray-50 sticky top-0">
-                        <tr>
-                            <th class="px-4 py-2 text-left">User</th>
-                            <th class="px-4 py-2 text-left">WIP</th>
-                            <th class="px-4 py-2 text-left">Done</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {#each getCounts() as [user, userCounts], index (user)}
-                            <tr class={userClasses(index)}>
-                                <td class="px-4 py-2">{user}</td>
-                                <td class="px-4 py-2">{userCounts.wip}</td>
-                                <td class="px-4 py-2">{userCounts.done}</td>
-                            </tr>
-                        {/each}
-                    </tbody>
-                </table>
-            {:else}
-                <p class="p-4 text-gray-500">No user data available</p>
-            {/if}
+        <div class="flex w-full flex-1">
+            <AgGrid {gridOptions} rowData={userCounts} {modules} {gridClass} />
         </div>
     {/if}
 </div>
