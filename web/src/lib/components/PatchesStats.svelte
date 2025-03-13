@@ -72,7 +72,7 @@
 <div class="flex w-full flex-1 flex-col">
     {#if !data.value?.total}
         <div class="flex h-full items-center justify-center">
-            <p class="text-gray-500">No stats data available</p>
+            <p class="text-gray-500">Loading statistics...</p>
         </div>
     {:else}
         <div class="mb-4">

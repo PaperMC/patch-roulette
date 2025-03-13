@@ -29,12 +29,9 @@
     async function handleVersionSelect(event: Event) {
         selectedVersion = (event.target as HTMLSelectElement).value;
         if (selectedVersion === "" || selectedVersion === null) {
-            document.getElementById("patches-container")?.classList.remove("flex");
-            document.getElementById("patches-container")?.classList.add("hidden");
+            return;
         } else if (selectedVersion) {
             await onVersionSelect((event.target as HTMLSelectElement).value);
-            document.getElementById("patches-container")?.classList.remove("hidden");
-            document.getElementById("patches-container")?.classList.add("flex");
         }
     }
 
@@ -51,8 +48,6 @@
         // TODO remove auto select 1.21.5-pre1
         selectedVersion = "1.21.5-pre1";
         await onVersionSelect(selectedVersion);
-        document.getElementById("patches-container")?.classList.remove("hidden");
-        document.getElementById("patches-container")?.classList.add("flex");
     });
 </script>
 
@@ -96,7 +91,12 @@
             </select>
         </div>
 
-        <div id="patches-container" class="hidden h-full w-full flex-col">
+        <div
+            id="patches-container"
+            class="h-full w-full flex-col"
+            class:hidden={selectedVersion === "" || selectedVersion === null}
+            class:flex={selectedVersion !== "" && selectedVersion !== null}
+        >
             <div class="mb-2 flex flex-row items-center">
                 <h3 class="text-xl font-semibold text-gray-800">Patches{selectedVersion === null ? "" : " for " + selectedVersion}</h3>
                 <button
