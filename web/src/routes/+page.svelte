@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { getUsername, onVersionSelect, patches, token, stats } from "$lib/index.svelte";
+    import { getUsername, onVersionSelect, patches, stats, token } from "$lib/index.svelte";
     import { onMount } from "svelte";
     import { goto } from "$app/navigation";
     import { fetchApi } from "$lib/api";
@@ -45,8 +45,8 @@
 
         await loadMinecraftVersions();
 
-        // TODO remove auto select 1.21.5-pre1
-        selectedVersion = "1.21.5-pre1";
+        // Auto select latest version
+        selectedVersion = minecraftVersions[minecraftVersions.length - 1];
         await onVersionSelect(selectedVersion);
     });
 </script>
