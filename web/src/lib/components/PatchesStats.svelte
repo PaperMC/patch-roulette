@@ -1,5 +1,5 @@
 <script lang="ts">
-    import type { Stats } from "$lib/types";
+    import type { Stats, UserStats } from "$lib/types";
     import { AgGrid } from "ag-grid-svelte5-extended";
     import type { GridOptions } from "@ag-grid-community/core";
     import { themeQuartz } from "@ag-grid-community/theming";
@@ -18,28 +18,50 @@
         return percentage > 0 && percentage < 1 ? 1 : Math.round(percentage);
     }
 
-    const gridOptions: GridOptions<Stats["users"][0]> = {
+    interface StyledUserStats extends UserStats {
+        rowClasses: string;
+    }
+
+    const styledUserStats: StyledUserStats[] = $derived.by(() => {
+        if (!data.value) return [];
+        return data.value.users.map((user: UserStats, index: number) => {
+            let classes: string = "";
+
+            if (index === 0) {
+                classes = "bg-[#EFBF04]! font-semibold";
+            } else if (index === 1) {
+                classes = "bg-[#C0C0C0]! font-semibold";
+            } else if (index === 2) {
+                classes = "bg-[#CE8946]! font-semibold";
+            }
+
+            return { ...user, rowClasses: classes };
+        });
+    });
+
+    const gridOptions: GridOptions<StyledUserStats> = {
         columnDefs: [
             { field: "user", flex: 2, sortable: false },
-            { field: "wip", flex: 1, sortable: false },
-            { field: "done", flex: 1, sortable: false },
+            { field: "wip", flex: 1, sortable: true },
+            { field: "done", flex: 1, sortable: true },
             {
                 field: "timeSpent",
                 flex: 1,
-                sortable: false,
+                sortable: true,
                 valueFormatter: (params) => (params.data?.timeSpent ? Duration.fromISO(params.data.timeSpent).toFormat("hh:mm:ss.SSS") : ""),
+                comparator: (valueA, valueB, nodeA, nodeB) => {
+                    // Extract ISO duration strings from data
+                    const durationA = Duration.fromISO(nodeA.data?.timeSpent || "PT0S");
+                    const durationB = Duration.fromISO(nodeB.data?.timeSpent || "PT0S");
+
+                    // Compare durations by converting to milliseconds
+                    return durationA.as("milliseconds") - durationB.as("milliseconds");
+                },
             },
         ],
         getRowId: (params) => params.data.user,
         getRowClass: (params) => {
-            if (params.rowIndex === 0) {
-                return "bg-[#EFBF04]! font-semibold";
-            } else if (params.rowIndex === 1) {
-                return "bg-[#C0C0C0]! font-semibold";
-            } else if (params.rowIndex === 2) {
-                return "bg-[#CE8946]! font-semibold";
-            }
-            return "";
+            return params.data!.rowClasses;
         },
         theme: themeQuartz,
         loadThemeGoogleFonts: false,
@@ -95,7 +117,7 @@
         </div>
 
         <div class="flex w-full flex-1">
-            <AgGrid {gridOptions} rowData={data.value.users} {modules} {gridClass} />
+            <AgGrid {gridOptions} rowData={styledUserStats} {modules} {gridClass} />
         </div>
     {/if}
 </div>
