@@ -82,7 +82,7 @@
                     {getProgressPercentage(data.value.available, data.value.total)}% Todo
                 </span>
                 <span class="text-sm font-semibold">
-                    Time Spend: {Duration.fromISO(data.value.timeSpent).toHuman()}
+                    Time Spent: {Duration.fromISO(data.value.timeSpent).toHuman()}
                 </span>
             </div>
             <div class="h-4 w-full overflow-hidden rounded-full bg-gray-200 shadow">
