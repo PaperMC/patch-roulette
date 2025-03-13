@@ -1,3 +1,5 @@
+export type PatchStatus = "WIP" | "AVAILABLE" | "DONE";
+
 export type PatchDetails = {
     path: string;
     status: PatchStatus;
@@ -12,12 +14,12 @@ export type Stats = {
     wip: number;
     total: number;
     timeSpent: string;
-    users: {
-        user: string;
-        wip: number;
-        done: number;
-        timeSpent: string;
-    }[];
+    users: UserStats[];
 };
 
-export type PatchStatus = "WIP" | "AVAILABLE" | "DONE";
+export type UserStats = {
+    user: string;
+    wip: number;
+    done: number;
+    timeSpent: string;
+}
