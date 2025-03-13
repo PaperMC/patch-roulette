@@ -1,8 +1,8 @@
 <script lang="ts">
     import type { PatchDetails } from "$lib/types";
-    import {AgGrid} from "ag-grid-svelte5-extended";
-    import type {GridOptions} from "@ag-grid-community/core";
-    import {themeQuartz} from "@ag-grid-community/theming";
+    import { AgGrid } from "ag-grid-svelte5-extended";
+    import type { GridOptions } from "@ag-grid-community/core";
+    import { themeQuartz } from "@ag-grid-community/theming";
     import { ClientSideRowModelModule } from "@ag-grid-community/client-side-row-model";
 
     let { data = { value: [] }, gridClass = "ag-theme-quartz" } = $props<{

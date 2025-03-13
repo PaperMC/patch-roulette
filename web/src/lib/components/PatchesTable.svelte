@@ -14,12 +14,29 @@
         columnDefs: [
             {
                 field: "path",
-                flex: 1,
+                flex: 2,
                 filter: true,
                 floatingFilter: true,
             },
-            { field: "status", width: 120, filter: true, floatingFilter: true },
-            { field: "responsibleUser", width: 200, filter: true, floatingFilter: true },
+            {
+                field: "status",
+                flex: 1,
+                filter: true,
+                floatingFilter: true,
+                cellClass: (params) => {
+                    switch (params.value) {
+                        case "WIP":
+                            return "text-orange-500";
+                        case "AVAILABLE":
+                            return "text-yellow-500";
+                        case "DONE":
+                            return "text-green-500";
+                        default:
+                            return "";
+                    }
+                },
+            },
+            { field: "responsibleUser", flex: 1, filter: true, floatingFilter: true },
         ],
         getRowId: (params) => params.data.path,
         theme: themeQuartz,

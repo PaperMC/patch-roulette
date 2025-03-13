@@ -1,8 +1,8 @@
-import {sveltekit} from "@sveltejs/kit/vite";
-import {defineConfig} from "vite";
+import { sveltekit } from "@sveltejs/kit/vite";
+import { defineConfig } from "vite";
 import tailwindcss from "@tailwindcss/vite";
 
-export default defineConfig(({mode}) => ({
+export default defineConfig(({ mode }) => ({
     plugins: [tailwindcss(), sveltekit()],
     server: {
         proxy: {
