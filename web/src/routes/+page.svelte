@@ -4,6 +4,10 @@
     import { goto } from "$app/navigation";
     import { fetchApi } from "$lib/api";
     import PatchesTable from "$lib/components/PatchesTable.svelte";
+    import PatchesStats from "$lib/components/PatchesStats.svelte";
+
+    type View = "table" | "stats";
+    let currentView: View = $state("stats");
 
     let minecraftVersions: string[] = $state([]);
     let selectedVersion = $state("");
@@ -52,27 +56,30 @@
 
 <div class="flex h-screen flex-row items-center justify-center px-2 py-2 lg:px-64 lg:py-6">
     <div class="flex h-full w-full flex-col overflow-hidden rounded-lg bg-white p-6 shadow-md">
-        <h2 class="mb-4 flex text-2xl font-bold text-gray-800">Patch Roulette</h2>
-        <div class="mb-4 flex flex-row items-center justify-between">
-            <p id="user-info" class="text-sm text-gray-600">
-                Logged in as: <span id="logged-user" class="font-medium">{token.value === null ? "" : getUsername()}</span>
-            </p>
+        <div class="mb-2 flex flex-row items-center justify-between">
+            <h2 class="flex text-2xl font-bold text-gray-800">Patch Roulette</h2>
 
-            <button
-                id="logout-button"
-                type="button"
-                class="focus:shadow-outline ms-4 rounded bg-gray-300 px-4 py-2 font-bold text-gray-800 hover:bg-gray-400 focus:outline-none"
-                onclick={() => {
-                    localStorage.removeItem("token");
-                    token.value = null;
-                    goto("/login");
-                }}
-            >
-                Logout
-            </button>
+            <div class="ms-4 flex items-center">
+                <p id="user-info" class="text-sm text-gray-600">
+                    Logged in as: <span id="logged-user" class="font-medium">{token.value === null ? "" : getUsername()}</span>
+                </p>
+
+                <button
+                    id="logout-button"
+                    type="button"
+                    class="focus:shadow-outline ms-4 rounded bg-gray-300 px-2 py-1 text-gray-800 hover:bg-gray-400 focus:outline-none"
+                    onclick={() => {
+                        localStorage.removeItem("token");
+                        token.value = null;
+                        goto("/login");
+                    }}
+                >
+                    Logout
+                </button>
+            </div>
         </div>
 
-        <div class="mb-4 flex items-center">
+        <div class="mb-2 flex items-center">
             <label for="mcVersion" class="me-2 block text-sm font-bold text-gray-700">Minecraft Version</label>
             <select
                 id="mcVersion"
@@ -92,13 +99,33 @@
                 <div class="mb-2 flex flex-row items-center">
                     <h3 class="text-xl font-semibold text-gray-800">Patches{selectedVersion === null ? "" : " for " + selectedVersion}</h3>
                     <button
-                        class="focus:shadow-outline ms-4 rounded bg-blue-500 px-2 py-1 font-bold text-white hover:bg-blue-700 focus:outline-none"
+                        class="focus:shadow-outline ms-4 rounded bg-blue-500 px-2 py-1 text-white hover:bg-blue-700 focus:outline-none"
                         onclick={() => onVersionSelect(selectedVersion)}
                     >
                         Refresh
                     </button>
+                    <div class="ms-2 flex rounded bg-blue-300 text-white">
+                        <button
+                            class=" rounded px-2 py-1 text-white hover:bg-blue-700 focus:outline-none"
+                            class:bg-blue-500={currentView === "table"}
+                            onclick={() => (currentView = "table")}
+                        >
+                            Table
+                        </button>
+                        <button
+                            class="rounded px-2 py-1 text-white hover:bg-blue-700 focus:outline-none"
+                            class:bg-blue-500={currentView === "stats"}
+                            onclick={() => (currentView = "stats")}
+                        >
+                            Stats
+                        </button>
+                    </div>
                 </div>
-                <PatchesTable data={patches} gridClass="ag-theme-quartz w-full"></PatchesTable>
+                {#if currentView === "table"}
+                    <PatchesTable data={patches} gridClass="ag-theme-quartz w-full"></PatchesTable>
+                {:else if currentView === "stats"}
+                    <PatchesStats data={patches}></PatchesStats>
+                {/if}
             </div>
         </div>
     </div>
