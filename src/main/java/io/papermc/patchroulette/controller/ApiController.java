@@ -216,7 +216,9 @@ public class ApiController {
                     } else if (patch.getStatus() == Status.DONE) {
                         userStats.done++;
                     }
-                    userStats.timeSpent = userStats.timeSpent.plus(patch.getDuration());
+                    if (patch.getDuration() != null) {
+                        userStats.timeSpent = userStats.timeSpent.plus(patch.getDuration());
+                    }
                     return userStats;
                 });
             }
