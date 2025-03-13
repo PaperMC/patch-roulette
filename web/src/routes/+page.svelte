@@ -57,7 +57,7 @@
 </script>
 
 <div class="flex min-h-screen flex-row justify-center px-2 py-2 lg:py-6">
-    <div class="flex min-h-[500px] max-w-7xl grow flex-col rounded-lg bg-white p-6 shadow-md">
+    <div class="flex min-h-[500px] max-w-7xl grow flex-col rounded-lg bg-white p-3 md:p-6 shadow-md">
         <div class="mb-2 flex flex-row items-center justify-between">
             <h2 class="flex text-2xl font-bold text-gray-800">Patch Roulette</h2>
 
