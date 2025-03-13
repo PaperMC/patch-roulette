@@ -5,11 +5,6 @@
         data: { value: PatchDetails[] };
     }>();
 
-    $effect(() => {
-        // Force reactivity when data changes
-        console.log("Stats updated:", data.value.length);
-    });
-
     function getStatusCounts() {
         const counts = {
             total: data.value.length,
@@ -88,7 +83,7 @@
     }
 </script>
 
-<div class="mt-2 flex w-full flex-1 flex-col">
+<div class="flex w-full flex-1 flex-col">
     {#if data.value.length === 0}
         <div class="flex h-full items-center justify-center">
             <p class="text-gray-500">No patch data available</p>
@@ -134,31 +129,29 @@
             </div>
         </div>
 
-        <div>
-            <div class="max-h-60 overflow-y-auto rounded border border-gray-300">
-                {#if data.value.length > 0}
-                    <table class="w-full">
-                        <thead class="bg-gray-50">
-                            <tr>
-                                <th class="px-4 py-2 text-left">User</th>
-                                <th class="px-4 py-2 text-left">WIP</th>
-                                <th class="px-4 py-2 text-left">Done</th>
+        <div class="flex h-56 overflow-y-auto rounded border border-gray-300">
+            {#if data.value.length > 0}
+                <table class="w-full">
+                    <thead class="bg-gray-50 sticky top-0">
+                        <tr>
+                            <th class="px-4 py-2 text-left">User</th>
+                            <th class="px-4 py-2 text-left">WIP</th>
+                            <th class="px-4 py-2 text-left">Done</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {#each getCounts() as [user, userCounts], index (user)}
+                            <tr class={userClasses(index)}>
+                                <td class="px-4 py-2">{user}</td>
+                                <td class="px-4 py-2">{userCounts.wip}</td>
+                                <td class="px-4 py-2">{userCounts.done}</td>
                             </tr>
-                        </thead>
-                        <tbody>
-                            {#each getCounts() as [user, counts], index (user)}
-                                <tr class={userClasses(index)}>
-                                    <td class="px-4 py-2">{user}</td>
-                                    <td class="px-4 py-2">{counts.wip}</td>
-                                    <td class="px-4 py-2">{counts.done}</td>
-                                </tr>
-                            {/each}
-                        </tbody>
-                    </table>
-                {:else}
-                    <p class="p-4 text-gray-500">No user data available</p>
-                {/if}
-            </div>
+                        {/each}
+                    </tbody>
+                </table>
+            {:else}
+                <p class="p-4 text-gray-500">No user data available</p>
+            {/if}
         </div>
     {/if}
 </div>
