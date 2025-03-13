@@ -26,7 +26,7 @@
     }
 </script>
 
-<div id="login-container" class="flex min-h-screen items-center justify-center p-4">
+<div id="login-container" class="flex h-screen items-center justify-center p-4">
     <form id="login-form" class="w-full max-w-md rounded-lg bg-white p-6 shadow-md" onsubmit={submit}>
         <div class="mb-4">
             <label for="username" class="mb-2 block text-sm font-bold text-gray-700">Username</label>

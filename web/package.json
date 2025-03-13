@@ -39,5 +39,8 @@
         "run": {
             "bun": true
         }
+    },
+    "dependencies": {
+        "ag-grid-svelte5-extended": "^0.0.13"
     }
 }
