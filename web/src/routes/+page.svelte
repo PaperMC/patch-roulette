@@ -52,17 +52,19 @@
 
     // start: Auto refresh
     let autoRefresh = $state(false);
-    let refreshTask: ReturnType<typeof setInterval> | null = $state(null);
+    let refreshTask: ReturnType<typeof setInterval> | null = null;
     const refreshInterval = 1;
 
     $effect(() => {
+        if (refreshTask) {
+            clearInterval(refreshTask);
+            refreshTask = null;
+        }
+
         if (autoRefresh && selectedVersion) {
             refreshTask = setInterval(() => {
                 onVersionSelect(selectedVersion);
             }, refreshInterval * 60000); // interval is in minutes
-        } else if (refreshTask) {
-            clearInterval(refreshTask);
-            refreshTask = null;
         }
     });
 
