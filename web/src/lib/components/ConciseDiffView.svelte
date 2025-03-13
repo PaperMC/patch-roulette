@@ -19,7 +19,7 @@
     });
 
     async function setup(patchContent: string) {
-        const hunkRegex = /@@ -\d+(?:,\d+)? \+\d+_?(?:,\d+)? @@\n((?:[ +-].*\n(?!@@))*(?:[ +-].*(?!@@))?)/g;
+        const hunkRegex = /@@ -\d+(?:,\d+)? \+\d+_?(?:,\d+)? @@(?:\s[^\n]*)?(?:\n|$)((?:[ +-][^\n]*(?:\n|$))*)/g;
 
         renderDiff = () => {
             const rows: PatchRow[] = [];
@@ -76,12 +76,15 @@
     }
 
     function lineHasNonHeaderChange(line: string) {
-        const diffLine = line.startsWith("+") || line.startsWith("-");
-        if (diffLine) {
-            const addedOrRemoved = line.substring(1);
-            return !addedOrRemoved.startsWith("+++") && !addedOrRemoved.startsWith("---") && !/^[@+-]@@ -\d+,\d+ \+[\d_]+,\d+ @@/.test(line);
+        if (!(line.startsWith("+") || line.startsWith("-"))) {
+            // context line
+            return false;
         }
-        return false;
+
+        // Added or removed content
+        const content = line.substring(1);
+        // Skip header lines and hunk headers in nested patches
+        return !(content.startsWith("+++") || content.startsWith("---") || content.startsWith("@@ -") || content.startsWith("@@ +"));
     }
 </script>
 
