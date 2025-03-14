@@ -86,8 +86,12 @@
 </script>
 
 {#each patchRows as row (row)}
-    <div class="h-auto w-full p-1 pl-1 {row.backgroundClasses}">
-        <pre class="inline ps-0.5">{row.content.charAt(0)}</pre>
-        <pre class="inline ps-0.5 break-words whitespace-pre-wrap {row.innerPatchContentClasses}">{row.content.substring(1)}</pre>
+    <div class="h-auto py-1 ps-0.5 {row.backgroundClasses} flex w-full flex-row">
+        <div class="w-max">
+            <pre>{row.content.charAt(0)}</pre>
+        </div>
+        <div class="w-max max-w-full">
+            <pre class=" break-words whitespace-pre-wrap {row.innerPatchContentClasses}">{row.content.substring(1)}</pre>
+        </div>
     </div>
 {/each}
