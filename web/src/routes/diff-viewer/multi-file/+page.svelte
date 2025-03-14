@@ -215,7 +215,7 @@
             </div>
         </div>
     </div>
-    <div class="flex min-h-[500px] grow flex-col rounded-lg bg-white p-3 shadow-md md:p-6 lg:max-w-8/12">
+    <div class="flex min-h-[500px] grow flex-col rounded-lg bg-white p-3 shadow-md md:p-6 lg:max-w-9/12">
         <div class="mb-2 flex items-center justify-between">
             <label for="patchUpload" class="me-2 cursor-pointer rounded-lg bg-blue-500 px-4 py-2 text-white hover:bg-blue-600">
                 Load Patch File

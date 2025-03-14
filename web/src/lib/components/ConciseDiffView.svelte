@@ -3,7 +3,8 @@
 
     type PatchRow = {
         content: string;
-        classes?: string;
+        backgroundClasses?: string;
+        innerPatchContentClasses?: string;
     };
 
     const patchRows = $derived.by(() => makeRows(data.value));
@@ -26,26 +27,37 @@
             // Add the hunk header
             rows.push({
                 content: match[0].split("\n")[0],
-                classes: "bg-gray-200 font-mono",
+                backgroundClasses: "bg-gray-200 font-mono",
             });
 
             // Process the content lines
-            contentLines.forEach((line) => {
-                let lineClass = "font-mono";
-                if (line.startsWith("+")) {
-                    lineClass += " bg-green-100";
-                } else if (line.startsWith("-")) {
-                    lineClass += " bg-red-100";
+            contentLines.forEach((diff) => {
+                let outerLine = "font-mono";
+
+                if (diff.startsWith("+")) {
+                    outerLine += " bg-green-200";
+                } else if (diff.startsWith("-")) {
+                    outerLine += " bg-red-200";
+                }
+
+                let innerClasses = "font-mono";
+
+                let patch = diff.substring(1);
+                if (patch.startsWith("+") && patch.charAt(1) !== "+") {
+                    innerClasses += " bg-[#dafbe1] font-medium";
+                } else if (patch.startsWith("-") && patch.charAt(1) !== "-") {
+                    innerClasses += " bg-[#ffebe9] font-medium";
                 }
 
                 rows.push({
-                    content: line,
-                    classes: lineClass,
+                    content: diff,
+                    backgroundClasses: outerLine,
+                    innerPatchContentClasses: innerClasses,
                 });
             });
 
             // Add a separator between hunks
-            rows.push({ content: "", classes: "h-2" });
+            rows.push({ content: "", backgroundClasses: "h-2" });
         }
 
         return rows;
@@ -74,5 +86,8 @@
 </script>
 
 {#each patchRows as row (row)}
-    <pre class="w-full ps-0.5 break-words whitespace-pre-wrap {row.classes}">{row.content}</pre>
+    <div class="h-auto w-full p-1 pl-1 break-words whitespace-pre-wrap {row.backgroundClasses}">
+        {row.content.charAt(0)}
+        <pre class="inline ps-0.5 {row.innerPatchContentClasses}">{row.content.substring(1)}</pre>
+    </div>
 {/each}
