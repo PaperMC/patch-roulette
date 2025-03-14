@@ -209,7 +209,7 @@
                         role="button"
                         tabindex="0"
                     >
-                        <span>{value.toFile}</span>
+                        <span class="max-w-full overflow-hidden break-all">{value.toFile}</span>
                         <input type="checkbox" class="mx-1 rounded-sm border border-gray-300" autocomplete="off" onchange={() => toggleChecked(index)} />
                     </div>
                 {/each}
