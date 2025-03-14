@@ -19,7 +19,7 @@
     <div class="flex min-h-[500px] max-w-7xl grow flex-col rounded-lg bg-white p-3 shadow-md md:p-6">
         <div class="mb-2 flex">
             <label for="patchUpload" class="cursor-pointer rounded-lg bg-blue-500 px-4 py-2 text-white hover:bg-blue-600">
-                Upload Patch File
+                Load Patch File
                 <input id="patchUpload" type="file" class="hidden" onchange={handleFileUpload} />
             </label>
         </div>
