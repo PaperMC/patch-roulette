@@ -1,6 +1,34 @@
+export type PatchRowType = "header" | "context" | "add" | "remove" | "spacer";
+
+export type PatchRowTypeProps = {
+    classes: string;
+    prefix?: string;
+};
+
+export const patchRowTypeProps: Record<PatchRowType, PatchRowTypeProps> = {
+    header: {
+        classes: "bg-gray-200",
+    },
+    add: {
+        classes: "bg-green-200",
+        prefix: "+",
+    },
+    remove: {
+        classes: "bg-red-200",
+        prefix: "-",
+    },
+    context: {
+        classes: "",
+        prefix: " ",
+    },
+    spacer: {
+        classes: "h-2",
+    },
+};
+
 export type PatchRow = {
+    type: PatchRowType;
     content: string;
-    backgroundClasses?: string;
     innerPatchContentClasses?: string;
 };
 
@@ -21,38 +49,39 @@ export default function makeRows(patchContent: string): PatchRow[] {
 
         // Add the hunk header
         rows.push({
+            type: "header",
             content: match[0].split("\n")[0],
-            backgroundClasses: "bg-gray-200 font-mono",
         });
 
         // Process the content lines
-        contentLines.forEach((diff) => {
-            let outerLine = "font-mono";
-
-            if (diff.startsWith("+")) {
-                outerLine += " bg-green-200";
-            } else if (diff.startsWith("-")) {
-                outerLine += " bg-red-200";
+        contentLines.forEach((contentLine) => {
+            let type: PatchRowType;
+            if (contentLine.startsWith("+")) {
+                type = "add";
+            } else if (contentLine.startsWith("-")) {
+                type = "remove";
+            } else {
+                type = "context";
             }
 
             let innerClasses = "font-mono";
 
-            const patch = diff.substring(1);
-            if (patch.startsWith("+") && patch.charAt(1) !== "+") {
+            const trimmed = contentLine.substring(1);
+            if (trimmed.startsWith("+")) {
                 innerClasses += " bg-green-300 text-green-800";
-            } else if (patch.startsWith("-") && patch.charAt(1) !== "-") {
+            } else if (trimmed.startsWith("-")) {
                 innerClasses += " bg-red-300 text-red-800";
             }
 
             rows.push({
-                content: diff,
-                backgroundClasses: outerLine,
+                content: trimmed,
                 innerPatchContentClasses: innerClasses,
+                type: type,
             });
         });
 
         // Add a separator between hunks
-        rows.push({ content: "", backgroundClasses: "h-2" });
+        rows.push({ content: "", type: "spacer" });
     }
 
     return rows;
