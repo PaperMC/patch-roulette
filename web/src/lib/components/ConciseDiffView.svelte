@@ -6,63 +6,49 @@
         classes?: string;
     };
 
-    type PatchRows = {
-        values: PatchRow[];
-    };
+    const patchRows = $derived.by(() => makeRows(data.value));
 
-    let renderDiff: () => PatchRows = $state(() => {
-        return { values: [] };
-    });
-
-    $effect(() => {
-        setup(data.value);
-    });
-
-    async function setup(patchContent: string) {
+    function makeRows(patchContent: string): PatchRow[] {
         const hunkRegex = /@@ -\d+(?:,\d+)? \+\d+_?(?:,\d+)? @@(?:\s[^\n]*)?(?:\n|$)((?:[ +-][^\n]*(?:\n|$))*)/g;
 
-        renderDiff = () => {
-            const rows: PatchRow[] = [];
+        const rows: PatchRow[] = [];
 
-            let match;
-            while ((match = hunkRegex.exec(patchContent)) !== null) {
-                // Check if this hunk only contains changes to headers
-                const contentLines = match[1].split("\n");
+        let match;
+        while ((match = hunkRegex.exec(patchContent)) !== null) {
+            // Check if this hunk only contains changes to headers
+            const contentLines = match[1].split("\n");
 
-                // Skip this hunk if it only contains header changes
-                if (!hasNonHeaderChanges(contentLines)) {
-                    continue;
-                }
-
-                // Add the hunk header
-                rows.push({
-                    content: match[0].split("\n")[0],
-                    classes: "bg-gray-200 font-mono",
-                });
-
-                // Process the content lines
-                contentLines.forEach((line) => {
-                    let lineClass = "font-mono";
-                    if (line.startsWith("+")) {
-                        lineClass += " bg-green-100";
-                    } else if (line.startsWith("-")) {
-                        lineClass += " bg-red-100";
-                    }
-
-                    rows.push({
-                        content: line,
-                        classes: lineClass,
-                    });
-                });
-
-                // Add a separator between hunks
-                rows.push({ content: "", classes: "h-2" });
+            // Skip this hunk if it only contains header changes
+            if (!hasNonHeaderChanges(contentLines)) {
+                continue;
             }
 
-            return {
-                values: rows,
-            };
-        };
+            // Add the hunk header
+            rows.push({
+                content: match[0].split("\n")[0],
+                classes: "bg-gray-200 font-mono",
+            });
+
+            // Process the content lines
+            contentLines.forEach((line) => {
+                let lineClass = "font-mono";
+                if (line.startsWith("+")) {
+                    lineClass += " bg-green-100";
+                } else if (line.startsWith("-")) {
+                    lineClass += " bg-red-100";
+                }
+
+                rows.push({
+                    content: line,
+                    classes: lineClass,
+                });
+            });
+
+            // Add a separator between hunks
+            rows.push({ content: "", classes: "h-2" });
+        }
+
+        return rows;
     }
 
     function hasNonHeaderChanges(contentLines: string[]) {
@@ -87,6 +73,6 @@
     }
 </script>
 
-{#each renderDiff().values as row (row)}
+{#each patchRows as row (row)}
     <pre class="w-full ps-0.5 break-words whitespace-pre-wrap {row.classes}">{row.content}</pre>
 {/each}
