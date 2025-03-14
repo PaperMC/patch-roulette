@@ -1,5 +1,6 @@
 <script lang="ts">
     import ConciseDiffView from "$lib/components/ConciseDiffView.svelte";
+    import makeRows, { type PatchRow } from "$lib/components/scripts/ConciseDiffView.svelte";
 
     type GithubPRFile = {
         filename: string;
@@ -11,7 +12,7 @@
         fromFile: string;
         toFile: string;
     };
-    let data: { values: FileDetails[] } = $state({ values: [] });
+    let data: { values: FileDetails[]; rows: PatchRow[][] } = $state({ values: [], rows: [] });
     let searchQuery: string = $state("");
     let filteredFiles: FileDetails[] = $derived(
         searchQuery
@@ -33,6 +34,13 @@
             data.values = [];
         }
         data.values.push(...patches);
+        patches.forEach((patch) => {
+            const rows = makeRows(patch.content);
+            data.rows.push(rows);
+            if (rows.length == 0) {
+                checkedState[data.rows.length - 1] = true;
+            }
+        });
     }
 
     function splitMultiFilePatch(patchContent: string): FileDetails[] {
@@ -188,6 +196,7 @@
                 placeholder="Search files..."
                 bind:value={searchQuery}
                 class="w-full rounded-md border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                autocomplete="off"
             />
             {#if searchQuery}
                 <button class="absolute top-1/2 right-4 -translate-y-1/2 text-gray-500 hover:text-gray-700" onclick={clearSearch}>✕</button>
@@ -209,13 +218,19 @@
                         tabindex="0"
                     >
                         <span class="max-w-full overflow-hidden break-all">{value.toFile}</span>
-                        <input type="checkbox" class="mx-1 rounded-sm border border-gray-300" autocomplete="off" onchange={() => toggleChecked(index)} />
+                        <input
+                            type="checkbox"
+                            class="mx-1 rounded-sm border border-gray-300"
+                            autocomplete="off"
+                            onchange={() => toggleChecked(index)}
+                            checked={checkedState[getOriginalIndex(index)]}
+                        />
                     </div>
                 {/each}
             </div>
         </div>
     </div>
-    <div class="flex min-h-[500px] grow flex-col rounded-lg bg-white p-3 shadow-md md:p-6 lg:max-w-8/12">
+    <div class="flex min-h-[500px] grow flex-col rounded-lg bg-white p-3 shadow-md md:p-6 lg:max-w-9/12">
         <div class="mb-2 flex items-center justify-between">
             <label for="patchUpload" class="me-2 cursor-pointer rounded-lg bg-blue-500 px-4 py-2 text-white hover:bg-blue-600">
                 Load Patch File
@@ -233,6 +248,8 @@
         <div class="flex flex-1 flex-col overflow-y-auto border border-gray-300">
             <div class="h-100">
                 {#each data.values as value, index (index)}
+                    {@const rows = data.rows[index]}
+
                     <div id={`file-${index}`}>
                         <div
                             class="sticky top-0 flex cursor-pointer flex-row items-center justify-between border-b border-gray-300 bg-white px-2 py-1 shadow-sm"
@@ -246,17 +263,21 @@
                             {:else}
                                 <span class="max-w-full overflow-hidden break-all">{value.fromFile} -> {value.toFile}</span>
                             {/if}
-                            <span class="ms-2 rounded-sm bg-blue-500 px-1 text-white hover:bg-blue-600">
-                                {#if collapsedState[index]}
-                                    Expand
-                                {:else}
-                                    Collapse
-                                {/if}
-                            </span>
+                            {#if rows.length !== 0}
+                                <span class="ms-2 rounded-sm bg-blue-500 px-1 text-white hover:bg-blue-600">
+                                    {#if collapsedState[index]}
+                                        Expand
+                                    {:else}
+                                        Collapse
+                                    {/if}
+                                </span>
+                            {:else}
+                                <span class="ms-2 rounded-sm bg-gray-300 px-1 text-gray-800">Patch-header-only diff</span>
+                            {/if}
                         </div>
-                        {#if !collapsedState[index]}
+                        {#if !collapsedState[index] && rows.length !== 0}
                             <div class="mb border-b border-gray-300 text-sm">
-                                <ConciseDiffView data={{ value: value.content }}></ConciseDiffView>
+                                <ConciseDiffView preRenderedPatchRows={rows}></ConciseDiffView>
                             </div>
                         {/if}
                     </div>

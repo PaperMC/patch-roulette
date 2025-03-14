@@ -1,5 +1,5 @@
 import { fetchApi } from "./api";
-import type { PatchDetails, Stats } from "$lib/types";
+import type { PatchDetails, Stats } from "./types";
 
 export const token: { value: string | null } = $state({ value: null });
 export const patches: { value: PatchDetails[] } = $state({ value: [] });
