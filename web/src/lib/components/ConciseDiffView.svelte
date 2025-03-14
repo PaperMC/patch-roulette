@@ -86,8 +86,8 @@
 </script>
 
 {#each patchRows as row (row)}
-    <div class="h-auto w-full p-1 pl-1 break-words whitespace-pre-wrap {row.backgroundClasses}">
-        {row.content.charAt(0)}
-        <pre class="inline ps-0.5 {row.innerPatchContentClasses}">{row.content.substring(1)}</pre>
+    <div class="h-auto w-full p-1 pl-1 {row.backgroundClasses}">
+        <pre class="inline ps-0.5">{row.content.charAt(0)}</pre>
+        <pre class="inline ps-0.5 break-words whitespace-pre-wrap {row.innerPatchContentClasses}">{row.content.substring(1)}</pre>
     </div>
 {/each}
