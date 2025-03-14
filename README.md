@@ -31,7 +31,8 @@ Note that Bun can be substituted with the package manager of your choice.
 
 ### Setup
 
-Install [Bun](https://bun.sh/) and execute `bun install` in `/web` to install the required dependencies for the frontend.
+- Install [Bun](https://bun.sh/) and execute `bun install` in `/web` to install the required dependencies for the frontend.
+- Install a JVM 21 or newer for the Gradle runtime (prefer a JDK to avoid extra downloads for a compiler).
 
 ### Testing
 
