@@ -93,18 +93,31 @@
 
             return splitMultiFilePatch(await resp.text());
         } else if (type === "pull") {
-            const resp = await fetch(`https://api.github.com/repos/${owner}/${repo}/pulls/${id}/files`, {
-                headers: {
-                    Accept: "application/vnd.github+json",
-                },
-            });
+            let files: GithubPRFile[] = [];
+            let page = 1;
+            let hasMorePages = true;
 
-            if (!resp.ok) {
-                alert(`Error ${resp.status}: ${await resp.text()}`);
-                return null;
+            while (hasMorePages) {
+                const resp = await fetch(`https://api.github.com/repos/${owner}/${repo}/pulls/${id}/files?per_page=100&page=${page}`, {
+                    headers: {
+                        Accept: "application/vnd.github+json",
+                    },
+                });
+
+                if (!resp.ok) {
+                    alert(`Error ${resp.status}: ${await resp.text()}`);
+                    return null;
+                }
+
+                const pageFiles: GithubPRFile[] = await resp.json();
+                files.push(...pageFiles);
+
+                const linkHeader = resp.headers.get("Link");
+                hasMorePages = linkHeader?.includes('rel="next"') || false;
+                page++;
+
+                if (pageFiles.length === 0) break;
             }
-
-            const files: GithubPRFile[] = await resp.json();
 
             return files.map((file) => {
                 return {
