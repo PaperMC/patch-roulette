@@ -2,6 +2,9 @@
 
 REST API and web interface for managing Paper updates and dealing with patches.
 
+> [!NOTE]  
+> This project is intended for internal use and does not guarantee stability, compatibility, support, or follow semantic versioning. External users will likely only find the diff viewer useful.
+
 ## Overview
 
 ### REST API
@@ -43,3 +46,7 @@ Note that Bun can be substituted with the package manager of your choice.
 
 - The frontend uses ESLint and Prettier for code style. Run `bun run format` to reformat and `bun run lint` to check style.
 - The backend simply has a `.editorconfig` file for code style.
+
+### Deployment
+
+- Published to the GitHub Container Registry on each commit through the `publish` actions workflow.
