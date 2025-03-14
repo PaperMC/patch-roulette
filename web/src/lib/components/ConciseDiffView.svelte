@@ -44,9 +44,9 @@
 
                 let patch = diff.substring(1);
                 if (patch.startsWith("+") && patch.charAt(1) !== "+") {
-                    innerClasses += " bg-green-300 font-medium";
+                    innerClasses += " bg-green-300";
                 } else if (patch.startsWith("-") && patch.charAt(1) !== "-") {
-                    innerClasses += " bg-red-300 font-medium";
+                    innerClasses += " bg-red-300";
                 }
 
                 rows.push({
