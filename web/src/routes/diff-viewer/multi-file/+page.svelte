@@ -81,7 +81,7 @@
             </label>
             <label for="githubUrl" class="rounded-lg">
                 <span class="me-2 font-semibold">Load from GitHub commit or PR URL</span>
-                <input id="githubUrl" type="text" class="border border-gray-300" onchange={handleGithubUrl} />
+                <input id="githubUrl" type="text" class="border border-gray-300" onchange={handleGithubUrl} autocomplete="off" />
             </label>
         </div>
         <div class="flex flex-1 flex-col overflow-y-auto border border-gray-300">
