@@ -88,9 +88,11 @@
         <div class="flex flex-1 flex-col overflow-y-auto border border-gray-300">
             <div class="h-100">
                 {#each data.values as value, index (index)}
-                    <h1 class="text-2xl">{value.name}</h1>
-                    <div class="mb-2 border-t border-b border-gray-300">
-                        <ConciseDiffView data={{ value: value.content }}></ConciseDiffView>
+                    <div>
+                        <h1 class="sticky top-0 bg-white text-xl px-2 py-1 border-b border-gray-300">{value.name}</h1>
+                        <div class="mb border-t border-b border-gray-300">
+                            <ConciseDiffView data={{ value: value.content }}></ConciseDiffView>
+                        </div>
                     </div>
                 {/each}
             </div>
