@@ -25,7 +25,7 @@
         </div>
         <h1 class="text-2xl">{fileName}</h1>
         <div class="flex h-fit flex-1 flex-col border border-gray-300">
-            <ConciseDiffView {data}></ConciseDiffView>
+            <ConciseDiffView rawPatchContent={data.value}></ConciseDiffView>
         </div>
     </div>
 </div>
