@@ -91,7 +91,7 @@
             <pre>{row.content.charAt(0)}</pre>
         </div>
         <div class="w-max max-w-full">
-            <pre class=" break-words whitespace-pre-wrap {row.innerPatchContentClasses}">{row.content.substring(1)}</pre>
+            <pre class="break-all whitespace-pre-wrap {row.innerPatchContentClasses}">{row.content.substring(1)}</pre>
         </div>
     </div>
 {/each}
