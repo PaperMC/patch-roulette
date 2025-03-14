@@ -236,7 +236,7 @@
                 {#each data.values as value, index (index)}
                     <div id={`file-${index}`}>
                         <div
-                            class="sticky top-0 flex flex-row items-center justify-between border-b border-gray-300 bg-white px-2 py-1 shadow-sm"
+                            class="sticky top-0 flex cursor-pointer flex-row items-center justify-between border-b border-gray-300 bg-white px-2 py-1 shadow-sm"
                             onclick={() => toggleCollapse(index)}
                             tabindex="0"
                             onkeyup={(event) => event.key === "Enter" && toggleCollapse(index)}
