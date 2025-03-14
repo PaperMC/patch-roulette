@@ -10,6 +10,7 @@
     const fileRegex = /diff --git a\/(\S+) b\/(\S+)\r?\n(?:.+\r?\n)*?(?=diff --git|Z)/g;
 
     function loadPatches(patchContent: string) {
+        data.values = [];
         // Process each file in the diff
         let fileMatch;
         while ((fileMatch = fileRegex.exec(patchContent)) !== null) {
