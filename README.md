@@ -26,7 +26,7 @@ SvelteKit frontend using tailwindcss for styling. Hosted as static files by the 
 
 #### Public Pages
 
-- `/diff-viewer/multi-file`: Multi-file concise diff viewer
+- [`/diff-viewer/multi-file`](https://patch-roulette.papermc.io/diff-viewer/multi-file): Multi-file concise diff viewer
 
 ## Development
 
