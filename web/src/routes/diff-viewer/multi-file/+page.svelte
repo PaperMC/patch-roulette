@@ -231,7 +231,7 @@
             <button type="button" class="me-2 rounded-md bg-blue-500 px-2 py-1 text-white hover:bg-blue-600" onclick={expandAll}> Expand All </button>
             <button type="button" class="me-2 rounded-md bg-blue-500 px-2 py-1 text-white hover:bg-blue-600" onclick={collapseAll}> Collapse All </button>
         </div>
-        <div class="flex flex-1 flex-col overflow-y-auto border border-gray-300 max-w-full overflow-hidden break-all">
+        <div class="flex flex-1 flex-col overflow-y-auto border border-gray-300">
             <div class="h-100">
                 {#each data.values as value, index (index)}
                     <div id={`file-${index}`}>
@@ -243,11 +243,11 @@
                             role="button"
                         >
                             {#if value.fromFile === value.toFile}
-                                <span>{value.toFile}</span>
+                                <span class="max-w-full overflow-hidden break-all">{value.toFile}</span>
                             {:else}
-                                <span>{value.fromFile} -> {value.toFile}</span>
+                                <span class="max-w-full overflow-hidden break-all">{value.fromFile} -> {value.toFile}</span>
                             {/if}
-                            <span class="rounded-sm bg-blue-500 px-1 text-white hover:bg-blue-600">
+                            <span class="ms-2 rounded-sm bg-blue-500 px-1 text-white hover:bg-blue-600">
                                 {#if collapsedState[index]}
                                     Expand
                                 {:else}
