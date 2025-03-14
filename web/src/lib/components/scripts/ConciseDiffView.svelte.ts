@@ -1,4 +1,10 @@
-export type PatchLineType = "header" | "context" | "add" | "remove" | "spacer";
+export enum PatchLineType {
+    HEADER,
+    CONTEXT,
+    ADD,
+    REMOVE,
+    SPACER,
+}
 
 export type PatchLineTypeProps = {
     classes: string;
@@ -6,40 +12,44 @@ export type PatchLineTypeProps = {
 };
 
 export const patchLineTypeProps: Record<PatchLineType, PatchLineTypeProps> = {
-    header: {
+    [PatchLineType.HEADER]: {
         classes: "bg-gray-200",
     },
-    add: {
+    [PatchLineType.ADD]: {
         classes: "bg-green-200",
         prefix: "+",
     },
-    remove: {
+    [PatchLineType.REMOVE]: {
         classes: "bg-red-200",
         prefix: "-",
     },
-    context: {
+    [PatchLineType.CONTEXT]: {
         classes: "",
         prefix: " ",
     },
-    spacer: {
+    [PatchLineType.SPACER]: {
         classes: "h-2",
     },
 };
 
-export type InnerPatchLineType = "add" | "remove" | "none";
+export enum InnerPatchLineType {
+    ADD,
+    REMOVE,
+    NONE,
+}
 
 export type InnerPatchLineTypeProps = {
     classes: string;
 };
 
 export const innerPatchLineTypeProps: Record<InnerPatchLineType, InnerPatchLineTypeProps> = {
-    add: {
+    [InnerPatchLineType.ADD]: {
         classes: "bg-green-300 text-green-800",
     },
-    remove: {
+    [InnerPatchLineType.REMOVE]: {
         classes: "bg-red-300 text-red-800",
     },
-    none: {
+    [InnerPatchLineType.NONE]: {
         classes: "",
     },
 };
@@ -67,28 +77,28 @@ export default function makeLines(patchContent: string): PatchLine[] {
 
         // Add the hunk header
         lines.push({
-            type: "header",
+            type: PatchLineType.HEADER,
             content: match[0].split("\n")[0],
-            innerPatchLineType: "none",
+            innerPatchLineType: InnerPatchLineType.NONE,
         });
 
         // Process the content lines
         contentLines.forEach((contentLine) => {
             let type: PatchLineType;
             if (contentLine.startsWith("+")) {
-                type = "add";
+                type = PatchLineType.ADD;
             } else if (contentLine.startsWith("-")) {
-                type = "remove";
+                type = PatchLineType.REMOVE;
             } else {
-                type = "context";
+                type = PatchLineType.CONTEXT;
             }
 
-            let innerType: InnerPatchLineType = "none";
+            let innerType: InnerPatchLineType = InnerPatchLineType.NONE;
             const trimmed = contentLine.substring(1);
             if (trimmed.startsWith("+")) {
-                innerType = "add";
+                innerType = InnerPatchLineType.ADD;
             } else if (trimmed.startsWith("-")) {
-                innerType = "remove";
+                innerType = InnerPatchLineType.REMOVE;
             }
 
             lines.push({
@@ -99,7 +109,7 @@ export default function makeLines(patchContent: string): PatchLine[] {
         });
 
         // Add a separator between hunks
-        lines.push({ content: "", type: "spacer", innerPatchLineType: "none" });
+        lines.push({ content: "", type: PatchLineType.SPACER, innerPatchLineType: InnerPatchLineType.NONE });
     }
 
     return lines;
