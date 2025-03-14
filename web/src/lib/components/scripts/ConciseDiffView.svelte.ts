@@ -26,10 +26,28 @@ export const patchLineTypeProps: Record<PatchLineType, PatchLineTypeProps> = {
     },
 };
 
+export type InnerPatchLineType = "add" | "remove" | "none";
+
+export type InnerPatchLineTypeProps = {
+    classes: string;
+};
+
+export const innerPatchLineTypeProps: Record<InnerPatchLineType, InnerPatchLineTypeProps> = {
+    add: {
+        classes: "bg-green-300 text-green-800",
+    },
+    remove: {
+        classes: "bg-red-300 text-red-800",
+    },
+    none: {
+        classes: "",
+    },
+};
+
 export type PatchLine = {
     type: PatchLineType;
     content: string;
-    innerPatchContentClasses?: string;
+    innerPatchLineType: InnerPatchLineType;
 };
 
 export default function makeLines(patchContent: string): PatchLine[] {
@@ -51,6 +69,7 @@ export default function makeLines(patchContent: string): PatchLine[] {
         lines.push({
             type: "header",
             content: match[0].split("\n")[0],
+            innerPatchLineType: "none",
         });
 
         // Process the content lines
@@ -64,24 +83,23 @@ export default function makeLines(patchContent: string): PatchLine[] {
                 type = "context";
             }
 
-            let innerClasses = "font-mono";
-
+            let innerType: InnerPatchLineType = "none";
             const trimmed = contentLine.substring(1);
             if (trimmed.startsWith("+")) {
-                innerClasses += " bg-green-300 text-green-800";
+                innerType = "add";
             } else if (trimmed.startsWith("-")) {
-                innerClasses += " bg-red-300 text-red-800";
+                innerType = "remove";
             }
 
             lines.push({
                 content: trimmed,
-                innerPatchContentClasses: innerClasses,
+                innerPatchLineType: innerType,
                 type: type,
             });
         });
 
         // Add a separator between hunks
-        lines.push({ content: "", type: "spacer" });
+        lines.push({ content: "", type: "spacer", innerPatchLineType: "none" });
     }
 
     return lines;
