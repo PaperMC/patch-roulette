@@ -89,5 +89,5 @@
 </script>
 
 {#each renderDiff().values as row (row)}
-    <pre class="whitespace-pre-wrap {row.classes}">{row.content}</pre>
+    <pre class="break-words whitespace-pre-wrap {row.classes}">{row.content}</pre>
 {/each}
