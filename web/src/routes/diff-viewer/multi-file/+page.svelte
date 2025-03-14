@@ -34,11 +34,11 @@
             data.values = [];
         }
         data.values.push(...patches);
-        patches.forEach((patch, index) => {
+        patches.forEach((patch) => {
             const rows = makeRows(patch.content);
             data.rows.push(rows);
             if (rows.length == 0) {
-                checkedState[index] = true;
+                checkedState[data.rows.length - 1] = true;
             }
         });
     }
@@ -196,6 +196,7 @@
                 placeholder="Search files..."
                 bind:value={searchQuery}
                 class="w-full rounded-md border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                autocomplete="off"
             />
             {#if searchQuery}
                 <button class="absolute top-1/2 right-4 -translate-y-1/2 text-gray-500 hover:text-gray-700" onclick={clearSearch}>✕</button>
