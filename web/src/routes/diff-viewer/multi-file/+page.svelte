@@ -1,6 +1,11 @@
 <script lang="ts">
     import ConciseDiffView from "$lib/components/ConciseDiffView.svelte";
 
+    type GithubPRFile = {
+        filename: string;
+        previous_filename?: string;
+        patch: string;
+    };
     type FileDetails = {
         content: string;
         fromFile: string;
@@ -21,16 +26,26 @@
     let collapsedState: boolean[] = $state([]);
     let checkedState: boolean[] = $state([]);
 
-    function loadPatches(patchContent: string) {
+    function loadPatches(patches: FileDetails[]) {
         collapsedState = [];
         checkedState = [];
         data.values = [];
+        data.values.push(...patches);
+    }
+
+    function splitMultiFilePatch(patchContent: string): FileDetails[] {
+        let patches: FileDetails[] = [];
         // Process each file in the diff
         let fileMatch;
         while ((fileMatch = fileRegex.exec(patchContent)) !== null) {
             const [fullFileMatch, fromFile, toFile] = fileMatch;
-            data.values.push({ content: fullFileMatch, fromFile: fromFile, toFile: toFile });
+            patches.push({ content: fullFileMatch, fromFile: fromFile, toFile: toFile });
         }
+        return patches;
+    }
+
+    function loadMultiFilePatch(patchContent: string) {
+        loadPatches(splitMultiFilePatch(patchContent));
     }
 
     async function handleFileUpload(event: Event) {
@@ -40,32 +55,20 @@
         if (file) {
             const patchContent = await file.text();
 
-            loadPatches(patchContent);
+            loadMultiFilePatch(patchContent);
         }
     }
 
     async function handleGithubUrl(event: Event) {
         const url = (event.target as HTMLInputElement).value;
-        const apiUrl = convertToApiUrl(url);
-        if (!apiUrl) {
-            return;
+        const patches = await getFromGithubApi(url);
+        if (patches) {
+            loadPatches(patches);
         }
-
-        const response = await fetch(apiUrl, {
-            headers: {
-                Accept: "application/vnd.github.v3.diff",
-            },
-        });
-        if (!response.ok) {
-            alert(`Error ${response.status}: ${await response.text()}`);
-            return;
-        }
-        const body = await response.text();
-        loadPatches(body);
     }
 
     // convert commit or PR url to an API url
-    function convertToApiUrl(url: string): string | null {
+    async function getFromGithubApi(url: string): Promise<FileDetails[] | null> {
         const regex = /^https:\/\/github\.com\/([^/]+)\/([^/]+)\/(commit|pull)\/([^/]+)$/;
         const match = url.match(regex);
 
@@ -77,9 +80,39 @@
         const [, owner, repo, type, id] = match;
 
         if (type === "commit") {
-            return `https://api.github.com/repos/${owner}/${repo}/commits/${id}`;
+            const resp = await fetch(`https://api.github.com/repos/${owner}/${repo}/commits/${id}`, {
+                headers: {
+                    Accept: "application/vnd.github.v3.diff",
+                },
+            });
+
+            if (!resp.ok) {
+                alert(`Error ${resp.status}: ${await resp.text()}`);
+                return null;
+            }
+
+            return splitMultiFilePatch(await resp.text());
         } else if (type === "pull") {
-            return `https://api.github.com/repos/${owner}/${repo}/pulls/${id}`;
+            const resp = await fetch(`https://api.github.com/repos/${owner}/${repo}/pulls/${id}/files`, {
+                headers: {
+                    Accept: "application/vnd.github+json",
+                },
+            });
+
+            if (!resp.ok) {
+                alert(`Error ${resp.status}: ${await resp.text()}`);
+                return null;
+            }
+
+            const files: GithubPRFile[] = await resp.json();
+
+            return files.map((file) => {
+                return {
+                    content: file.patch,
+                    fromFile: file.previous_filename || file.filename,
+                    toFile: file.filename,
+                };
+            });
         }
 
         throw new Error("Unsupported URL type");
