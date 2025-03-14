@@ -50,7 +50,7 @@
                 flex: 1,
                 filter: true,
                 floatingFilter: true,
-                valueFormatter: (params) => (params.data?.lastUpdated ? DateTime.fromISO(params.data.lastUpdated).toLocaleString(DateTime.DATETIME_SHORT) : ""),
+                valueFormatter: (params) => (params.data?.lastUpdated ? DateTime.fromISO(params.data.lastUpdated).toLocal().toLocaleString(DateTime.DATETIME_SHORT) : ""),
             },
         ],
         getRowId: (params) => params.data.path,
