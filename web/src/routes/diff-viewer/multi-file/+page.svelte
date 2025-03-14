@@ -26,10 +26,12 @@
     let collapsedState: boolean[] = $state([]);
     let checkedState: boolean[] = $state([]);
 
-    function loadPatches(patches: FileDetails[]) {
-        collapsedState = [];
-        checkedState = [];
-        data.values = [];
+    function loadPatches(patches: FileDetails[], reset: boolean = true) {
+        if (reset) {
+            collapsedState = [];
+            checkedState = [];
+            data.values = [];
+        }
         data.values.push(...patches);
     }
 
@@ -61,14 +63,11 @@
 
     async function handleGithubUrl(event: Event) {
         const url = (event.target as HTMLInputElement).value;
-        const patches = await getFromGithubApi(url);
-        if (patches) {
-            loadPatches(patches);
-        }
+        await loadFromGithubApi(url);
     }
 
     // convert commit or PR url to an API url
-    async function getFromGithubApi(url: string): Promise<FileDetails[] | null> {
+    async function loadFromGithubApi(url: string) {
         const regex = /^https:\/\/github\.com\/([^/]+)\/([^/]+)\/(commit|pull)\/([^/]+)$/;
         const match = url.match(regex);
 
@@ -91,9 +90,8 @@
                 return null;
             }
 
-            return splitMultiFilePatch(await resp.text());
+            loadPatches(splitMultiFilePatch(await resp.text()));
         } else if (type === "pull") {
-            let files: GithubPRFile[] = [];
             let page = 1;
             let hasMorePages = true;
 
@@ -110,7 +108,16 @@
                 }
 
                 const pageFiles: GithubPRFile[] = await resp.json();
-                files.push(...pageFiles);
+                loadPatches(
+                    pageFiles.map((file) => {
+                        return {
+                            content: file.patch,
+                            fromFile: file.previous_filename || file.filename,
+                            toFile: file.filename,
+                        };
+                    }),
+                    page === 1,
+                );
 
                 const linkHeader = resp.headers.get("Link");
                 hasMorePages = linkHeader?.includes('rel="next"') || false;
@@ -118,14 +125,6 @@
 
                 if (pageFiles.length === 0) break;
             }
-
-            return files.map((file) => {
-                return {
-                    content: file.patch,
-                    fromFile: file.previous_filename || file.filename,
-                    toFile: file.filename,
-                };
-            });
         }
 
         throw new Error("Unsupported URL type");
