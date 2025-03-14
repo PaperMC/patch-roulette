@@ -24,7 +24,6 @@
         renderDiff = () => {
             const rows: PatchRow[] = [];
 
-            // Process p.patch (patch of patches)
             let match;
             while ((match = hunkRegex.exec(patchContent)) !== null) {
                 // Check if this hunk only contains changes to headers
@@ -45,9 +44,9 @@
                 contentLines.forEach((line) => {
                     let lineClass = "font-mono";
                     if (line.startsWith("+")) {
-                        lineClass += " bg-green-100 text-green-800";
+                        lineClass += " bg-green-100";
                     } else if (line.startsWith("-")) {
-                        lineClass += " bg-red-100 text-red-800";
+                        lineClass += " bg-red-100";
                     }
 
                     rows.push({
