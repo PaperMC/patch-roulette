@@ -1,11 +1,11 @@
-export type PatchRowType = "header" | "context" | "add" | "remove" | "spacer";
+export type PatchLineType = "header" | "context" | "add" | "remove" | "spacer";
 
-export type PatchRowTypeProps = {
+export type PatchLineTypeProps = {
     classes: string;
     prefix?: string;
 };
 
-export const patchRowTypeProps: Record<PatchRowType, PatchRowTypeProps> = {
+export const patchLineTypeProps: Record<PatchLineType, PatchLineTypeProps> = {
     header: {
         classes: "bg-gray-200",
     },
@@ -26,16 +26,16 @@ export const patchRowTypeProps: Record<PatchRowType, PatchRowTypeProps> = {
     },
 };
 
-export type PatchRow = {
-    type: PatchRowType;
+export type PatchLine = {
+    type: PatchLineType;
     content: string;
     innerPatchContentClasses?: string;
 };
 
-export default function makeRows(patchContent: string): PatchRow[] {
+export default function makeLines(patchContent: string): PatchLine[] {
     const hunkRegex = /@@ -\d+(?:,\d+)? \+\d+_?(?:,\d+)? @@(?:\s[^\n]*)?(?:\n|$)((?:[ +-][^\n]*(?:\n|$))*)/g;
 
-    const rows: PatchRow[] = [];
+    const lines: PatchLine[] = [];
 
     let match;
     while ((match = hunkRegex.exec(patchContent)) !== null) {
@@ -48,14 +48,14 @@ export default function makeRows(patchContent: string): PatchRow[] {
         }
 
         // Add the hunk header
-        rows.push({
+        lines.push({
             type: "header",
             content: match[0].split("\n")[0],
         });
 
         // Process the content lines
         contentLines.forEach((contentLine) => {
-            let type: PatchRowType;
+            let type: PatchLineType;
             if (contentLine.startsWith("+")) {
                 type = "add";
             } else if (contentLine.startsWith("-")) {
@@ -73,7 +73,7 @@ export default function makeRows(patchContent: string): PatchRow[] {
                 innerClasses += " bg-red-300 text-red-800";
             }
 
-            rows.push({
+            lines.push({
                 content: trimmed,
                 innerPatchContentClasses: innerClasses,
                 type: type,
@@ -81,10 +81,10 @@ export default function makeRows(patchContent: string): PatchRow[] {
         });
 
         // Add a separator between hunks
-        rows.push({ content: "", type: "spacer" });
+        lines.push({ content: "", type: "spacer" });
     }
 
-    return rows;
+    return lines;
 }
 
 function hasNonHeaderChanges(contentLines: string[]) {

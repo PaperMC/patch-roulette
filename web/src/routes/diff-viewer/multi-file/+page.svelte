@@ -1,6 +1,6 @@
 <script lang="ts">
     import ConciseDiffView from "$lib/components/ConciseDiffView.svelte";
-    import makeRows, { type PatchRow } from "$lib/components/scripts/ConciseDiffView.svelte";
+    import makeLines, { type PatchLine } from "$lib/components/scripts/ConciseDiffView.svelte";
 
     type GithubPRFile = {
         filename: string;
@@ -12,7 +12,7 @@
         fromFile: string;
         toFile: string;
     };
-    let data: { values: FileDetails[]; rows: PatchRow[][] } = $state({ values: [], rows: [] });
+    let data: { values: FileDetails[]; lines: PatchLine[][] } = $state({ values: [], lines: [] });
     let searchQuery: string = $state("");
     let filteredFiles: FileDetails[] = $derived(
         searchQuery
@@ -35,10 +35,10 @@
         }
         data.values.push(...patches);
         patches.forEach((patch) => {
-            const rows = makeRows(patch.content);
-            data.rows.push(rows);
-            if (rows.length == 0) {
-                checkedState[data.rows.length - 1] = true;
+            const lines = makeLines(patch.content);
+            data.lines.push(lines);
+            if (lines.length == 0) {
+                checkedState[data.lines.length - 1] = true;
             }
         });
     }
@@ -248,7 +248,7 @@
         <div class="flex flex-1 flex-col overflow-y-auto border border-gray-300">
             <div class="h-100">
                 {#each data.values as value, index (index)}
-                    {@const rows = data.rows[index]}
+                    {@const lines = data.lines[index]}
 
                     <div id={`file-${index}`}>
                         <div
@@ -263,7 +263,7 @@
                             {:else}
                                 <span class="max-w-full overflow-hidden break-all">{value.fromFile} -> {value.toFile}</span>
                             {/if}
-                            {#if rows.length !== 0}
+                            {#if lines.length !== 0}
                                 <span class="ms-2 rounded-sm bg-blue-500 px-1 text-white hover:bg-blue-600">
                                     {#if collapsedState[index]}
                                         Expand
@@ -275,9 +275,9 @@
                                 <span class="ms-2 rounded-sm bg-gray-300 px-1 text-gray-800">Patch-header-only diff</span>
                             {/if}
                         </div>
-                        {#if !collapsedState[index] && rows.length !== 0}
+                        {#if !collapsedState[index] && lines.length !== 0}
                             <div class="mb border-b border-gray-300 text-sm">
-                                <ConciseDiffView preRenderedPatchRows={rows}></ConciseDiffView>
+                                <ConciseDiffView preRenderedPatchLines={lines}></ConciseDiffView>
                             </div>
                         {/if}
                     </div>
