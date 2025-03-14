@@ -9,7 +9,10 @@
 
     const fileRegex = /diff --git a\/(\S+) b\/(\S+)\r?\n(?:.+\r?\n)*?(?=diff --git|Z)/g;
 
+    let collapsedState: boolean[] = $state([]);
+
     function loadPatches(patchContent: string) {
+        collapsedState = [];
         data.values = [];
         // Process each file in the diff
         let fileMatch;
@@ -71,6 +74,18 @@
 
         throw new Error("Unsupported URL type");
     }
+
+    function toggleCollapse(index: number) {
+        collapsedState[index] = !(collapsedState[index] || false);
+    }
+
+    function expandAll() {
+        collapsedState = [];
+    }
+
+    function collapseAll() {
+        collapsedState = data.values.map(() => true);
+    }
 </script>
 
 <div class="flex min-h-screen flex-row justify-center px-2 py-2 lg:py-6">
@@ -85,12 +100,35 @@
                 <input id="githubUrl" type="text" class="border border-gray-300" onchange={handleGithubUrl} autocomplete="off" />
             </label>
         </div>
+        <div class="mb-2 flex justify-end">
+            <button type="button" class="me-2 rounded-md bg-blue-500 px-2 py-1 text-white hover:bg-blue-600" onclick={expandAll}> Expand All </button>
+            <button type="button" class="me-2 rounded-md bg-blue-500 px-2 py-1 text-white hover:bg-blue-600" onclick={collapseAll}> Collapse All </button>
+        </div>
         <div class="flex flex-1 flex-col overflow-y-auto border border-gray-300">
             <div class="h-100">
                 {#each data.values as value, index (index)}
                     <div>
-                        <h1 class="sticky top-0 bg-white text-xl px-2 py-1 border-b border-gray-300">{value.name}</h1>
-                        <div class="mb border-t border-b border-gray-300">
+                        <div
+                            class="shadow-sm sticky top-0 flex flex-row items-center justify-between border-b border-gray-300 bg-white px-2 py-1"
+                            onclick={() => toggleCollapse(index)}
+                            tabindex="0"
+                            onkeyup={(event) => {
+                                if (event.key === "Enter") {
+                                    toggleCollapse(index);
+                                }
+                            }}
+                            role="button"
+                        >
+                            <span class="text-xl">{value.name}</span>
+                            <span class="rounded-sm bg-blue-500 px-1 text-white hover:bg-blue-600">
+                                {#if collapsedState[index]}
+                                    Expand
+                                {:else}
+                                    Collapse
+                                {/if}
+                            </span>
+                        </div>
+                        <div class="mb border-b border-gray-300" class:hidden={collapsedState[index]}>
                             <ConciseDiffView data={{ value: value.content }}></ConciseDiffView>
                         </div>
                     </div>
