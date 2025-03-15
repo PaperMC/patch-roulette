@@ -95,8 +95,6 @@ function processLineDiff(contentLines: string[], lines: PatchLine[]) {
             newState = State.ADD;
         } else if (lineText.startsWith("-")) {
             newState = State.REMOVE;
-        } else {
-            newState = State.CONTEXT;
         }
 
         let stateChanged = false;
@@ -107,7 +105,7 @@ function processLineDiff(contentLines: string[], lines: PatchLine[]) {
 
         if (stateChanged && state === State.CONTEXT) {
             if (addLinesText.length != removeLinesText.length) {
-                // The added and removed lines are not adjacent
+                // The added and removed lines are not adjacent or are not symmetric
                 removeLinesText.forEach((text) => {
                     lines.push({
                         content: [{ text }],
