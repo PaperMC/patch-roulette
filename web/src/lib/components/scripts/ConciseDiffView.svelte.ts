@@ -1,3 +1,10 @@
+import diff from "fast-diff";
+
+export type LineSegment = {
+    text: string;
+    classes?: string;
+};
+
 export enum PatchLineType {
     HEADER,
     CONTEXT,
@@ -56,9 +63,125 @@ export const innerPatchLineTypeProps: Record<InnerPatchLineType, InnerPatchLineT
 
 export type PatchLine = {
     type: PatchLineType;
-    content: string;
+    content: LineSegment[];
     innerPatchLineType: InnerPatchLineType;
 };
+
+function getInnerType(text: string) {
+    let innerType = InnerPatchLineType.NONE;
+    if (text.startsWith("+")) {
+        innerType = InnerPatchLineType.ADD;
+    } else if (text.startsWith("-")) {
+        innerType = InnerPatchLineType.REMOVE;
+    }
+    return innerType;
+}
+
+function processLineDiff(contentLines: string[], lines: PatchLine[]) {
+    enum State {
+        CONTEXT,
+        ADD,
+        REMOVE,
+    }
+
+    let addLinesText: string[] = [];
+    let removeLinesText: string[] = [];
+    let state = State.CONTEXT;
+    for (let i = 0; i < contentLines.length; i++) {
+        const lineText = contentLines[i];
+
+        let newState: State = State.CONTEXT;
+        if (lineText.startsWith("+")) {
+            newState = State.ADD;
+        } else if (lineText.startsWith("-")) {
+            newState = State.REMOVE;
+        } else {
+            newState = State.CONTEXT;
+        }
+
+        let stateChanged = false;
+        if (newState !== state) {
+            state = newState;
+            stateChanged = true;
+        }
+
+        if (stateChanged && state === State.CONTEXT) {
+            if (addLinesText.length != removeLinesText.length) {
+                // The added and removed lines are not adjacent
+                removeLinesText.forEach((text) => {
+                    lines.push({
+                        content: [{ text }],
+                        type: PatchLineType.REMOVE,
+                        innerPatchLineType: getInnerType(text),
+                    });
+                });
+                addLinesText.forEach((text) => {
+                    lines.push({
+                        content: [{ text }],
+                        type: PatchLineType.ADD,
+                        innerPatchLineType: getInnerType(text),
+                    });
+                });
+                continue;
+            }
+
+            const addLines: LineSegment[][] = [];
+            const removeLines: LineSegment[][] = [];
+
+            for (let j = 0; j < addLinesText.length; j++) {
+                const diffResult = diff(removeLinesText[j], addLinesText[j], undefined, true);
+
+                const addLine: LineSegment[] = [];
+                const removeLine: LineSegment[] = [];
+                diffResult.forEach(([type, text]) => {
+                    if (type === 1) {
+                        addLine.push({ text, classes: "rounded-sm bg-green-100 m-0.5" });
+                    } else if (type === -1) {
+                        removeLine.push({ text, classes: "rounded-sm bg-red-100 m-0.5" });
+                    } else {
+                        addLine.push({ text });
+                        removeLine.push({ text });
+                    }
+                });
+                if (addLine.length !== 0) {
+                    addLines.push(addLine);
+                }
+                if (removeLine.length !== 0) {
+                    removeLines.push(removeLine);
+                }
+            }
+            addLinesText = [];
+            removeLinesText = [];
+            removeLines.forEach((line) => {
+                lines.push({
+                    content: line,
+                    type: PatchLineType.REMOVE,
+                    innerPatchLineType: getInnerType(line[0].text),
+                });
+            });
+            addLines.forEach((line) => {
+                lines.push({
+                    content: line,
+                    type: PatchLineType.ADD,
+                    innerPatchLineType: getInnerType(line[0].text),
+                });
+            });
+        }
+
+        if (state === State.ADD) {
+            addLinesText.push(lineText.substring(1));
+        } else if (state === State.REMOVE) {
+            removeLinesText.push(lineText.substring(1));
+        } else {
+            const trimmed = lineText.substring(1);
+            lines.push({
+                content: [{ text: trimmed }],
+                innerPatchLineType: getInnerType(trimmed),
+                type: PatchLineType.CONTEXT,
+            });
+        }
+    }
+}
 
 export default function makeLines(patchContent: string): PatchLine[] {
     const hunkRegex = /@@ -\d+(?:,\d+)? \+\d+_?(?:,\d+)? @@(?:\s[^\n]*)?(?:\n|$)((?:[ +-][^\n]*(?:\n|$))*)/g;
@@ -78,38 +201,14 @@ export default function makeLines(patchContent: string): PatchLine[] {
         // Add the hunk header
         lines.push({
             type: PatchLineType.HEADER,
-            content: match[0].split("\n")[0],
+            content: [{ text: match[0].split("\n")[0] }],
             innerPatchLineType: InnerPatchLineType.NONE,
         });
 
-        // Process the content lines
-        contentLines.forEach((contentLine) => {
-            let type: PatchLineType;
-            if (contentLine.startsWith("+")) {
-                type = PatchLineType.ADD;
-            } else if (contentLine.startsWith("-")) {
-                type = PatchLineType.REMOVE;
-            } else {
-                type = PatchLineType.CONTEXT;
-            }
-
-            let innerType: InnerPatchLineType = InnerPatchLineType.NONE;
-            const trimmed = contentLine.substring(1);
-            if (trimmed.startsWith("+")) {
-                innerType = InnerPatchLineType.ADD;
-            } else if (trimmed.startsWith("-")) {
-                innerType = InnerPatchLineType.REMOVE;
-            }
-
-            lines.push({
-                content: trimmed,
-                innerPatchLineType: innerType,
-                type: type,
-            });
-        });
+        processLineDiff(contentLines, lines);
 
         // Add a separator between hunks
-        lines.push({ content: "", type: PatchLineType.SPACER, innerPatchLineType: InnerPatchLineType.NONE });
+        lines.push({ content: [{ text: "" }], type: PatchLineType.SPACER, innerPatchLineType: InnerPatchLineType.NONE });
     }
 
     return lines;

@@ -99,6 +99,7 @@
             }
 
             loadPatches(splitMultiFilePatch(await resp.text()));
+            return;
         } else if (type === "pull") {
             let page = 1;
             let hasMorePages = true;
@@ -133,9 +134,10 @@
 
                 if (pageFiles.length === 0) break;
             }
+            return;
         }
 
-        throw new Error("Unsupported URL type");
+        throw new Error("Unsupported URL type " + url);
     }
 
     function toggleCollapse(index: number) {
