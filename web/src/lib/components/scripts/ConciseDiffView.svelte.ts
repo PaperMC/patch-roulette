@@ -131,9 +131,9 @@ function processLineDiff(contentLines: string[], lines: PatchLine[]) {
                     const removeLine: LineSegment[] = [];
                     diffResult.forEach(([type, text]) => {
                         if (type === 1) {
-                            addLine.push({ text, classes: "rounded-sm bg-green-100 m-0.5" });
+                            addLine.push({ text, classes: "rounded-sm bg-green-100 my-0.5" });
                         } else if (type === -1) {
-                            removeLine.push({ text, classes: "rounded-sm bg-red-100 m-0.5" });
+                            removeLine.push({ text, classes: "rounded-sm bg-red-100 my-0.5" });
                         } else {
                             addLine.push({ text });
                             removeLine.push({ text });
