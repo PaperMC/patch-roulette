@@ -1,6 +1,7 @@
 <script lang="ts">
     import ConciseDiffView from "$lib/components/ConciseDiffView.svelte";
     import makeLines, { type PatchLine } from "$lib/components/scripts/ConciseDiffView.svelte";
+    import { debounce } from "$lib/util";
 
     type GithubPRFile = {
         filename: string;
@@ -14,13 +15,25 @@
     };
     let data: { values: FileDetails[]; lines: PatchLine[][] } = $state({ values: [], lines: [] });
     let searchQuery: string = $state("");
+    let debouncedSearchQuery: string = $state("");
     let filteredFiles: FileDetails[] = $derived(
-        searchQuery
+        debouncedSearchQuery
             ? data.values.filter((file) => {
-                  return file.toFile.toLowerCase().includes(searchQuery.toLowerCase()) || file.fromFile.toLowerCase().includes(searchQuery.toLowerCase());
+                  return (
+                      file.toFile.toLowerCase().includes(debouncedSearchQuery.toLowerCase()) ||
+                      file.fromFile.toLowerCase().includes(debouncedSearchQuery.toLowerCase())
+                  );
               })
             : data.values,
     );
+
+    const updateDebouncedSearch = debounce((value: string) => {
+        debouncedSearchQuery = value;
+    }, 500);
+
+    $effect(() => {
+        updateDebouncedSearch(searchQuery);
+    });
 
     const fileRegex = /diff --git a\/(\S+) b\/(\S+)\r?\n(?:.+\r?\n)*?(?=diff --git|Z)/g;
 
@@ -178,6 +191,7 @@
 
     function clearSearch() {
         searchQuery = "";
+        debouncedSearchQuery = "";
     }
 
     function toggleChecked(index: number) {
@@ -190,8 +204,8 @@
     }
 </script>
 
-<div class="flex min-h-screen flex-row justify-center px-2 py-2 lg:py-6">
-    <div class="lg: me-2 flex min-h-[500px] max-w-3/12 grow flex-col rounded-lg bg-white p-3 shadow-md">
+<div class="flex min-h-screen flex-row justify-center">
+    <div class="flex max-w-3/12 grow flex-col border-e border-gray-300 bg-white p-3">
         <div class="relative mb-2">
             <input
                 type="text"
@@ -200,7 +214,7 @@
                 class="w-full rounded-md border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none"
                 autocomplete="off"
             />
-            {#if searchQuery}
+            {#if debouncedSearchQuery}
                 <button class="absolute top-1/2 right-4 -translate-y-1/2 text-gray-500 hover:text-gray-700" onclick={clearSearch}>✕</button>
             {/if}
         </div>
@@ -211,7 +225,7 @@
         {/if}
         <div class="flex h-full flex-col overflow-y-auto rounded-md border border-gray-300">
             <div class="h-100">
-                {#each filteredFiles as value, index (index)}
+                {#each filteredFiles as value, index (value.toFile)}
                     <div
                         class="flex cursor-pointer items-center justify-between border-b border-gray-300 px-2 py-1 hover:bg-gray-100"
                         onclick={(e) => scrollToFileClick(e, getOriginalIndex(index))}
@@ -232,7 +246,7 @@
             </div>
         </div>
     </div>
-    <div class="flex min-h-[500px] grow flex-col rounded-lg bg-white p-3 shadow-md md:p-6 lg:max-w-9/12">
+    <div class="flex grow flex-col bg-white p-3 lg:max-w-9/12">
         <div class="mb-2 flex items-center justify-between">
             <label for="patchUpload" class="me-2 cursor-pointer rounded-lg bg-blue-500 px-4 py-2 text-white hover:bg-blue-600">
                 Load Patch File
