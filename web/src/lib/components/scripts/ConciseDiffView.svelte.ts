@@ -120,50 +120,49 @@ function processLineDiff(contentLines: string[], lines: PatchLine[]) {
                         innerPatchLineType: getInnerType(text),
                     });
                 });
-                continue;
-            }
+            } else {
+                const addLines: LineSegment[][] = [];
+                const removeLines: LineSegment[][] = [];
 
-            const addLines: LineSegment[][] = [];
-            const removeLines: LineSegment[][] = [];
+                for (let j = 0; j < addLinesText.length; j++) {
+                    const diffResult = diff(removeLinesText[j], addLinesText[j], undefined, true);
 
-            for (let j = 0; j < addLinesText.length; j++) {
-                const diffResult = diff(removeLinesText[j], addLinesText[j], undefined, true);
-
-                const addLine: LineSegment[] = [];
-                const removeLine: LineSegment[] = [];
-                diffResult.forEach(([type, text]) => {
-                    if (type === 1) {
-                        addLine.push({ text, classes: "rounded-sm bg-green-100 m-0.5" });
-                    } else if (type === -1) {
-                        removeLine.push({ text, classes: "rounded-sm bg-red-100 m-0.5" });
-                    } else {
-                        addLine.push({ text });
-                        removeLine.push({ text });
+                    const addLine: LineSegment[] = [];
+                    const removeLine: LineSegment[] = [];
+                    diffResult.forEach(([type, text]) => {
+                        if (type === 1) {
+                            addLine.push({ text, classes: "rounded-sm bg-green-100 m-0.5" });
+                        } else if (type === -1) {
+                            removeLine.push({ text, classes: "rounded-sm bg-red-100 m-0.5" });
+                        } else {
+                            addLine.push({ text });
+                            removeLine.push({ text });
+                        }
+                    });
+                    if (addLine.length !== 0) {
+                        addLines.push(addLine);
                     }
+                    if (removeLine.length !== 0) {
+                        removeLines.push(removeLine);
+                    }
+                }
+                removeLines.forEach((line) => {
+                    lines.push({
+                        content: line,
+                        type: PatchLineType.REMOVE,
+                        innerPatchLineType: getInnerType(line[0].text),
+                    });
                 });
-                if (addLine.length !== 0) {
-                    addLines.push(addLine);
-                }
-                if (removeLine.length !== 0) {
-                    removeLines.push(removeLine);
-                }
+                addLines.forEach((line) => {
+                    lines.push({
+                        content: line,
+                        type: PatchLineType.ADD,
+                        innerPatchLineType: getInnerType(line[0].text),
+                    });
+                });
             }
             addLinesText = [];
             removeLinesText = [];
-            removeLines.forEach((line) => {
-                lines.push({
-                    content: line,
-                    type: PatchLineType.REMOVE,
-                    innerPatchLineType: getInnerType(line[0].text),
-                });
-            });
-            addLines.forEach((line) => {
-                lines.push({
-                    content: line,
-                    type: PatchLineType.ADD,
-                    innerPatchLineType: getInnerType(line[0].text),
-                });
-            });
         }
 
         if (state === State.ADD) {
