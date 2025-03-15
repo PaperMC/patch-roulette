@@ -24,7 +24,7 @@
         <span class="inline-block font-mono whitespace-pre-wrap {innerLineType.classes}">
             {#each line.content as segment, index (index)}
                 {#if segment.classes}
-                    <span class="inline-block font-mono whitespace-pre-wrap {segment.classes}">{segment.text}</span>
+                    <span class="inline font-mono whitespace-pre-wrap {segment.classes}">{segment.text}</span>
                 {:else}{segment.text}{/if}
             {/each}
         </span>
