@@ -2,6 +2,7 @@
     import ConciseDiffView from "$lib/components/ConciseDiffView.svelte";
     import makeLines, { type PatchLine } from "$lib/components/scripts/ConciseDiffView.svelte";
     import { debounce } from "$lib/util";
+    import { VList } from "virtua/svelte";
 
     type GithubPRFile = {
         filename: string;
@@ -26,6 +27,7 @@
               })
             : data.values,
     );
+    let vlist: VList<FileDetails> | undefined = $state();
 
     const updateDebouncedSearch = debounce((value: string) => {
         debouncedSearchQuery = value;
@@ -174,13 +176,12 @@
     }
 
     function scrollToFile(index: number) {
-        const fileElement = document.getElementById(`file-${index}`);
-        if (fileElement) {
+        if (vlist) {
             if (!checkedState[index]) {
                 // Auto-expand on jump when not checked
                 collapsedState[index] = false;
             }
-            fileElement.scrollIntoView({ behavior: "smooth" });
+            vlist.scrollToIndex(index, { align: "start" });
         }
     }
 
@@ -261,9 +262,9 @@
             <button type="button" class="me-2 rounded-md bg-blue-500 px-2 py-1 text-white hover:bg-blue-600" onclick={expandAll}>Expand All</button>
             <button type="button" class="me-2 rounded-md bg-blue-500 px-2 py-1 text-white hover:bg-blue-600" onclick={collapseAll}>Collapse All</button>
         </div>
-        <div class="flex flex-1 flex-col overflow-y-auto border border-gray-300">
-            <div class="h-100">
-                {#each data.values as value, index (index)}
+        <div class="flex flex-1 flex-col border border-gray-300">
+            <VList data={data.values} style="height: 100%;" getKey={(_, i) => i} bind:this={vlist}>
+                {#snippet children(value, index)}
                     {@const lines = data.lines[index]}
 
                     <div id={`file-${index}`}>
@@ -297,8 +298,8 @@
                             </div>
                         {/if}
                     </div>
-                {/each}
-            </div>
+                {/snippet}
+            </VList>
         </div>
     </div>
 </div>
