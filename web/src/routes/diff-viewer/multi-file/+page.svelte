@@ -4,7 +4,7 @@
     import makeLines, { type PatchLine } from "$lib/components/scripts/ConciseDiffView.svelte";
     import { debounce } from "$lib/util";
     import { VList } from "virtua/svelte";
-    import { getGithubUsername, type GithubPRFile, githubUsername } from "$lib/github.svelte";
+    import { getGithubApiUrl, getGithubUsername, type GithubPRFile, githubUsername } from "$lib/github.svelte";
     import { onMount } from "svelte";
 
     type FileDetails = {
@@ -131,7 +131,8 @@
                     Authorization: "Bearer " + localStorage.getItem("github_token"),
                 };
             }
-            const resp = await fetch(`${window.location.origin}/api/github/proxy/repos/${owner}/${repo}/commits/${id}`, opts);
+            const route = `/repos/${owner}/${repo}/commits/${id}`;
+            const resp = await fetch(`${getGithubApiUrl()}${route}`, opts);
 
             if (!resp.ok) {
                 alert(`Error ${resp.status}: ${await resp.text()}`);
@@ -156,7 +157,8 @@
                         Authorization: "Bearer " + localStorage.getItem("github_token"),
                     };
                 }
-                const resp = await fetch(`${window.location.origin}/api/github/proxy/repos/${owner}/${repo}/pulls/${id}/files?per_page=100&page=${page}`, opts);
+                const route = `/repos/${owner}/${repo}/pulls/${id}/files?per_page=100&page=${page}`;
+                const resp = await fetch(`${getGithubApiUrl()}${route}`, opts);
 
                 if (!resp.ok) {
                     alert(`Error ${resp.status}: ${await resp.text()}`);
