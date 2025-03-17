@@ -178,6 +178,22 @@ function processLineDiff(contentLines: string[], lines: PatchLine[]) {
             });
         }
     }
+
+    // In case the patch ends on adds/removes and not context lines
+    removeLinesText.forEach((text) => {
+        lines.push({
+            content: [{ text }],
+            type: PatchLineType.REMOVE,
+            innerPatchLineType: getInnerType(text),
+        });
+    });
+    addLinesText.forEach((text) => {
+        lines.push({
+            content: [{ text }],
+            type: PatchLineType.ADD,
+            innerPatchLineType: getInnerType(text),
+        });
+    });
 }
 
 export default function makeLines(patchContent: string): PatchLine[] {
