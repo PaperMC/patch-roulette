@@ -5,6 +5,7 @@ import io.papermc.patchroulette.model.PatchId;
 import io.papermc.patchroulette.model.Status;
 import io.papermc.patchroulette.service.PatchService;
 import io.papermc.patchroulette.util.TimeUtil;
+import jakarta.persistence.EntityNotFoundException;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -12,8 +13,6 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import jakarta.persistence.EntityNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
