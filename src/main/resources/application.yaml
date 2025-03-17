@@ -2,8 +2,6 @@ application:
   users: []
   github-client-id: Iv23lio9NNdLLYjZ363a
   github-client-secret: secret
-  github-token-password: mysecurepassword
-  github-token-salt: 1a3a9f2c431e6a7a
 management:
   server:
     port: 8081
