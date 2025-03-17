@@ -38,7 +38,7 @@ export async function fetchGithubUserToken(code: string): Promise<TokenResponse>
 }
 
 export async function fetchCurrentGithubUser(token: string): Promise<GHUser> {
-    const response = await fetch(`${window.location.origin}/api/github/user`, {
+    const response = await fetch(`${window.location.origin}/api/github/proxy/user`, {
         headers: {
             Authorization: `Bearer ${token}`,
         },
