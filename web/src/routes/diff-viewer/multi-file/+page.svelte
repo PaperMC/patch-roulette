@@ -4,14 +4,10 @@
     import makeLines, { type PatchLine } from "$lib/components/scripts/ConciseDiffView.svelte";
     import { debounce } from "$lib/util";
     import { VList } from "virtua/svelte";
-    import { getGithubUsername, type GithubPRFile, githubUsername } from "$lib/github.svelte";
+    import { getGithubUsername, type GithubPRFile, type FileStatus, githubUsername } from "$lib/github.svelte";
     import { onMount } from "svelte";
+    import { type FileDetails, getFileStatusProps } from "$lib/diff-viewer-multi-file";
 
-    type FileDetails = {
-        content: string;
-        fromFile: string;
-        toFile: string;
-    };
     let data: { values: FileDetails[]; lines: PatchLine[][] } = $state({ values: [], lines: [] });
     let searchQuery: string = $state("");
     let debouncedSearchQuery: string = $state("");
@@ -45,6 +41,7 @@
             collapsedState = [];
             checkedState = [];
             data.values = [];
+            data.lines = [];
         }
         data.values.push(...patches);
         patches.forEach((patch) => {
@@ -62,7 +59,15 @@
         let fileMatch;
         while ((fileMatch = fileRegex.exec(patchContent)) !== null) {
             const [fullFileMatch, fromFile, toFile] = fileMatch;
-            patches.push({ content: fullFileMatch, fromFile: fromFile, toFile: toFile });
+
+            let status: FileStatus = "modified";
+            if (fullFileMatch.match(/deleted file mode/)) {
+                status = "removed";
+            } else if (fullFileMatch.match(/new file mode/)) {
+                status = "added";
+            }
+
+            patches.push({ content: fullFileMatch, fromFile: fromFile, toFile: toFile, status });
         }
         return patches;
     }
@@ -164,16 +169,27 @@
                 }
 
                 const pageFiles: GithubPRFile[] = await resp.json();
-                loadPatches(
-                    pageFiles.map((file) => {
-                        return {
-                            content: file.patch,
+                const patches: FileDetails[] = [];
+                for (const file of pageFiles) {
+                    const patchContent: string | undefined = file.patch;
+                    if (!patchContent) {
+                        // TODO: GitHub does not return patch data for large diffs, find a way around this
+                        patches.push({
+                            content: "@@ -0,0 +2,1 @@\n+" + file.filename + "\n+Error: Diff not available",
                             fromFile: file.previous_filename || file.filename,
                             toFile: file.filename,
-                        };
-                    }),
-                    page === 1,
-                );
+                            status: file.status,
+                        });
+                        continue;
+                    }
+                    patches.push({
+                        content: patchContent,
+                        fromFile: file.previous_filename || file.filename,
+                        toFile: file.filename,
+                        status: file.status,
+                    });
+                }
+                loadPatches(patches, page === 1);
 
                 const linkHeader = resp.headers.get("Link");
                 hasMorePages = linkHeader?.includes('rel="next"') || false;
@@ -363,7 +379,13 @@
                         role="button"
                         tabindex="0"
                     >
-                        <span class="max-w-full overflow-hidden break-all">{value.toFile}</span>
+                        <div
+                            class="{getFileStatusProps(value.status).classes} me-1 flex h-5 w-5 shrink-0 items-center justify-center rounded-sm border"
+                            title={getFileStatusProps(value.status).title}
+                        >
+                            {getFileStatusProps(value.status).icon}
+                        </div>
+                        <span class="grow overflow-hidden break-all">{value.toFile}</span>
                         <input
                             type="checkbox"
                             class="mx-1 rounded-sm border border-gray-300"
