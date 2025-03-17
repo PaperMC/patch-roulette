@@ -45,9 +45,11 @@
 
         await loadMinecraftVersions();
 
-        // Auto select latest version
-        selectedVersion = minecraftVersions[minecraftVersions.length - 1];
-        await onVersionSelect(selectedVersion);
+        if (minecraftVersions.length > 0) {
+            // Auto select latest version
+            selectedVersion = minecraftVersions[minecraftVersions.length - 1];
+            await onVersionSelect(selectedVersion);
+        }
     });
 
     // start: Auto refresh
