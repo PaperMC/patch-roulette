@@ -10,11 +10,8 @@ export function getGithubUsername(): string | null {
     return githubUsername.value || localStorage.getItem("github_username");
 }
 
-export type GithubPRFile = {
-    filename: string;
-    previous_filename?: string;
-    patch: string;
-};
+export type GithubPRFile = components["schemas"]["diff-entry"];
+export type FileStatus = GithubPRFile["status"];
 export type GHUser = components["schemas"]["private-user"];
 export type TokenResponse = {
     access_token: string;

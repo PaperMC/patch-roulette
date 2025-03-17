@@ -197,14 +197,17 @@ function processLineDiff(contentLines: string[], lines: PatchLine[]) {
 }
 
 export default function makeLines(patchContent: string): PatchLine[] {
-    const hunkRegex = /@@ -\d+(?:,\d+)? \+\d+_?(?:,\d+)? @@(?:\s[^\n]*)?(?:\n|$)((?:[ +-][^\n]*(?:\n|$))*)/g;
+    const hunkRegex = /@@ -\d+(?:,\d+)? \+\d+_?(?:,\d+)? @@(?:[^\S\n][^\n]*(?:\n|$)|(?:\n|$))((?:[ +-][^\n]*(?:\n|$))*)/g;
 
     const lines: PatchLine[] = [];
 
     let match;
     while ((match = hunkRegex.exec(patchContent)) !== null) {
         // Check if this hunk only contains changes to headers
-        const contentLines = match[1].split("\n");
+        const contentLines = match[1]
+            .split("\n")
+            // Filter trailing newline for non-terminal hunks
+            .filter((line) => line !== "");
 
         // Skip this hunk if it only contains header changes
         if (!hasNonHeaderChanges(contentLines)) {
