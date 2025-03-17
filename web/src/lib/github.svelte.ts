@@ -3,6 +3,15 @@ import type { components } from "@octokit/openapi-types";
 
 export const githubUsername: { value: string | null } = $state({ value: null });
 
+export function getGithubApiUrl(): string {
+    // Only use the proxy for authenticated requests
+    if (localStorage.getItem("github_token") !== null) {
+        return `${window.location.origin}/api/github/proxy`;
+    } else {
+        return "https://api.github.com";
+    }
+}
+
 export function getGithubUsername(): string | null {
     if (!browser) {
         return null;
@@ -38,7 +47,7 @@ export async function fetchGithubUserToken(code: string): Promise<TokenResponse>
 }
 
 export async function fetchCurrentGithubUser(token: string): Promise<GHUser> {
-    const response = await fetch(`${window.location.origin}/api/github/proxy/user`, {
+    const response = await fetch(`${getGithubApiUrl()}/user`, {
         headers: {
             Authorization: `Bearer ${token}`,
         },
