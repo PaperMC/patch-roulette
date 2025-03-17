@@ -1,181 +1,149 @@
 package io.papermc.patchroulette.controller;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import io.papermc.patchroulette.config.ApplicationConfig;
+import jakarta.servlet.http.HttpServletRequest;
+import java.net.URI;
+import java.util.Enumeration;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Bean;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.http.RequestEntity;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.encrypt.Encryptors;
 import org.springframework.security.crypto.encrypt.TextEncryptor;
-import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.util.UriComponentsBuilder;
 
 @RestController
 @RequestMapping("/api/github")
 public class GitHubApiController {
 
-    private static final String GITHUB_TOKEN_ENDPOINT = "https://github.com/login/oauth/access_token";
+	private static final String GITHUB_TOKEN_ENDPOINT = "https://github.com/login/oauth/access_token";
 
-    private final RestTemplate restTemplate;
-    private final ApplicationConfig config;
-    private final TextEncryptor encryptor;
+	private final RestTemplate restTemplate;
+	private final ApplicationConfig config;
+	private final TextEncryptor encryptor;
 
-    @Autowired
-    public GitHubApiController(final ApplicationConfig config) {
-        this.restTemplate = new RestTemplate();
-        this.config = config;
-        this.encryptor = Encryptors.text(this.config.githubTokenPassword(), this.config.githubTokenSalt());
-    }
+	@Autowired
+	public GitHubApiController(final ApplicationConfig config) {
+		this.restTemplate = new RestTemplate();
+		this.config = config;
+		this.encryptor = Encryptors.text(this.config.githubTokenPassword(), this.config.githubTokenSalt());
+	}
 
-    public record GithubTokenRequest(
-        String client_id,
-        String client_secret,
-        String code,
-        String state
-    ) {}
+	@RequestMapping("/proxy/**")
+	public ResponseEntity<byte[]> proxyGithubApi(final HttpServletRequest request) throws Exception {
+		final String path = request.getRequestURI().replace("/api/github/proxy/", "");
 
-    public record GithubTokenResponse(
-        String access_token,
-        String token_type,
-        String scope,
-        Integer expires_in
-    ) {
-        public GithubTokenResponse withToken(String token) {
-            return new GithubTokenResponse(token, this.token_type, this.scope, this.expires_in);
-        }
-    }
+		// Build URI with query parameters
+		final UriComponentsBuilder uriBuilder = UriComponentsBuilder
+				.fromUriString("https://api.github.com/" + path);
 
-    @GetMapping("/pr")
-    public ResponseEntity<JsonNode> getPullRequest(
-        final HttpHeaders headers,
-        @RequestHeader("Authorization") final String authorization,
-        @RequestParam("owner") final String owner,
-        @RequestParam("repo") final String repo,
-        @RequestParam("id") final String id,
-        @RequestParam("page") final int page
-    ) {
-        final ResponseEntity<JsonNode> failedToDecrypt = this.decryptToken(headers, authorization);
-        if (failedToDecrypt != null) {
-            return failedToDecrypt;
-        }
-        headers.set("Accept", "application/vnd.github+json");
-        return this.proxyGitHubApiRequest(
-            "/repos/" + owner + "/" + repo + "/pulls/" + id + "/files?per_page=100&page=" + page,
-            HttpMethod.GET,
-            null,
-            headers,
-            JsonNode.class
-        );
-    }
+		// Copy query parameters
+		request.getParameterMap().forEach(uriBuilder::queryParam);
+		final URI githubUri = uriBuilder.build().toUri();
 
-    @GetMapping("/commit")
-    public ResponseEntity<String> getCommit(
-        final HttpHeaders headers,
-        @RequestHeader("Authorization") final String authorization,
-        @RequestParam("owner") final String owner,
-        @RequestParam("repo") final String repo,
-        @RequestParam("id") final String id
-    ) {
-        final ResponseEntity<String> failedToDecrypt = this.decryptToken(headers, authorization);
-        if (failedToDecrypt != null) {
-            return failedToDecrypt;
-        }
-        headers.set("Accept", "application/vnd.github.v3.diff");
-        return this.proxyGitHubApiRequest(
-            "/repos/" + owner + "/" + repo + "/commits/" + id,
-            HttpMethod.GET,
-            null,
-            headers,
-            String.class
-        );
-    }
+		// Copy all headers from incoming request
+		final HttpHeaders headers = new HttpHeaders();
+		final Enumeration<String> headerNames = request.getHeaderNames();
+		while (headerNames.hasMoreElements()) {
+			final String headerName = headerNames.nextElement();
+			headers.add(headerName, request.getHeader(headerName));
+		}
 
-    @GetMapping("/user")
-    public ResponseEntity<JsonNode> getUser(
-        final HttpHeaders headers,
-        @RequestHeader("Authorization") final String authorization
-    ) {
-        final ResponseEntity<JsonNode> failedToDecrypt = this.decryptToken(headers, authorization);
-        if (failedToDecrypt != null) {
-            return failedToDecrypt;
-        }
-        return this.proxyGitHubApiRequest(
-            "/user",
-            HttpMethod.GET,
-            null,
-            headers,
-            JsonNode.class
-        );
-    }
+		// Decrypt Authorization header
+		final ResponseEntity<byte[]> decryptFail = this.decryptToken(headers);
+		if (decryptFail != null) {
+			return decryptFail;
+		}
 
-    private <T> ResponseEntity<T> decryptToken(final HttpHeaders headers, String authorization) {
-        if (authorization == null) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-        }
-        authorization = this.encryptor.decrypt(authorization.substring("Bearer ".length()));
-        headers.set("Authorization", "Bearer " + authorization);
-        return null;
-    }
+		// Create request entity with headers and body (if any)
+		final RequestEntity<?> requestEntity;
+		if (request.getContentLength() > 0) {
+			requestEntity = new RequestEntity<>(request.getInputStream().readAllBytes(), headers, HttpMethod.valueOf(request.getMethod()), githubUri);
+		} else {
+			requestEntity = new RequestEntity<>(headers, HttpMethod.valueOf(request.getMethod()), githubUri);
+		}
 
-    private <B, T> ResponseEntity<T> proxyGitHubApiRequest(
-        final String path,
-        final HttpMethod method,
-        final B body,
-        final HttpHeaders headers,
-        final Class<T> responseType
-    ) {
-        final HttpEntity<B> requestEntity = new HttpEntity<>(body, headers);
-        return this.restTemplate.exchange(
-            "https://api.github.com" + path,
-            method,
-            requestEntity,
-            responseType
-        );
-    }
+		// Execute the request and return response
+		return this.restTemplate.exchange(requestEntity, byte[].class);
+	}
 
-    @PostMapping("/token")
-    public ResponseEntity<GithubTokenResponse> getAccessToken(
-        @RequestParam("code") String code,
-        @RequestParam(value = "state", required = false) String state
-    ) {
-        final HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_JSON);
-        headers.add("Accept", "application/json");
+	@Bean
+	public RestTemplate restTemplate() {
+		return new RestTemplate();
+	}
 
-        final GithubTokenRequest requestBody = new GithubTokenRequest(
-            this.config.githubClientId(), this.config.githubClientSecret(), code, state);
+	private <T> ResponseEntity<T> decryptToken(final HttpHeaders headers) {
+		String authorization = headers.getFirst(HttpHeaders.AUTHORIZATION);
+		if (authorization == null) {
+			return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+		}
+		authorization = this.encryptor.decrypt(authorization.substring("Bearer ".length()));
+		headers.set(HttpHeaders.AUTHORIZATION, "Bearer " + authorization);
+		return null;
+	}
 
-        final HttpEntity<GithubTokenRequest> requestEntity = new HttpEntity<>(requestBody, headers);
+	public record GithubTokenRequest(
+			String client_id,
+			String client_secret,
+			String code,
+			String state
+	) {}
 
-        final ResponseEntity<GithubTokenResponse> response = this.restTemplate.exchange(
-            GITHUB_TOKEN_ENDPOINT,
-            HttpMethod.POST,
-            requestEntity,
-            GithubTokenResponse.class
-        );
+	public record GithubTokenResponse(
+			String access_token,
+			String token_type,
+			String scope,
+			Integer expires_in
+	) {
+		public GithubTokenResponse withToken(String token) {
+			return new GithubTokenResponse(token, this.token_type, this.scope, this.expires_in);
+		}
+	}
 
-        if (response.getStatusCode() == HttpStatus.OK) {
-            final GithubTokenResponse body = response.getBody();
-            if (body != null) {
-                final String token = response.getBody().access_token;
-                final String encryptedToken = this.encryptor.encrypt(token);
-                return ResponseEntity
-                    .status(response.getStatusCode())
-                    .body(response.getBody().withToken(encryptedToken));
-            }
-        }
+	@PostMapping("/token")
+	public ResponseEntity<GithubTokenResponse> getAccessToken(
+			@RequestParam("code") String code,
+			@RequestParam(value = "state", required = false) String state
+	) {
+		final HttpHeaders headers = new HttpHeaders();
+		headers.setContentType(MediaType.APPLICATION_JSON);
+		headers.add("Accept", "application/json");
 
-        return ResponseEntity
-            .status(response.getStatusCode())
-            .body(response.getBody());
-    }
+		final GithubTokenRequest requestBody = new GithubTokenRequest(
+				this.config.githubClientId(), this.config.githubClientSecret(), code, state);
+
+		final HttpEntity<GithubTokenRequest> requestEntity = new HttpEntity<>(requestBody, headers);
+
+		final ResponseEntity<GithubTokenResponse> response = this.restTemplate.exchange(
+				GITHUB_TOKEN_ENDPOINT,
+				HttpMethod.POST,
+				requestEntity,
+				GithubTokenResponse.class
+		);
+
+		if (response.getStatusCode() == HttpStatus.OK) {
+			final GithubTokenResponse body = response.getBody();
+			if (body != null) {
+				final String token = response.getBody().access_token;
+				final String encryptedToken = this.encryptor.encrypt(token);
+				return ResponseEntity
+						.status(response.getStatusCode())
+						.body(response.getBody().withToken(encryptedToken));
+			}
+		}
+
+		return ResponseEntity
+				.status(response.getStatusCode())
+				.body(response.getBody());
+	}
 }

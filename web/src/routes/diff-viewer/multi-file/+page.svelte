@@ -131,7 +131,7 @@
                     Authorization: "Bearer " + localStorage.getItem("github_token"),
                 };
             }
-            const resp = await fetch(`${window.location.origin}/api/github/commit?repo=${repo}&owner=${owner}&id=${id}`, opts);
+            const resp = await fetch(`${window.location.origin}/api/github/proxy/repos/${owner}/${repo}/commits/${id}`, opts);
 
             if (!resp.ok) {
                 alert(`Error ${resp.status}: ${await resp.text()}`);
@@ -156,7 +156,7 @@
                         Authorization: "Bearer " + localStorage.getItem("github_token"),
                     };
                 }
-                const resp = await fetch(`${window.location.origin}/api/github/pr?repo=${repo}&owner=${owner}&id=${id}&page=${page}`, opts);
+                const resp = await fetch(`${window.location.origin}/api/github/proxy/repos/${owner}/${repo}/pulls/${id}/files?per_page=100&page=${page}`, opts);
 
                 if (!resp.ok) {
                     alert(`Error ${resp.status}: ${await resp.text()}`);
