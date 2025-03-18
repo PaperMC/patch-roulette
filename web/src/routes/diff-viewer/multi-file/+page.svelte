@@ -84,9 +84,7 @@
     let dragActive = $state(false);
 
     function handleDragOver(event: DragEvent) {
-        if (event.currentTarget === event.target) {
-            dragActive = true;
-        }
+        dragActive = true;
         event.preventDefault();
     }
 
