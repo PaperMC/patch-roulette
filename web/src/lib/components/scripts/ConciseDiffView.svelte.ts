@@ -32,7 +32,6 @@ export const patchLineTypeProps: Record<PatchLineType, PatchLineTypeProps> = {
     },
     [PatchLineType.CONTEXT]: {
         classes: "",
-        prefix: " ",
     },
     [PatchLineType.SPACER]: {
         classes: "h-2",
@@ -172,7 +171,7 @@ function processLineDiff(contentLines: string[], lines: PatchLine[]) {
         } else {
             const trimmed = lineText.substring(1);
             lines.push({
-                content: [{ text: trimmed }],
+                content: [{ text: lineText }],
                 innerPatchLineType: getInnerType(trimmed),
                 type: PatchLineType.CONTEXT,
             });
@@ -197,7 +196,7 @@ function processLineDiff(contentLines: string[], lines: PatchLine[]) {
 }
 
 export default function makeLines(patchContent: string): PatchLine[] {
-    const hunkRegex = /@@ -\d+(?:,\d+)? \+\d+_?(?:,\d+)? @@(?:[^\S\n][^\n]*(?:\n|$)|(?:\n|$))((?:[ +-][^\n]*(?:\n|$))*)/g;
+    const hunkRegex = /@@ -\d+(?:,\d+)? \+\d+_?(?:,\d+)? @@(?:[^\S\n][^\n]*(?:\n|$)|(?:\n|$))((?:[ +\-\\][^\n]*(?:\n|$))*)/g;
 
     const lines: PatchLine[] = [];
 
