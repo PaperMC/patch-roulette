@@ -1,10 +1,17 @@
 <script lang="ts">
-    import { PUBLIC_GITHUB_CLIENT_ID, PUBLIC_GITHUB_APP_NAME } from "$env/static/public";
     import ConciseDiffView from "$lib/components/ConciseDiffView.svelte";
     import makeLines, { type PatchLine } from "$lib/components/scripts/ConciseDiffView.svelte";
-    import { debounce } from "$lib/util";
+    import { debounce, splitMultiFilePatch } from "$lib/util";
     import { VList } from "virtua/svelte";
-    import { getGithubUsername, type GithubPRFile, type FileStatus, githubUsername } from "$lib/github.svelte";
+    import {
+        fetchGithubCommitDiff,
+        fetchGithubPRComparison,
+        getGithubToken,
+        getGithubUsername,
+        installGithubApp,
+        loginWithGithub,
+        logoutGithub,
+    } from "$lib/github.svelte";
     import { onMount } from "svelte";
     import { type FileDetails, getFileStatusProps } from "$lib/diff-viewer-multi-file";
 
@@ -31,8 +38,6 @@
         updateDebouncedSearch(searchQuery);
     });
 
-    const fileRegex = /diff --git a\/(\S+) b\/(\S+)\r?\n(?:.+\r?\n)*?(?=diff --git|Z)/g;
-
     let collapsedState: boolean[] = $state([]);
     let checkedState: boolean[] = $state([]);
 
@@ -51,25 +56,6 @@
                 checkedState[data.lines.length - 1] = true;
             }
         });
-    }
-
-    function splitMultiFilePatch(patchContent: string): FileDetails[] {
-        let patches: FileDetails[] = [];
-        // Process each file in the diff
-        let fileMatch;
-        while ((fileMatch = fileRegex.exec(patchContent)) !== null) {
-            const [fullFileMatch, fromFile, toFile] = fileMatch;
-
-            let status: FileStatus = "modified";
-            if (fullFileMatch.match(/deleted file mode/)) {
-                status = "removed";
-            } else if (fullFileMatch.match(/new file mode/)) {
-                status = "added";
-            }
-
-            patches.push({ content: fullFileMatch, fromFile: fromFile, toFile: toFile, status });
-        }
-        return patches;
     }
 
     function loadMultiFilePatch(patchContent: string) {
@@ -123,84 +109,24 @@
         }
 
         const [, owner, repo, type, id] = match;
+        const token = getGithubToken();
 
-        if (type === "commit") {
-            const opts: RequestInit = {
-                headers: {
-                    Accept: "application/vnd.github.v3.diff",
-                },
-            };
-            if (localStorage.getItem("github_token")) {
-                opts.headers = {
-                    ...opts.headers,
-                    Authorization: "Bearer " + localStorage.getItem("github_token"),
-                };
+        try {
+            if (type === "commit") {
+                loadPatches(await fetchGithubCommitDiff(token, owner, repo, id));
+                return true;
+            } else if (type === "pull") {
+                loadPatches(await fetchGithubPRComparison(token, owner, repo, id));
+                return true;
             }
-            const resp = await fetch(`https://api.github.com/repos/${owner}/${repo}/commits/${id}`, opts);
-
-            if (!resp.ok) {
-                alert(`Error ${resp.status}: ${await resp.text()}`);
-                return false;
-            }
-
-            loadPatches(splitMultiFilePatch(await resp.text()));
-            return true;
-        } else if (type === "pull") {
-            let page = 1;
-            let hasMorePages = true;
-
-            while (hasMorePages) {
-                const opts: RequestInit = {
-                    headers: {
-                        Accept: "application/vnd.github+json",
-                    },
-                };
-                if (localStorage.getItem("github_token")) {
-                    opts.headers = {
-                        ...opts.headers,
-                        Authorization: "Bearer " + localStorage.getItem("github_token"),
-                    };
-                }
-                const resp = await fetch(`https://api.github.com/repos/${owner}/${repo}/pulls/${id}/files?per_page=100&page=${page}`, opts);
-
-                if (!resp.ok) {
-                    alert(`Error ${resp.status}: ${await resp.text()}`);
-                    return false;
-                }
-
-                const pageFiles: GithubPRFile[] = await resp.json();
-                const patches: FileDetails[] = [];
-                for (const file of pageFiles) {
-                    const patchContent: string | undefined = file.patch;
-                    if (!patchContent) {
-                        // TODO: GitHub does not return patch data for large diffs, find a way around this
-                        patches.push({
-                            content: "@@ -0,0 +2,1 @@\n+" + file.filename + "\n+Error: Diff not available",
-                            fromFile: file.previous_filename || file.filename,
-                            toFile: file.filename,
-                            status: file.status,
-                        });
-                        continue;
-                    }
-                    patches.push({
-                        content: patchContent,
-                        fromFile: file.previous_filename || file.filename,
-                        toFile: file.filename,
-                        status: file.status,
-                    });
-                }
-                loadPatches(patches, page === 1);
-
-                const linkHeader = resp.headers.get("Link");
-                hasMorePages = linkHeader?.includes('rel="next"') || false;
-                page++;
-
-                if (pageFiles.length === 0) break;
-            }
-            return true;
+        } catch (error) {
+            console.error(error);
+            alert(`Failed to load diff from GitHub: ${error}`);
+            return false;
         }
 
-        throw new Error("Unsupported URL type " + url);
+        alert("Unsupported URL type " + url);
+        return false;
     }
 
     function toggleCollapse(index: number) {
@@ -250,31 +176,6 @@
             // Auto-collapse on check
             collapsedState[originalIdx] = true;
         }
-    }
-
-    function loginWithGithub() {
-        if (getGithubUsername()) {
-            return;
-        }
-        localStorage.setItem("authReferrer", window.location.pathname);
-        const params = new URLSearchParams({
-            client_id: PUBLIC_GITHUB_CLIENT_ID,
-            redirect_uri: window.location.origin + "/github-callback",
-        });
-        window.location.href = "https://github.com/login/oauth/authorize?" + params.toString();
-    }
-
-    function logoutGithub() {
-        localStorage.removeItem("github_token");
-        localStorage.removeItem("github_token_expires");
-        localStorage.removeItem("github_username");
-        githubUsername.value = "";
-    }
-
-    function installGithub() {
-        const url = `https://github.com/apps/${PUBLIC_GITHUB_APP_NAME}/installations/new`;
-        localStorage.setItem("authReferrer", window.location.href);
-        window.location.href = url;
     }
 </script>
 
@@ -335,7 +236,7 @@
                 aria-labelledby="githubAppLabel"
                 type="button"
                 class="flex w-fit flex-row items-center gap-2 rounded-md bg-blue-500 px-2 py-1 text-white hover:bg-blue-600"
-                onclick={installGithub}
+                onclick={installGithubApp}
             >
                 {@render githubIcon()} Install/configure GitHub App
             </button>
