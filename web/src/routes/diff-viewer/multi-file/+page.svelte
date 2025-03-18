@@ -64,37 +64,58 @@
 
     let modal: HTMLDialogElement | null = $state(null);
     onMount(() => {
-        if (modal) {
-            modal.showModal();
-        }
+        modal?.showModal();
     });
 
     async function handleFileUpload(event: Event) {
-        if (modal) {
-            modal.close();
-        }
-
         const input = event.target as HTMLInputElement;
-        const file = input.files?.[0];
-
-        if (file) {
-            const patchContent = await file.text();
-
-            loadMultiFilePatch(patchContent);
+        const files = input.files;
+        if (!files || files.length === 0) {
+            return;
         }
+        if (files.length > 1) {
+            alert("Only one file can be loaded at a time.");
+            return;
+        }
+        modal?.close();
+        loadMultiFilePatch(await files[0].text());
+    }
+
+    let dragActive = $state(false);
+
+    function handleDragOver(event: DragEvent) {
+        if (event.currentTarget === event.target) {
+            dragActive = true;
+        }
+        event.preventDefault();
+    }
+
+    function handleDragLeave(event: DragEvent) {
+        if (event.currentTarget === event.target) {
+            dragActive = false;
+        }
+        event.preventDefault();
+    }
+
+    async function handleFileDrop(event: DragEvent) {
+        dragActive = false;
+        event.preventDefault();
+        const files = event.dataTransfer?.files;
+        if (!files || files.length !== 1) {
+            alert("Only one file can be dropped at a time.");
+            return;
+        }
+        modal?.close();
+        loadMultiFilePatch(await files[0].text());
     }
 
     let githubUrl = $state("");
 
     async function handleGithubUrl() {
-        if (modal) {
-            modal.close();
-        }
+        modal?.close();
         const success = await loadFromGithubApi(githubUrl);
         if (!success) {
-            if (modal) {
-                modal.showModal();
-            }
+            modal?.showModal();
         }
     }
 
@@ -187,7 +208,14 @@
     </svg>
 {/snippet}
 
-<dialog bind:this={modal} class="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 rounded-md p-4 backdrop:bg-black/50">
+<dialog
+    bind:this={modal}
+    class="file-drop-target fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 rounded-md p-4 backdrop:bg-black/50"
+    ondrop={handleFileDrop}
+    ondragover={handleDragOver}
+    ondragleave={handleDragLeave}
+    data-drag-active={dragActive}
+>
     <div class="flex flex-col">
         <div class="mb-2 flex flex-row justify-end">
             <button type="button" class="rounded-md bg-blue-500 px-2 py-1 text-white hover:bg-blue-600 focus-visible:outline-0" onclick={() => modal?.close()}>
@@ -301,7 +329,14 @@
     </div>
     <div class="flex grow flex-col bg-white p-3 lg:max-w-9/12">
         <div class="mb-2 flex justify-between">
-            <button type="button" class="rounded-md bg-blue-500 px-2 py-1 text-white hover:bg-blue-600" onclick={() => modal?.showModal()}>
+            <button
+                type="button"
+                class="rounded-md bg-blue-500 px-2 py-1 text-white hover:bg-blue-600"
+                onclick={() => {
+                    dragActive = false;
+                    modal?.showModal();
+                }}
+            >
                 Load another diff
             </button>
             <div class="flex flex-row gap-2">
@@ -350,3 +385,25 @@
         </div>
     </div>
 </div>
+
+<style>
+    .file-drop-target[data-drag-active="true"]::before {
+        width: 100%;
+        height: 100%;
+        position: absolute;
+        top: 0;
+        left: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        content: "Drop file here";
+        font-size: var(--text-3xl);
+        color: var(--color-black);
+
+        background-color: rgba(255, 255, 255, 0.7);
+
+        border: dashed var(--color-blue-500);
+        border-radius: inherit;
+    }
+</style>
