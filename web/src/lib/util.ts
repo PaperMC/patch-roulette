@@ -27,10 +27,19 @@ export function splitMultiFilePatch(patchContent: string): FileDetails[] {
         const [fullFileMatch, fromFile, toFile] = fileMatch;
 
         let status: FileStatus = "modified";
-        if (fullFileMatch.match(/deleted file mode/)) {
-            status = "removed";
-        } else if (fullFileMatch.match(/new file mode/)) {
-            status = "added";
+
+        const newlineIndex = fullFileMatch.indexOf("\n");
+        if (newlineIndex !== -1) {
+            const secondNewlineIndex = fullFileMatch.indexOf("\n", newlineIndex + 1);
+            if (secondNewlineIndex !== -1) {
+                const line2 = fullFileMatch.substring(newlineIndex + 1, secondNewlineIndex);
+
+                if (line2.match(/^deleted file mode/)) {
+                    status = "removed";
+                } else if (line2.match(/^new file mode/)) {
+                    status = "added";
+                }
+            }
         }
 
         patches.push({ content: fullFileMatch, fromFile: fromFile, toFile: toFile, status });
