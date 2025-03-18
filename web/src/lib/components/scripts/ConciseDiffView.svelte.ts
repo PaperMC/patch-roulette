@@ -1,4 +1,4 @@
-import diff from "fast-diff";
+import { diffArrays } from "diff";
 
 export type LineSegment = {
     text: string;
@@ -124,14 +124,17 @@ function processLineDiff(contentLines: string[], lines: PatchLine[]) {
                 const removeLines: LineSegment[][] = [];
 
                 for (let j = 0; j < addLinesText.length; j++) {
-                    const diffResult = diff(removeLinesText[j], addLinesText[j], undefined, true);
+                    const removeTokens = genericTokenize(removeLinesText[j]);
+                    const addTokens = genericTokenize(addLinesText[j]);
+                    const diffResult = diffArrays(removeTokens, addTokens);
 
                     const addLine: LineSegment[] = [];
                     const removeLine: LineSegment[] = [];
-                    diffResult.forEach(([type, text]) => {
-                        if (type === 1) {
+                    diffResult.forEach((change) => {
+                        const text = change.value.join("");
+                        if (change.added) {
                             addLine.push({ text, classes: "rounded-sm bg-green-100 my-0.5" });
-                        } else if (type === -1) {
+                        } else if (change.removed) {
                             removeLine.push({ text, classes: "rounded-sm bg-red-100 my-0.5" });
                         } else {
                             addLine.push({ text });
@@ -248,4 +251,66 @@ function lineHasNonHeaderChange(line: string) {
     const content = line.substring(1);
     // Skip header lines and hunk headers in nested patches
     return !(content.startsWith("+++") || content.startsWith("---") || content.startsWith("@@ -") || content.startsWith("@@ +"));
+}
+
+const delimiters = [
+    " ",
+    "\t",
+    "\n",
+    ".",
+    ",",
+    ":",
+    ";",
+    "(",
+    ")",
+    "[",
+    "]",
+    "{",
+    "}",
+    "'",
+    '"',
+    "`",
+    "|",
+    "&",
+    "<",
+    ">",
+    "=",
+    "+",
+    "-",
+    "*",
+    "/",
+    "%",
+    "!",
+    "?",
+    "#",
+    "@",
+    "^",
+    "~",
+    "\\",
+    "$",
+];
+
+function genericTokenize(content: string): string[] {
+    const tokens: string[] = [];
+    let currentToken = "";
+
+    for (let i = 0; i < content.length; i++) {
+        const char = content[i];
+
+        if (delimiters.includes(char)) {
+            if (currentToken) {
+                tokens.push(currentToken);
+                currentToken = "";
+            }
+            tokens.push(char);
+        } else {
+            currentToken += char;
+        }
+    }
+
+    if (currentToken) {
+        tokens.push(currentToken);
+    }
+
+    return tokens;
 }
