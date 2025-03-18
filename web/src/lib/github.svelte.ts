@@ -10,11 +10,12 @@ export const GITHUB_TOKEN_EXPIRES_KEY = "github_token_expires";
 
 export const githubUsername: { value: string | null } = $state({ value: null });
 
+if (browser) {
+    githubUsername.value = localStorage.getItem(GITHUB_USERNAME_KEY);
+}
+
 export function getGithubUsername(): string | null {
-    if (!browser) {
-        return null;
-    }
-    return githubUsername.value || localStorage.getItem(GITHUB_USERNAME_KEY);
+    return githubUsername.value;
 }
 
 export function getGithubToken(): string | null {
