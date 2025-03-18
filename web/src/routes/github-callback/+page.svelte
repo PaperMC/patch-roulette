@@ -35,7 +35,9 @@
             try {
                 const token = await fetchGithubUserToken(code);
                 localStorage.setItem(GITHUB_TOKEN_KEY, token.access_token);
-                localStorage.setItem(GITHUB_TOKEN_EXPIRES_KEY, "" + (Date.now() + token.expires_in * 1000));
+                if (token.expires_in) {
+                    localStorage.setItem(GITHUB_TOKEN_EXPIRES_KEY, "" + (Date.now() + token.expires_in * 1000));
+                }
 
                 const user = await fetchCurrentGithubUser(token.access_token);
                 localStorage.setItem(GITHUB_USERNAME_KEY, user.login);
