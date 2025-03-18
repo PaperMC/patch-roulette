@@ -1,7 +1,15 @@
 <script lang="ts">
     import { onMount } from "svelte";
     import { goto } from "$app/navigation";
-    import { fetchCurrentGithubUser, fetchGithubUserToken, githubUsername } from "$lib/github.svelte";
+    import {
+        fetchCurrentGithubUser,
+        fetchGithubUserToken,
+        GITHUB_TOKEN_EXPIRES_KEY,
+        GITHUB_TOKEN_KEY,
+        GITHUB_USERNAME_KEY,
+        githubUsername,
+        logoutGithub,
+    } from "$lib/github.svelte";
 
     async function leave() {
         const authReferrer = localStorage.getItem("authReferrer");
@@ -26,17 +34,14 @@
             }
             try {
                 const token = await fetchGithubUserToken(code);
-                localStorage.setItem("github_token", token.access_token);
-                localStorage.setItem("github_token_expires", "" + (Date.now() + token.expires_in * 1000));
-                fetchCurrentGithubUser(token.access_token).then((user) => {
-                    localStorage.setItem("github_username", user.login);
-                    githubUsername.value = user.login;
-                    console.log(user);
-                });
+                localStorage.setItem(GITHUB_TOKEN_KEY, token.access_token);
+                localStorage.setItem(GITHUB_TOKEN_EXPIRES_KEY, "" + (Date.now() + token.expires_in * 1000));
+
+                const user = await fetchCurrentGithubUser(token.access_token);
+                localStorage.setItem(GITHUB_USERNAME_KEY, user.login);
+                githubUsername.value = user.login;
             } catch (e) {
-                localStorage.removeItem("github_token");
-                localStorage.removeItem("github_token_expires");
-                localStorage.removeItem("github_username");
+                logoutGithub();
                 alert(`Failed to retrieve token: ${e}`);
             }
         }
