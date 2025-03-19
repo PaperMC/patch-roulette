@@ -1,7 +1,7 @@
 import { browser } from "$app/environment";
 import type { components } from "@octokit/openapi-types";
 import { splitMultiFilePatch } from "$lib/util";
-import type { FileDetails } from "$lib/diff-viewer-multi-file";
+import type { FileDetails } from "$lib/diff-viewer-multi-file.svelte";
 import { PUBLIC_GITHUB_APP_NAME, PUBLIC_GITHUB_CLIENT_ID } from "$env/static/public";
 
 export const GITHUB_USERNAME_KEY = "github_username";
