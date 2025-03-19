@@ -1,4 +1,4 @@
-import { diffArrays } from "diff";
+import { diffArrays, parsePatch } from "diff";
 
 export type LineSegment = {
     text: string;
@@ -199,31 +199,28 @@ function processLineDiff(contentLines: string[], lines: PatchLine[]) {
 }
 
 export default function makeLines(patchContent: string): PatchLine[] {
-    const hunkRegex = /@@ -\d+(?:,\d+)? \+\d+_?(?:,\d+)? @@(?:[^\S\n][^\n]*(?:\n|$)|(?:\n|$))((?:[ +\-\\][^\n]*(?:\n|$))*)/g;
+    const diffs = parsePatch(patchContent);
+    if (diffs.length !== 1) {
+        throw Error("Only one patch is supported");
+    }
 
     const lines: PatchLine[] = [];
 
-    let match;
-    while ((match = hunkRegex.exec(patchContent)) !== null) {
-        // Check if this hunk only contains changes to headers
-        const contentLines = match[1]
-            .split("\n")
-            // Filter trailing newline for non-terminal hunks
-            .filter((line) => line !== "");
-
+    for (const hunk of diffs[0].hunks) {
         // Skip this hunk if it only contains header changes
-        if (!hasNonHeaderChanges(contentLines)) {
+        if (!hasNonHeaderChanges(hunk.lines)) {
             continue;
         }
 
         // Add the hunk header
+        const header = `@@ -${hunk.oldStart},${hunk.oldLines} +${hunk.newStart},${hunk.newLines} @@`;
         lines.push({
             type: PatchLineType.HEADER,
-            content: [{ text: match[0].split("\n")[0] }],
+            content: [{ text: header }],
             innerPatchLineType: InnerPatchLineType.NONE,
         });
 
-        processLineDiff(contentLines, lines);
+        processLineDiff(hunk.lines, lines);
 
         // Add a separator between hunks
         lines.push({ content: [{ text: "" }], type: PatchLineType.SPACER, innerPatchLineType: InnerPatchLineType.NONE });
