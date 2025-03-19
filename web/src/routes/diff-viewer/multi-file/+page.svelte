@@ -337,7 +337,7 @@
                     </div>
                 {/snippet}
                 <Tree roots={rootNodes}>
-                    {#snippet nodeSnippet({ node, collapsed, toggleCollapse })}
+                    {#snippet node({ node, collapsed, toggleCollapse })}
                         {@const FolderIcon = collapsed ? FileDirectoryFill16 : FileDirectoryOpenFill16}
                         {#if node.data.type === "file"}
                             {@render fileSnippet(node.data.data as FileDetails)}
@@ -360,7 +360,7 @@
                             </div>
                         {/if}
                     {/snippet}
-                    {#snippet childrenWrapperSnippet({ node, collapsed, children, style })}
+                    {#snippet childWrapper({ node, collapsed, children, style })}
                         <div class:dir-header={node.data.type === "directory" && !collapsed} {style}>
                             {@render children({ node })}
                         </div>

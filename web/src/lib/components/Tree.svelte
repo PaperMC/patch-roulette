@@ -4,12 +4,31 @@
 
     interface Props {
         roots: TreeNode<T>[];
-        nodeSnippet: Snippet<[{ node: TreeNode<T>; collapsed: boolean; toggleCollapse: () => void }]>;
-        // TODO: Move children into the nodeSnippet
-        childrenWrapperSnippet?: Snippet<[{ node: TreeNode<T>; collapsed: boolean; children: Snippet<[{ node: TreeNode<T> }]>; style: string }]> | null;
+        node: Snippet<
+            [
+                {
+                    node: TreeNode<T>;
+                    collapsed: boolean;
+                    toggleCollapse: () => void;
+                },
+            ]
+        >;
+        childWrapper?: Snippet<
+            [
+                {
+                    node: TreeNode<T>;
+                    collapsed: boolean;
+                    children: Snippet<[{ node: TreeNode<T> }]>;
+                    style: string;
+                },
+            ]
+        > | null;
     }
 
-    let { roots, nodeSnippet, childrenWrapperSnippet = null }: Props = $props();
+    let { roots, node, childWrapper = null }: Props = $props();
+    // Give these props better names
+    let nodeSnippet = $derived(node);
+    let childrenWrapperSnippet = $derived(childWrapper);
 
     let collapsed: Set<TreeNode<T>> = $state(new Set());
     $effect(() => {
