@@ -122,6 +122,14 @@
     }
 
     let githubUrl = $state("");
+    onMount(async () => {
+        const params = new URLSearchParams(location.search);
+        const url = params.get("github_url");
+        if (url) {
+            githubUrl = url;
+            await handleGithubUrl();
+        }
+    });
 
     async function handleGithubUrl() {
         modal?.close();
@@ -250,10 +258,12 @@
         </div>
         <hr class="mb-2 text-gray-300" />
 
-        <div class="flex flex-row items-center gap-2">
-            <label for="githubUrl">
-                <span>Load from GitHub URL</span>
-            </label>
+        <label for="githubUrl">
+            <span>Load from GitHub URL</span>
+            <br />
+            <span class="text-sm text-gray-600">Supports commit, PR, and comparison URLs</span>
+        </label>
+        <div class="mb-4 flex flex-row items-center gap-2">
             <input
                 id="githubUrl"
                 type="text"
@@ -268,7 +278,6 @@
             />
             <button type="button" onclick={handleGithubUrl} class="rounded-md bg-blue-500 px-2 py-1 text-white hover:bg-blue-600">Go</button>
         </div>
-        <span class="mb-2 text-sm text-gray-600">Supports commit, PR, and comparison URLs</span>
 
         <div class="mb-2 flex flex-row items-center gap-2">
             <button
@@ -286,7 +295,7 @@
                 <span id="loginToGitHubLabel">Login to GitHub for higher rate limits.</span>
             {/if}
         </div>
-        <div class="mb-2 flex flex-row items-center gap-2">
+        <div class="mb-4 flex flex-row items-center gap-2">
             <button
                 aria-labelledby="githubAppLabel"
                 type="button"
