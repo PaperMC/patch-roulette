@@ -5,6 +5,7 @@
     import { VList } from "virtua/svelte";
     import {
         fetchGithubCommitDiff,
+        fetchGithubComparison,
         fetchGithubPRComparison,
         getGithubToken,
         getGithubUsername,
@@ -132,11 +133,11 @@
 
     // convert commit or PR url to an API url
     async function loadFromGithubApi(url: string): Promise<boolean> {
-        const regex = /^https:\/\/github\.com\/([^/]+)\/([^/]+)\/(commit|pull)\/([^/]+)$/;
+        const regex = /^https:\/\/github\.com\/([^/]+)\/([^/]+)\/(commit|pull|compare)\/([^/]+)$/;
         const match = url.match(regex);
 
         if (!match) {
-            alert("Invalid GitHub URL. Use: https://github.com/owner/repo/(commit|pull)/id");
+            alert("Invalid GitHub URL. Use: https://github.com/owner/repo/(commit|pull|compare)/(id|ref_a...ref_b)");
             return false;
         }
 
@@ -149,6 +150,16 @@
                 return true;
             } else if (type === "pull") {
                 loadPatches(await fetchGithubPRComparison(token, owner, repo, id));
+                return true;
+            } else if (type === "compare") {
+                const refs = id.split("...");
+                if (refs.length !== 2) {
+                    alert(`Invalid comparison URL. '${id}' does not match format 'ref_a...ref_b'`);
+                    return false;
+                }
+                const base = refs[0];
+                const head = refs[1];
+                loadPatches(await fetchGithubComparison(token, owner, repo, base, head));
                 return true;
             }
         } catch (error) {
@@ -239,9 +250,9 @@
         </div>
         <hr class="mb-2 text-gray-300" />
 
-        <div class="mb-2 flex flex-row items-center gap-2">
+        <div class="flex flex-row items-center gap-2">
             <label for="githubUrl">
-                <span class="font-semibold">Load from GitHub commit or PR URL</span>
+                <span>Load from GitHub URL</span>
             </label>
             <input
                 id="githubUrl"
@@ -257,6 +268,7 @@
             />
             <button type="button" onclick={handleGithubUrl} class="rounded-md bg-blue-500 px-2 py-1 text-white hover:bg-blue-600">Go</button>
         </div>
+        <span class="mb-2 text-sm text-gray-600">Supports commit, PR, and comparison URLs</span>
 
         <div class="mb-2 flex flex-row items-center gap-2">
             <button
@@ -265,7 +277,7 @@
                 onclick={loginWithGithub}
                 type="button"
             >
-                <MarkGithub></MarkGithub>
+                <MarkGithub class="shrink-0"></MarkGithub>
                 {#if getGithubUsername()}{getGithubUsername()}{:else}Login to GitHub{/if}
             </button>
             {#if getGithubUsername()}
@@ -281,7 +293,7 @@
                 class="flex w-fit flex-row items-center gap-2 rounded-md bg-blue-500 px-2 py-1 text-white hover:bg-blue-600"
                 onclick={installGithubApp}
             >
-                <MarkGithub></MarkGithub> Install/configure GitHub App
+                <MarkGithub class="shrink-0"></MarkGithub> Install/configure GitHub App
             </button>
             <span id="githubAppLabel">Install the GitHub App to view private repos.</span>
         </div>
