@@ -439,7 +439,7 @@
                                 <span class="max-w-full overflow-hidden break-all">{value.fromFile} -> {value.toFile}</span>
                             {/if}
                             {#if lines.length !== 0}
-                                <span class="rounded-md p-1.5 text-blue-500 hover:bg-gray-100 hover:shadow">
+                                <span class="rounded-md p-0.5 text-blue-500 hover:bg-gray-100 hover:shadow">
                                     {#if collapsedState[index]}
                                         <ChevronRight16></ChevronRight16>
                                     {:else}
