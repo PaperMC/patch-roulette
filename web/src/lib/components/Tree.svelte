@@ -1,13 +1,13 @@
 <script lang="ts" generics="T">
-    import type { Snippet } from "svelte";
-    import type { TreeNode } from "$lib/components/scripts/Tree.svelte";
+    import { type Snippet, untrack } from "svelte";
+    import { collectAllNodes, filteredView, type TreeNode, type TreeNodeView } from "$lib/components/scripts/Tree.svelte";
 
     interface Props {
         roots: TreeNode<T>[];
-        node: Snippet<
+        nodeRenderer: Snippet<
             [
                 {
-                    node: TreeNode<T>;
+                    node: TreeNodeView<T>;
                     collapsed: boolean;
                     toggleCollapse: () => void;
                 },
@@ -16,48 +16,52 @@
         childWrapper?: Snippet<
             [
                 {
-                    node: TreeNode<T>;
+                    node: TreeNodeView<T>;
                     collapsed: boolean;
-                    children: Snippet<[{ node: TreeNode<T> }]>;
-                    style: string;
+                    children: Snippet<[{ node: TreeNodeView<T> }]>;
                 },
             ]
         > | null;
+        filter?: ((node: TreeNode<T>) => boolean) | null;
     }
 
-    let { roots, node, childWrapper = null }: Props = $props();
-    // Give these props better names
-    let nodeSnippet = $derived(node);
-    let childrenWrapperSnippet = $derived(childWrapper);
+    let { roots, nodeRenderer, childWrapper = null, filter = null }: Props = $props();
 
-    let collapsed: Set<TreeNode<T>> = $state(new Set());
+    let collapsedNodes: Set<TreeNode<T>> = $state(new Set());
+    let allNodesSet = $derived(collectAllNodes(roots));
+    let filteredRoots: Set<TreeNodeView<T>> = $derived(filteredView(roots, filter));
+
     $effect(() => {
-        // Make sure the collapsed set is cleared when the roots change (i.e. search)
-        // TODO: remove no longer existing nodes only
-        if (roots.length > 0) {
-            collapsed = new Set();
+        // Untrack to avoid infinite loop
+        const untrackedCollapsed = untrack(() => collapsedNodes);
+        const collapsedCopy = new Set(untrackedCollapsed);
+        for (const c of untrackedCollapsed) {
+            // Remove no longer existing nodes from the collapsed set
+            if (!allNodesSet.has(c)) {
+                collapsedCopy.delete(c);
+            }
         }
-
-        // TODO in-component filtering
+        collapsedNodes = collapsedCopy;
     });
+
     function toggleCollapse(node: TreeNode<T>) {
-        const copy = new Set(collapsed);
+        const copy = new Set(collapsedNodes);
         if (copy.has(node)) {
             copy.delete(node);
         } else {
             copy.add(node);
         }
-        collapsed = copy;
+        collapsedNodes = copy;
     }
 </script>
 
 {#snippet renderNode({ node })}
-    {@render nodeSnippet({ node, collapsed: collapsed.has(node), toggleCollapse: () => toggleCollapse(node) })}
-    {#if !collapsed.has(node) && node.children.length > 0}
-        {#if childrenWrapperSnippet !== null}
-            {@render childrenWrapperSnippet({ node, collapsed: collapsed.has(node), children: renderChildren, style: "padding-inline-start: 1rem;" })}
+    {@render nodeRenderer({ node, collapsed: collapsedNodes.has(node.backingNode), toggleCollapse: () => toggleCollapse(node.backingNode) })}
+    {#if !collapsedNodes.has(node.backingNode) && node.visibleChildren.length > 0}
+        {#if childWrapper !== null}
+            {@render childWrapper({ node, collapsed: collapsedNodes.has(node.backingNode), children: renderChildren })}
         {:else}
-            <div style="padding-inline-start: 1rem;">
+            <div class="ps-4">
                 {@render renderChildren({ node })}
             </div>
         {/if}
@@ -65,11 +69,11 @@
 {/snippet}
 
 {#snippet renderChildren({ node })}
-    {#each node.children as childNode (childNode)}
+    {#each node.visibleChildren as childNode (childNode)}
         {@render renderNode({ node: childNode })}
     {/each}
 {/snippet}
 
-{#each roots as root (root)}
+{#each filteredRoots as root (root)}
     {@render renderNode({ node: root })}
 {/each}

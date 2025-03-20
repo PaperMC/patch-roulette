@@ -1,7 +1,7 @@
 <script lang="ts">
     import ConciseDiffView from "$lib/components/ConciseDiffView.svelte";
     import makeLines, { type PatchLine } from "$lib/components/scripts/ConciseDiffView.svelte";
-    import { debounce, makeFileTree, splitMultiFilePatch } from "$lib/util";
+    import { debounce, type FileTreeNodeData, makeFileTree, splitMultiFilePatch } from "$lib/util";
     import { VList } from "virtua/svelte";
     import {
         fetchGithubCommitDiff,
@@ -15,23 +15,19 @@
     import { onMount } from "svelte";
     import { type FileDetails, getFileStatusProps } from "$lib/diff-viewer-multi-file.svelte";
     import Tree from "$lib/components/Tree.svelte";
-    import FileDirectoryOpenFill16 from "virtual:icons/octicon/file-directory-open-fill-16";
-    import FileDirectoryFill16 from "virtual:icons/octicon/file-directory-fill-16";
-    import LogoGithub16 from "virtual:icons/octicon/mark-github-16";
+    import type { TreeNode } from "$lib/components/scripts/Tree.svelte";
+    import FileDirectoryOpen from "virtual:icons/octicon/file-directory-open-fill-16";
+    import FileDirectory from "virtual:icons/octicon/file-directory-fill-16";
+    import MarkGithub from "virtual:icons/octicon/mark-github-16";
+    import SidebarCollapse from "virtual:icons/octicon/sidebar-collapse-16";
+    import SidebarExpand from "virtual:icons/octicon/sidebar-expand-16";
+    import ChevronDown16 from "virtual:icons/octicon/chevron-down-16";
+    import ChevronRight16 from "virtual:icons/octicon/chevron-right-16";
 
     let data: { values: FileDetails[]; lines: PatchLine[][] } = $state({ values: [], lines: [] });
     let searchQuery: string = $state("");
     let debouncedSearchQuery: string = $state("");
-    let filteredFiles: FileDetails[] = $derived(
-        debouncedSearchQuery
-            ? data.values.filter((file) => {
-                  return (
-                      file.toFile.toLowerCase().includes(debouncedSearchQuery.toLowerCase()) ||
-                      file.fromFile.toLowerCase().includes(debouncedSearchQuery.toLowerCase())
-                  );
-              })
-            : data.values,
-    );
+    let filteredFiles: FileDetails[] = $derived(debouncedSearchQuery ? data.values.filter(filterFile) : data.values);
     let vlist: VList<FileDetails> | undefined = $state();
 
     const updateDebouncedSearch = debounce((value: string) => {
@@ -41,6 +37,19 @@
     $effect(() => {
         updateDebouncedSearch(searchQuery);
     });
+
+    function filterFile(file: FileDetails): boolean {
+        return (
+            file.toFile.toLowerCase().includes(debouncedSearchQuery.toLowerCase()) || file.fromFile.toLowerCase().includes(debouncedSearchQuery.toLowerCase())
+        );
+    }
+
+    function filterFileNodes(file: TreeNode<FileTreeNodeData>): boolean {
+        if (file.data.type === "directory") {
+            return false;
+        }
+        return filterFile(file.data.data as FileDetails);
+    }
 
     let collapsedState: boolean[] = $state([]);
     let checkedState: boolean[] = $state([]);
@@ -201,12 +210,16 @@
 
     let sidebarCollapsed = $state(false);
 
-    let rootNodes = $derived(makeFileTree(filteredFiles));
+    let rootNodes = $derived(makeFileTree(data.values));
 </script>
 
 {#snippet sidebarToggle()}
-    <button type="button" class="rounded-md bg-blue-500 px-2 py-1 text-white hover:bg-blue-600" onclick={() => (sidebarCollapsed = !sidebarCollapsed)}>
-        {sidebarCollapsed ? ">" : "<"}
+    <button type="button" class="rounded-md p-1.5 text-blue-500 hover:bg-gray-100 hover:shadow" onclick={() => (sidebarCollapsed = !sidebarCollapsed)}>
+        {#if sidebarCollapsed}
+            <SidebarCollapse></SidebarCollapse>
+        {:else}
+            <SidebarExpand></SidebarExpand>
+        {/if}
     </button>
 {/snippet}
 
@@ -252,7 +265,7 @@
                 onclick={loginWithGithub}
                 type="button"
             >
-                <LogoGithub16></LogoGithub16>
+                <MarkGithub></MarkGithub>
                 {#if getGithubUsername()}{getGithubUsername()}{:else}Login to GitHub{/if}
             </button>
             {#if getGithubUsername()}
@@ -268,7 +281,7 @@
                 class="flex w-fit flex-row items-center gap-2 rounded-md bg-blue-500 px-2 py-1 text-white hover:bg-blue-600"
                 onclick={installGithubApp}
             >
-                <LogoGithub16></LogoGithub16> Install/configure GitHub App
+                <MarkGithub></MarkGithub> Install/configure GitHub App
             </button>
             <span id="githubAppLabel">Install the GitHub App to view private repos.</span>
         </div>
@@ -305,7 +318,7 @@
             </div>
         </div>
         {#if filteredFiles.length !== data.values.length}
-            <div class="mb-2 text-sm text-gray-600">
+            <div class="ms-2 mb-2 text-sm text-gray-600">
                 Showing {filteredFiles.length} of {data.values.length} files
             </div>
         {/if}
@@ -320,48 +333,45 @@
                         role="button"
                         tabindex="0"
                     >
-                        <div
+                        <FileIcon
                             class="{getFileStatusProps(value.status).classes} me-1 flex shrink-0 items-center justify-center"
                             title={getFileStatusProps(value.status).title}
-                        >
-                            <FileIcon></FileIcon>
-                        </div>
+                        ></FileIcon>
                         <span class="grow overflow-hidden break-all">{value.toFile.substring(value.toFile.lastIndexOf("/") + 1)}</span>
                         <input
                             type="checkbox"
-                            class="mx-1 rounded-sm border border-gray-300"
+                            class="ms-1 h-[1.2em] w-[1.2em] shrink-0 rounded-sm border border-gray-300"
                             autocomplete="off"
                             onchange={() => toggleChecked(getIndex(value))}
                             checked={checkedState[getIndex(value)]}
                         />
                     </div>
                 {/snippet}
-                <Tree roots={rootNodes}>
-                    {#snippet node({ node, collapsed, toggleCollapse })}
-                        {@const FolderIcon = collapsed ? FileDirectoryFill16 : FileDirectoryOpenFill16}
+                <Tree roots={rootNodes} filter={filterFileNodes}>
+                    {#snippet nodeRenderer({ node, collapsed, toggleCollapse })}
+                        {@const FolderIcon = collapsed ? FileDirectory : FileDirectoryOpen}
                         {#if node.data.type === "file"}
                             {@render fileSnippet(node.data.data as FileDetails)}
                         {:else}
                             <div
-                                class="flex cursor-pointer items-center justify-between py-1 ps-2 pe-2 hover:bg-gray-100"
+                                class="flex cursor-pointer items-center justify-between px-2 py-1 hover:bg-gray-100"
                                 onclick={toggleCollapse}
                                 onkeydown={(e) => e.key === "Enter" && toggleCollapse()}
                                 role="button"
                                 tabindex="0"
                             >
-                                <span><span class="me-1"><FolderIcon class="inline text-blue-500"></FolderIcon></span>{node.data.data}</span>
-                                <div>
-                                    {#if collapsed}
-                                        >
-                                    {:else}
-                                        v
-                                    {/if}
-                                </div>
+                                <FolderIcon class="me-1 shrink-0 text-blue-500"></FolderIcon>
+                                <span class="grow overflow-hidden break-all">{node.data.data}</span>
+                                {#if collapsed}
+                                    <ChevronRight16 class="shrink-0"></ChevronRight16>
+                                {:else}
+                                    <ChevronDown16 class="shrink-0"></ChevronDown16>
+                                {/if}
                             </div>
                         {/if}
                     {/snippet}
-                    {#snippet childWrapper({ node, collapsed, children, style })}
-                        <div class:dir-header={node.data.type === "directory" && !collapsed} {style}>
+                    {#snippet childWrapper({ node, collapsed, children })}
+                        <div class:dir-header={node.data.type === "directory" && !collapsed} class="ps-4">
                             {@render children({ node })}
                         </div>
                     {/snippet}
