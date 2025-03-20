@@ -401,7 +401,7 @@
         </div>
     </div>
     <div class="flex grow flex-col bg-white p-3">
-        <div class="mb-2 flex justify-between">
+        <div class="mb-2 flex justify-between gap-2">
             <div class="flex flex-row items-center gap-2">
                 {@render sidebarToggle()}
                 <button
