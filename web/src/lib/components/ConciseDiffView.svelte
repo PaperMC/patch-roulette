@@ -19,10 +19,10 @@
     {@const innerLineType = innerPatchLineTypeProps[line.innerPatchLineType]}
     <div class="h-auto py-1 ps-0.5 {lineType.classes} flex w-full flex-row break-all">
         {#if lineType.prefix}
-            <span class="inline-block font-mono whitespace-pre-wrap shrink-0">{lineType.prefix}</span>
+            <span class="inline-block shrink-0 font-mono whitespace-pre-wrap">{lineType.prefix}</span>
         {/if}
         <div class="grow">
-            <span class="inline font-mono whitespace-pre-wrap w-full {innerLineType.classes}">
+            <span class="inline w-full font-mono whitespace-pre-wrap {innerLineType.classes}">
                 {#each line.content as segment, index (index)}
                     {#if segment.classes}
                         <span class="inline font-mono whitespace-pre-wrap {segment.classes}">{segment.text}</span>
