@@ -384,9 +384,9 @@
                                 <FolderIcon class="me-1 shrink-0 text-blue-500"></FolderIcon>
                                 <span class="grow overflow-hidden break-all">{node.data.data}</span>
                                 {#if collapsed}
-                                    <ChevronRight16 class="shrink-0"></ChevronRight16>
+                                    <ChevronRight16 class="shrink-0 text-blue-500"></ChevronRight16>
                                 {:else}
-                                    <ChevronDown16 class="shrink-0"></ChevronDown16>
+                                    <ChevronDown16 class="shrink-0 text-blue-500"></ChevronDown16>
                                 {/if}
                             </div>
                         {/if}
@@ -427,7 +427,7 @@
 
                     <div id={`file-${index}`}>
                         <div
-                            class="sticky top-0 flex cursor-pointer flex-row items-center justify-between border-b border-gray-300 bg-white px-2 py-1 shadow-sm"
+                            class="sticky top-0 flex cursor-pointer flex-row items-center justify-between gap-2 border-b border-gray-300 bg-white px-2 py-1 shadow-sm"
                             onclick={() => toggleCollapse(index)}
                             tabindex="0"
                             onkeyup={(event) => event.key === "Enter" && toggleCollapse(index)}
@@ -439,11 +439,11 @@
                                 <span class="max-w-full overflow-hidden break-all">{value.fromFile} -> {value.toFile}</span>
                             {/if}
                             {#if lines.length !== 0}
-                                <span class="ms-2 rounded-sm bg-blue-500 px-1 text-white hover:bg-blue-600">
+                                <span class="rounded-md p-1.5 text-blue-500 hover:bg-gray-100 hover:shadow">
                                     {#if collapsedState[index]}
-                                        Expand
+                                        <ChevronRight16></ChevronRight16>
                                     {:else}
-                                        Collapse
+                                        <ChevronDown16></ChevronDown16>
                                     {/if}
                                 </span>
                             {:else}
