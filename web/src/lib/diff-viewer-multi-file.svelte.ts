@@ -1,4 +1,8 @@
+import type { Component } from "svelte";
 import type { FileStatus } from "./github.svelte";
+import AddIcon from "virtual:icons/octicon/diff-added-16";
+import RemoveIcon from "virtual:icons/octicon/diff-removed-16";
+import ModifyIcon from "virtual:icons/octicon/diff-modified-16";
 
 export type FileDetails = {
     content: string;
@@ -8,24 +12,24 @@ export type FileDetails = {
 };
 
 export type FileStatusProps = {
-    icon: string;
+    icon: Component;
     classes: string;
     title: string;
 };
 
 const addStatusProps: FileStatusProps = {
-    icon: "+",
-    classes: "bg-green-100 text-green-800 border-green-300",
+    icon: AddIcon,
+    classes: "text-green-600",
     title: "Added",
 };
 const removeStatusProps: FileStatusProps = {
-    icon: "-",
-    classes: "bg-red-100 text-red-800 border-red-300",
+    icon: RemoveIcon,
+    classes: "text-red-600",
     title: "Removed",
 };
 const modifyStatusProps: FileStatusProps = {
-    icon: "*",
-    classes: "bg-yellow-100 text-yellow-800 border-yellow-300",
+    icon: ModifyIcon,
+    classes: "text-yellow-600",
     title: "Modified",
 };
 

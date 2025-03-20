@@ -10,3 +10,4 @@ build
 database.mv.db
 database.trace.db
 db/
+.DS_Store
