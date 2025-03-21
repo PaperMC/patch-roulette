@@ -18,7 +18,7 @@ export function debounce<T extends (...args: any[]) => any>(fn: T, delay: number
     };
 }
 
-const fileRegex = /diff --git a\/(\S+) b\/(\S+)\r?\n(?:.+\r?\n)*?(?=diff --git|Z)/g;
+const fileRegex = /diff --git a\/(\S+) b\/(\S+)\r?\n(?:.+\r?\n)*?(?=diff --git|$)/g;
 
 export function splitMultiFilePatch(patchContent: string): FileDetails[] {
     const patches: FileDetails[] = [];
