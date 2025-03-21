@@ -72,8 +72,14 @@
         });
     }
 
-    function loadMultiFilePatch(patchContent: string) {
-        loadPatches(splitMultiFilePatch(patchContent));
+    function loadFromFile(patchContent: string) {
+        const files = splitMultiFilePatch(patchContent);
+        if (files.length === 0) {
+            alert("No valid patches found in the file.");
+            modal?.showModal();
+            return;
+        }
+        loadPatches(files);
     }
 
     let modal: HTMLDialogElement | null = $state(null);
@@ -92,7 +98,7 @@
             return;
         }
         modal?.close();
-        loadMultiFilePatch(await files[0].text());
+        loadFromFile(await files[0].text());
     }
 
     let dragActive = $state(false);
@@ -118,7 +124,7 @@
             return;
         }
         modal?.close();
-        loadMultiFilePatch(await files[0].text());
+        loadFromFile(await files[0].text());
     }
 
     let githubUrl = $state("");
