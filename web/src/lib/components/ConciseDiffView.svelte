@@ -21,7 +21,7 @@
         {#if lineType.prefix}
             <span class="inline-block shrink-0 font-mono whitespace-pre-wrap">{lineType.prefix}</span>
         {/if}
-        <div class="grow">
+        <div class="flex grow items-center">
             <span class="inline w-full font-mono whitespace-pre-wrap {innerLineType.classes}">
                 {#each line.content as segment, index (index)}
                     {@const Icon = segment.icon}

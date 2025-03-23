@@ -71,16 +71,6 @@ export type PatchLine = {
     innerPatchLineType: InnerPatchLineType;
 };
 
-function getInnerType(text: string) {
-    let innerType = InnerPatchLineType.NONE;
-    if (text.startsWith("+")) {
-        innerType = InnerPatchLineType.ADD;
-    } else if (text.startsWith("-")) {
-        innerType = InnerPatchLineType.REMOVE;
-    }
-    return innerType;
-}
-
 const noTrailingNewlineMarker: string = "%%" + ["PATCH", "ROULETTE", "NO", "TRAILING", "NEWLINE", "MARKER"].join("%") + "%%";
 
 enum LineProcessorState {
@@ -96,8 +86,9 @@ class LineProcessor {
     private addLinesText: string[] = [];
     private removeLinesText: string[] = [];
     private contextLinesText: string[] = [];
+    private patchFile: boolean = false;
 
-    process(contentLines: string[], output: PatchLine[]) {
+    process(fromFile: string | undefined, toFile: string | undefined, contentLines: string[], output: PatchLine[]) {
         // Reset state
         this.contentLines = contentLines;
         this.output = output;
@@ -105,6 +96,9 @@ class LineProcessor {
         this.addLinesText = [];
         this.removeLinesText = [];
         this.contextLinesText = [];
+        this.patchFile =
+            (fromFile !== undefined && (fromFile.endsWith(".patch") || fromFile.endsWith(".diff"))) ||
+            (toFile !== undefined && (toFile.endsWith(".patch") || toFile.endsWith(".diff")));
 
         for (let i = 0; i < this.contentLines.length; i++) {
             const lineText = this.contentLines[i];
@@ -180,7 +174,7 @@ class LineProcessor {
             this.output.push({
                 content: [{ text }],
                 type: PatchLineType.REMOVE,
-                innerPatchLineType: getInnerType(text),
+                innerPatchLineType: this.getInnerType(text),
             });
         }
         for (let i = 0; i < this.addLinesText.length; i++) {
@@ -188,7 +182,7 @@ class LineProcessor {
             this.output.push({
                 content: [{ text }],
                 type: PatchLineType.ADD,
-                innerPatchLineType: getInnerType(text),
+                innerPatchLineType: this.getInnerType(text),
             });
         }
         for (let i = 0; i < this.contextLinesText.length; i++) {
@@ -196,7 +190,7 @@ class LineProcessor {
             this.output.push({
                 content: [{ text }],
                 type: PatchLineType.CONTEXT,
-                innerPatchLineType: getInnerType(text),
+                innerPatchLineType: this.getInnerType(text),
             });
         }
         this.removeLinesText = [];
@@ -237,14 +231,14 @@ class LineProcessor {
             this.output.push({
                 content: line,
                 type: PatchLineType.REMOVE,
-                innerPatchLineType: getInnerType(line[0].text!),
+                innerPatchLineType: this.getInnerType(line[0].text!),
             });
         });
         addLines.forEach((line) => {
             this.output.push({
                 content: line,
                 type: PatchLineType.ADD,
-                innerPatchLineType: getInnerType(line[0].text!),
+                innerPatchLineType: this.getInnerType(line[0].text!),
             });
         });
 
@@ -274,12 +268,24 @@ class LineProcessor {
             }
         }
     }
+
+    private getInnerType(text: string) {
+        if (this.patchFile) {
+            if (text.startsWith("+")) {
+                return InnerPatchLineType.ADD;
+            } else if (text.startsWith("-")) {
+                return InnerPatchLineType.REMOVE;
+            }
+        }
+
+        return InnerPatchLineType.NONE;
+    }
 }
 
 const lineProcessor = new LineProcessor();
 
-function processLines(contentLines: string[], lines: PatchLine[]) {
-    lineProcessor.process(contentLines, lines);
+function processLines(fromFile: string | undefined, toFile: string | undefined, contentLines: string[], lines: PatchLine[]) {
+    lineProcessor.process(fromFile, toFile, contentLines, lines);
 }
 
 export default function makeLines(patchContent: string): PatchLine[] {
@@ -304,7 +310,7 @@ export default function makeLines(patchContent: string): PatchLine[] {
             innerPatchLineType: InnerPatchLineType.NONE,
         });
 
-        processLines(hunk.lines, lines);
+        processLines(diffs[0].oldFileName, diffs[0].newFileName, hunk.lines, lines);
 
         // Add a separator between hunks
         lines.push({ content: [{ text: "" }], type: PatchLineType.SPACER, innerPatchLineType: InnerPatchLineType.NONE });
