@@ -36,15 +36,25 @@ export function splitMultiFilePatch(patchContent: string): FileDetails[] {
                 const line2 = fullFileMatch.substring(newlineIndex + 1, secondNewlineIndex);
 
                 if (fromFile !== toFile) {
-                    if (line2.match(/^similarity index/)) {
-                        status = "renamed_modified";
-                    } else {
+                    if (line2 === "similarity index 100%") {
                         status = "renamed";
+                    } else {
+                        status = "renamed_modified";
                     }
                 } else if (line2.match(/^deleted file mode/)) {
                     status = "removed";
                 } else if (line2.match(/^new file mode/)) {
                     status = "added";
+                }
+
+                const thirdNewlineIndex = fullFileMatch.indexOf("\n", secondNewlineIndex + 1);
+                if (thirdNewlineIndex !== -1) {
+                    const line3 = fullFileMatch.substring(secondNewlineIndex + 1, thirdNewlineIndex);
+                    if (line3.match(/^Binary/)) {
+                        const fakeContent = `diff --git a/${fromFile} b/${toFile}\n--- a/${fromFile}\n+++ b/${toFile}\n@@ -1,1 +1,1 @@\n-Cannot show binary file\n+Cannot show binary file`;
+                        patches.push({ content: fakeContent, fromFile: fromFile, toFile: toFile, status });
+                        continue;
+                    }
                 }
             }
         }

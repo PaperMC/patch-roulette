@@ -25,6 +25,7 @@
     import SidebarExpand from "virtual:icons/octicon/sidebar-expand-16";
     import ChevronDown16 from "virtual:icons/octicon/chevron-down-16";
     import ChevronRight16 from "virtual:icons/octicon/chevron-right-16";
+    import ArrowRight24 from "virtual:icons/octicon/arrow-right-24";
     import { page } from "$app/state";
     import { replaceState } from "$app/navigation";
 
@@ -439,7 +440,7 @@
                             {#if value.fromFile === value.toFile}
                                 <span class="max-w-full overflow-hidden break-all">{value.toFile}</span>
                             {:else}
-                                <span class="max-w-full overflow-hidden break-all">{value.fromFile} -> {value.toFile}</span>
+                                <span class="max-w-full overflow-hidden break-all">{value.fromFile} <ArrowRight24 class="inline-block text-blue-500"></ArrowRight24> {value.toFile}</span>
                             {/if}
                             {#if lines.length !== 0}
                                 <span class="rounded-md p-0.5 text-blue-500 hover:bg-gray-100 hover:shadow">
