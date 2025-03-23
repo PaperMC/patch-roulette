@@ -24,8 +24,11 @@
         <div class="grow">
             <span class="inline w-full font-mono whitespace-pre-wrap {innerLineType.classes}">
                 {#each line.content as segment, index (index)}
+                    {@const Icon = segment.icon}
                     {#if segment.classes}
                         <span class="inline font-mono whitespace-pre-wrap {segment.classes}">{segment.text}</span>
+                    {:else if Icon}
+                        <Icon class="ms-0.5 inline text-red-600" aria-label={segment.caption}></Icon>
                     {:else}{segment.text}{/if}
                 {/each}
             </span>

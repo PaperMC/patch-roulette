@@ -1,6 +1,7 @@
 <script lang="ts">
     import { onMount } from "svelte";
     import { goto } from "$app/navigation";
+    import { page } from "$app/state";
     import {
         fetchCurrentGithubUser,
         fetchGithubUserToken,
@@ -22,7 +23,7 @@
     }
 
     onMount(async () => {
-        const params = new URLSearchParams(window.location.search);
+        const params = page.url.searchParams;
 
         // Login, not installation
         if (!params.has("installation_id")) {

@@ -9,6 +9,7 @@
         fetchGithubPRComparison,
         getGithubToken,
         getGithubUsername,
+        GITHUB_URL_PARAM,
         installGithubApp,
         loginWithGithub,
         logoutGithub,
@@ -24,36 +25,31 @@
     import SidebarExpand from "virtual:icons/octicon/sidebar-expand-16";
     import ChevronDown16 from "virtual:icons/octicon/chevron-down-16";
     import ChevronRight16 from "virtual:icons/octicon/chevron-right-16";
+    import { page } from "$app/state";
+    import { replaceState } from "$app/navigation";
 
     let data: { values: FileDetails[]; lines: PatchLine[][] } = $state({ values: [], lines: [] });
-    let searchQuery: string = $state("");
-    let debouncedSearchQuery: string = $state("");
-    let filteredFiles: FileDetails[] = $derived(debouncedSearchQuery ? data.values.filter(filterFile) : data.values);
     let vlist: VList<FileDetails> | undefined = $state();
-
-    const updateDebouncedSearch = debounce((value: string) => {
-        debouncedSearchQuery = value;
-    }, 500);
-
-    $effect(() => {
-        updateDebouncedSearch(searchQuery);
-    });
-
-    function filterFile(file: FileDetails): boolean {
-        return (
-            file.toFile.toLowerCase().includes(debouncedSearchQuery.toLowerCase()) || file.fromFile.toLowerCase().includes(debouncedSearchQuery.toLowerCase())
-        );
-    }
-
-    function filterFileNodes(file: TreeNode<FileTreeNodeData>): boolean {
-        if (file.data.type === "directory") {
-            return false;
-        }
-        return filterFile(file.data.data as FileDetails);
-    }
-
     let collapsedState: boolean[] = $state([]);
     let checkedState: boolean[] = $state([]);
+
+    let searchQuery: string = $state("");
+    let debouncedSearchQuery: string = $state("");
+    const updateDebouncedSearch = debounce((value: string) => (debouncedSearchQuery = value), 500);
+    $effect(() => updateDebouncedSearch(searchQuery));
+
+    let sidebarCollapsed = $state(false);
+    let rootNodes = $derived(makeFileTree(data.values));
+    let filteredFiles: FileDetails[] = $derived(debouncedSearchQuery ? data.values.filter(filterFile) : data.values);
+
+    function filterFile(file: FileDetails): boolean {
+        const queryLower = debouncedSearchQuery.toLowerCase();
+        return file.toFile.toLowerCase().includes(queryLower) || file.fromFile.toLowerCase().includes(queryLower);
+    }
+
+    function filterFileNode(file: TreeNode<FileTreeNodeData>): boolean {
+        return file.data.type === "file" && filterFile(file.data.data as FileDetails);
+    }
 
     function loadPatches(patches: FileDetails[], reset: boolean = true) {
         if (reset) {
@@ -61,6 +57,7 @@
             checkedState = [];
             data.values = [];
             data.lines = [];
+            vlist?.scrollToIndex(0, { align: "start" });
         }
         data.values.push(...patches);
         patches.forEach((patch) => {
@@ -129,9 +126,8 @@
 
     let githubUrl = $state("");
     onMount(async () => {
-        const params = new URLSearchParams(location.search);
-        const url = params.get("github_url");
-        if (url) {
+        const url = page.url.searchParams.get(GITHUB_URL_PARAM);
+        if (url !== null) {
             githubUrl = url;
             await handleGithubUrl();
         }
@@ -140,9 +136,13 @@
     async function handleGithubUrl() {
         modal?.close();
         const success = await loadFromGithubApi(githubUrl);
-        if (!success) {
-            modal?.showModal();
+        if (success) {
+            const newUrl = new URL(page.url);
+            newUrl.searchParams.set(GITHUB_URL_PARAM, githubUrl);
+            replaceState(newUrl, page.state);
+            return;
         }
+        modal?.showModal();
     }
 
     // convert commit or PR url to an API url
@@ -232,10 +232,6 @@
             collapsedState[index] = true;
         }
     }
-
-    let sidebarCollapsed = $state(false);
-
-    let rootNodes = $derived(makeFileTree(data.values));
 </script>
 
 {#snippet sidebarToggle()}
@@ -323,7 +319,7 @@
 </dialog>
 <div class="relative flex min-h-screen flex-row justify-center">
     <div
-        class="absolute top-0 left-0 z-10 h-full w-full flex-col border-e border-gray-300 bg-white md:w-[350px] lg:static lg:h-auto"
+        class="absolute top-0 left-0 z-10 h-full w-full flex-col border-e border-gray-300 bg-white md:w-[350px] md:shadow-md lg:static lg:h-auto lg:shadow-none"
         class:flex={!sidebarCollapsed}
         class:hidden={sidebarCollapsed}
     >
@@ -374,7 +370,7 @@
                         />
                     </div>
                 {/snippet}
-                <Tree roots={rootNodes} filter={filterFileNodes}>
+                <Tree roots={rootNodes} filter={filterFileNode}>
                     {#snippet nodeRenderer({ node, collapsed, toggleCollapse })}
                         {@const FolderIcon = collapsed ? FileDirectory : FileDirectoryOpen}
                         {#if node.data.type === "file"}
