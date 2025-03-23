@@ -1,20 +1,22 @@
 <script lang="ts">
     import ConciseDiffView from "$lib/components/ConciseDiffView.svelte";
     import makeLines, { type PatchLine } from "$lib/components/scripts/ConciseDiffView.svelte";
-    import { debounce, type FileTreeNodeData, makeFileTree, splitMultiFilePatch } from "$lib/util";
+    import { debounce, type FileTreeNodeData, isImageFile, makeFileTree, memoize, splitMultiFilePatch } from "$lib/util";
     import { VList } from "virtua/svelte";
     import {
         fetchGithubCommitDiff,
         fetchGithubComparison,
+        fetchGithubFile,
         fetchGithubPRComparison,
         getGithubToken,
         getGithubUsername,
         GITHUB_URL_PARAM,
+        type GithubDiff,
         installGithubApp,
         loginWithGithub,
         logoutGithub,
     } from "$lib/github.svelte";
-    import { onMount } from "svelte";
+    import { onDestroy, onMount } from "svelte";
     import { type FileDetails, getFileStatusProps } from "$lib/diff-viewer-multi-file.svelte";
     import Tree from "$lib/components/Tree.svelte";
     import type { TreeNode } from "$lib/components/scripts/Tree.svelte";
@@ -26,10 +28,23 @@
     import ChevronDown16 from "virtual:icons/octicon/chevron-down-16";
     import ChevronRight16 from "virtual:icons/octicon/chevron-right-16";
     import ArrowRight24 from "virtual:icons/octicon/arrow-right-24";
+    import Image16 from "virtual:icons/octicon/image-16";
     import { page } from "$app/state";
     import { replaceState } from "$app/navigation";
+    import ImageDiff from "$lib/components/ImageDiff.svelte";
+    import type { MemoizedValue } from "$lib/util.js";
 
-    let data: { values: FileDetails[]; lines: PatchLine[][] } = $state({ values: [], lines: [] });
+    type ImageDiffDetails = {
+        fileA: MemoizedValue<Promise<string>>;
+        fileB: MemoizedValue<Promise<string>>;
+        load: boolean;
+    };
+
+    let data: {
+        values: FileDetails[];
+        lines: PatchLine[][];
+        images: ImageDiffDetails[];
+    } = $state({ values: [], lines: [], images: [] });
     let vlist: VList<FileDetails> | undefined = $state();
     let collapsedState: boolean[] = $state([]);
     let checkedState: boolean[] = $state([]);
@@ -52,32 +67,76 @@
         return file.data.type === "file" && filterFile(file.data.data as FileDetails);
     }
 
-    function loadPatches(patches: FileDetails[], reset: boolean = true) {
-        if (reset) {
-            collapsedState = [];
-            checkedState = [];
-            data.values = [];
-            data.lines = [];
-            vlist?.scrollToIndex(0, { align: "start" });
+    function clearImages() {
+        for (let i = 0; i < data.images.length; i++) {
+            const image = data.images[i];
+            if (image !== null && image !== undefined) {
+                image.load = false;
+                if (image.fileA.hasValue()) {
+                    (async () => {
+                        const a = await image.fileA.getValue();
+                        URL.revokeObjectURL(a);
+                    })();
+                }
+                if (image.fileB.hasValue()) {
+                    (async () => {
+                        const b = await image.fileB.getValue();
+                        URL.revokeObjectURL(b);
+                    })();
+                }
+            }
         }
-        data.values.push(...patches);
-        patches.forEach((patch) => {
+        data.images = [];
+    }
+
+    onDestroy(() => clearImages());
+
+    async function loadPatches(patches: FileDetails[]) {
+        // Reset state
+        collapsedState = [];
+        checkedState = [];
+        data.values = [];
+        data.lines = [];
+        clearImages();
+        vlist?.scrollToIndex(0, { align: "start" });
+
+        // Load new state
+        for (let i = 0; i < patches.length; i++) {
+            const patch = patches[i];
+
+            if (isImageFile(patch.fromFile) && isImageFile(patch.toFile)) {
+                if (githubDetails) {
+                    const githubDetailsCopy = githubDetails;
+                    const fileA = memoize(() =>
+                        fetchGithubFile(getGithubToken(), githubDetailsCopy.owner, githubDetailsCopy.repo, patch.fromFile, githubDetailsCopy.base),
+                    );
+                    const fileB = memoize(() =>
+                        fetchGithubFile(getGithubToken(), githubDetailsCopy.owner, githubDetailsCopy.repo, patch.toFile, githubDetailsCopy.head),
+                    );
+                    data.images[i] = { fileA, fileB, load: false };
+                    continue;
+                }
+            }
+
             const lines = makeLines(patch.content);
-            data.lines.push(lines);
+            data.lines[i] = lines;
             if (lines.length == 0) {
                 checkedState[data.lines.length - 1] = true;
             }
-        });
+        }
+
+        // Set this last since it's what the VList loads
+        data.values.push(...patches);
     }
 
-    function loadFromFile(patchContent: string) {
+    async function loadFromFile(patchContent: string) {
         const files = splitMultiFilePatch(patchContent);
         if (files.length === 0) {
             alert("No valid patches found in the file.");
             modal?.showModal();
             return;
         }
-        loadPatches(files);
+        await loadPatches(files);
     }
 
     let modal: HTMLDialogElement | null = $state(null);
@@ -96,7 +155,8 @@
             return;
         }
         modal?.close();
-        loadFromFile(await files[0].text());
+        await loadFromFile(await files[0].text());
+        githubDetails = null;
     }
 
     let dragActive = $state(false);
@@ -122,10 +182,11 @@
             return;
         }
         modal?.close();
-        loadFromFile(await files[0].text());
+        await loadFromFile(await files[0].text());
     }
 
     let githubUrl = $state("");
+    let githubDetails: GithubDiff | null = $state(null);
     onMount(async () => {
         const url = page.url.searchParams.get(GITHUB_URL_PARAM);
         if (url !== null) {
@@ -161,10 +222,14 @@
 
         try {
             if (type === "commit") {
-                loadPatches(await fetchGithubCommitDiff(token, owner, repo, id));
+                const { info, files } = await fetchGithubCommitDiff(token, owner, repo, id);
+                githubDetails = info;
+                await loadPatches(files);
                 return true;
             } else if (type === "pull") {
-                loadPatches(await fetchGithubPRComparison(token, owner, repo, id));
+                const { info, files } = await fetchGithubPRComparison(token, owner, repo, id);
+                githubDetails = info;
+                await loadPatches(files);
                 return true;
             } else if (type === "compare") {
                 const refs = id.split("...");
@@ -174,7 +239,9 @@
                 }
                 const base = refs[0];
                 const head = refs[1];
-                loadPatches(await fetchGithubComparison(token, owner, repo, base, head));
+                const { info, files } = await fetchGithubComparison(token, owner, repo, base, head);
+                githubDetails = info;
+                await loadPatches(files);
                 return true;
             }
         } catch (error) {
@@ -428,6 +495,7 @@
             <VList data={data.values} style="height: 100%;" getKey={(_, i) => i} bind:this={vlist}>
                 {#snippet children(value, index)}
                     {@const lines = data.lines[index]}
+                    {@const image = data.images[index]}
 
                     <div id={`file-${index}`}>
                         <div
@@ -444,7 +512,7 @@
                                     >{value.fromFile} <ArrowRight24 class="inline-block text-blue-500"></ArrowRight24> {value.toFile}</span
                                 >
                             {/if}
-                            {#if lines.length !== 0}
+                            {#if lines !== null && lines !== undefined && lines.length !== 0}
                                 <span class="rounded-md p-0.5 text-blue-500 hover:bg-gray-100 hover:shadow">
                                     {#if collapsedState[index]}
                                         <ChevronRight16></ChevronRight16>
@@ -456,9 +524,31 @@
                                 <span class="ms-2 rounded-sm bg-gray-300 px-1 text-gray-800">Patch-header-only diff</span>
                             {/if}
                         </div>
-                        {#if !collapsedState[index] && lines.length !== 0}
+                        {#if !collapsedState[index] && ((image !== null && image !== undefined) || lines?.length > 0)}
                             <div class="mb border-b border-gray-300 text-sm">
-                                <ConciseDiffView preRenderedPatchLines={lines}></ConciseDiffView>
+                                {#if image !== null && image !== undefined}
+                                    {#if image.load}
+                                        {#await Promise.all([image.fileA.getValue(), image.fileB.getValue()])}
+                                            <div class="flex items-center justify-center bg-gray-300 p-4">
+                                                <div class="h-8 w-8 animate-spin rounded-full border-b-2 border-blue-500"></div>
+                                            </div>
+                                        {:then images}
+                                            <ImageDiff fileA={images[0]} fileB={images[1]}></ImageDiff>
+                                        {/await}
+                                    {:else}
+                                        <div class="flex justify-center bg-gray-300 p-4">
+                                            <button
+                                                type="button"
+                                                class=" flex flex-row items-center justify-center gap-1 rounded-md bg-blue-500 px-2 py-1 text-white hover:bg-blue-600"
+                                                onclick={() => (image.load = true)}
+                                            >
+                                                <Image16></Image16><span>Load image diff</span>
+                                            </button>
+                                        </div>
+                                    {/if}
+                                {:else}
+                                    <ConciseDiffView preRenderedPatchLines={lines}></ConciseDiffView>
+                                {/if}
                             </div>
                         {/if}
                     </div>

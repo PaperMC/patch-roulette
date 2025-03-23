@@ -123,3 +123,35 @@ export function makeFileTree(paths: FileDetails[]): TreeNode<FileTreeNodeData>[]
     }
     return [root];
 }
+
+const imageExtensions: Set<string> = new Set(["jpg", "jpeg", "png", "gif", "webp", "bmp", "svg", "tiff", "ico"]);
+
+export function isImageFile(fileName: string | null) {
+    if (fileName === null) {
+        return false;
+    }
+    const lastDot = fileName.lastIndexOf(".");
+    if (lastDot === -1) {
+        return false;
+    }
+    const extension = fileName.substring(lastDot + 1).toLowerCase();
+    return imageExtensions.has(extension);
+}
+
+export type MemoizedValue<T> = {
+    hasValue: () => boolean;
+    getValue: () => T;
+};
+
+export function memoize<T>(fn: () => T): MemoizedValue<T> {
+    let value: T | null = null;
+    return {
+        hasValue: () => value !== null,
+        getValue: () => {
+            if (value === null) {
+                value = fn();
+            }
+            return value;
+        },
+    };
+}

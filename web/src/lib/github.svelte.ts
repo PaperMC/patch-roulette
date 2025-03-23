@@ -11,6 +11,18 @@ export const GITHUB_URL_PARAM = "github_url";
 
 export const githubUsername: { value: string | null } = $state({ value: null });
 
+export type GithubDiff = {
+    owner: string;
+    repo: string;
+    base: string;
+    head: string;
+};
+
+export type GithubDiffResult = {
+    info: GithubDiff;
+    files: FileDetails[];
+};
+
 if (browser) {
     githubUsername.value = localStorage.getItem(GITHUB_USERNAME_KEY);
 }
@@ -58,6 +70,7 @@ export function installGithubApp() {
 export type GithubPR = components["schemas"]["pull-request"];
 export type FileStatus = "added" | "removed" | "modified" | "renamed" | "renamed_modified";
 export type GithubUser = components["schemas"]["private-user"];
+export type GithubCommitDetails = components["schemas"]["commit"];
 export type GithubTokenResponse = {
     access_token: string;
     token_type: string;
@@ -92,7 +105,7 @@ export async function fetchCurrentGithubUser(token: string): Promise<GithubUser>
     }
 }
 
-export async function fetchGithubPRComparison(token: string | null, owner: string, repo: string, prNumber: string): Promise<FileDetails[]> {
+export async function fetchGithubPRComparison(token: string | null, owner: string, repo: string, prNumber: string): Promise<GithubDiffResult> {
     const prInfo = await fetchGithubPRInfo(token, owner, repo, prNumber);
     const base = prInfo.base.sha;
     const head = prInfo.head.sha;
@@ -123,7 +136,7 @@ export async function fetchGithubPRInfo(token: string | null, owner: string, rep
     }
 }
 
-export async function fetchGithubComparison(token: string | null, owner: string, repo: string, base: string, head: string): Promise<FileDetails[]> {
+export async function fetchGithubComparison(token: string | null, owner: string, repo: string, base: string, head: string): Promise<GithubDiffResult> {
     const opts: RequestInit = {
         headers: {
             Accept: "application/vnd.github.v3.diff",
@@ -132,23 +145,52 @@ export async function fetchGithubComparison(token: string | null, owner: string,
     injectOptionalToken(token, opts);
     const response = await fetch(`https://api.github.com/repos/${owner}/${repo}/compare/${base}...${head}`, opts);
     if (response.ok) {
-        return splitMultiFilePatch(await response.text());
+        return { files: splitMultiFilePatch(await response.text()), info: { owner, repo, base, head } };
     } else {
         throw Error(`Failed to retrieve comparison (${response.status}): ${await response.text()}`);
     }
 }
 
-export async function fetchGithubCommitDiff(token: string | null, owner: string, repo: string, commit: string): Promise<FileDetails[]> {
-    const opts: RequestInit = {
+export async function fetchGithubCommitDiff(token: string | null, owner: string, repo: string, commit: string): Promise<GithubDiffResult> {
+    const diffOpts: RequestInit = {
         headers: {
             Accept: "application/vnd.github.v3.diff",
         },
     };
-    injectOptionalToken(token, opts);
-    const response = await fetch(`https://api.github.com/repos/${owner}/${repo}/commits/${commit}`, opts);
+    injectOptionalToken(token, diffOpts);
+    const url = `https://api.github.com/repos/${owner}/${repo}/commits/${commit}`;
+    const response = await fetch(url, diffOpts);
     if (response.ok) {
-        return splitMultiFilePatch(await response.text());
+        const metaOpts: RequestInit = {
+            headers: {
+                Accept: "application/vnd.github+json",
+            },
+        };
+        injectOptionalToken(token, metaOpts);
+        const metaResponse = await fetch(url, metaOpts);
+        if (!metaResponse.ok) {
+            throw Error(`Failed to retrieve commit meta (${metaResponse.status}): ${await metaResponse.text()}`);
+        }
+        const meta: GithubCommitDetails = await metaResponse.json();
+        const firstParent = meta.parents[0].sha;
+        return { files: splitMultiFilePatch(await response.text()), info: { owner, repo, base: firstParent, head: commit } };
     } else {
         throw Error(`Failed to retrieve commit diff (${response.status}): ${await response.text()}`);
+    }
+}
+
+export async function fetchGithubFile(token: string | null, owner: string, repo: string, path: string, ref: string): Promise<string> {
+    const opts: RequestInit = {
+        headers: {
+            Accept: "application/vnd.github.v3.raw",
+        },
+    };
+    injectOptionalToken(token, opts);
+    const response = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${path}?ref=${ref}`, opts);
+    if (response.ok) {
+        const blob = await response.blob();
+        return URL.createObjectURL(blob);
+    } else {
+        throw Error(`Failed to retrieve file (${response.status}): ${await response.text()}`);
     }
 }
