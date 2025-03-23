@@ -512,7 +512,7 @@
                                     >{value.fromFile} <ArrowRight24 class="inline-block text-blue-500"></ArrowRight24> {value.toFile}</span
                                 >
                             {/if}
-                            {#if lines !== null && lines !== undefined && lines.length !== 0}
+                            {#if (lines !== null && lines !== undefined && lines.length > 0) || (image !== null && image !== undefined)}
                                 <span class="rounded-md p-0.5 text-blue-500 hover:bg-gray-100 hover:shadow">
                                     {#if collapsedState[index]}
                                         <ChevronRight16></ChevronRight16>
@@ -520,7 +520,8 @@
                                         <ChevronDown16></ChevronDown16>
                                     {/if}
                                 </span>
-                            {:else if value.fromFile === value.toFile}
+                            {/if}
+                            {#if lines !== null && lines !== undefined && lines.length === 0}
                                 <span class="ms-2 rounded-sm bg-gray-300 px-1 text-gray-800">Patch-header-only diff</span>
                             {/if}
                         </div>
