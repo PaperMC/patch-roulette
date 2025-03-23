@@ -1,6 +1,5 @@
 <script lang="ts">
     import ConciseDiffView from "$lib/components/ConciseDiffView.svelte";
-    import makeLines, { type PatchLine } from "$lib/components/scripts/ConciseDiffView.svelte";
     import { debounce, type FileTreeNodeData, isImageFile, makeFileTree, memoize, splitMultiFilePatch } from "$lib/util";
     import { VList } from "virtua/svelte";
     import {
@@ -42,7 +41,7 @@
 
     let data: {
         values: FileDetails[];
-        lines: PatchLine[][];
+        lines: string[];
         images: ImageDiffDetails[];
     } = $state({ values: [], lines: [], images: [] });
     let vlist: VList<FileDetails> | undefined = $state();
@@ -91,7 +90,7 @@
 
     onDestroy(() => clearImages());
 
-    async function loadPatches(patches: FileDetails[]) {
+    function loadPatches(patches: FileDetails[]) {
         // Reset state
         collapsedState = [];
         checkedState = [];
@@ -104,39 +103,38 @@
         for (let i = 0; i < patches.length; i++) {
             const patch = patches[i];
 
-            if (isImageFile(patch.fromFile) && isImageFile(patch.toFile)) {
-                if (githubDetails) {
-                    const githubDetailsCopy = githubDetails;
-                    const fileA = memoize(() =>
-                        fetchGithubFile(getGithubToken(), githubDetailsCopy.owner, githubDetailsCopy.repo, patch.fromFile, githubDetailsCopy.base),
-                    );
-                    const fileB = memoize(() =>
-                        fetchGithubFile(getGithubToken(), githubDetailsCopy.owner, githubDetailsCopy.repo, patch.toFile, githubDetailsCopy.head),
-                    );
-                    data.images[i] = { fileA, fileB, load: false };
-                    continue;
-                }
+            if (githubDetails && isImageFile(patch.fromFile) && isImageFile(patch.toFile)) {
+                const githubDetailsCopy = githubDetails;
+                const fileA = memoize(() =>
+                    fetchGithubFile(getGithubToken(), githubDetailsCopy.owner, githubDetailsCopy.repo, patch.fromFile, githubDetailsCopy.base),
+                );
+                const fileB = memoize(() =>
+                    fetchGithubFile(getGithubToken(), githubDetailsCopy.owner, githubDetailsCopy.repo, patch.toFile, githubDetailsCopy.head),
+                );
+                data.images[i] = { fileA, fileB, load: false };
+                continue;
             }
 
-            const lines = makeLines(patch.content);
-            data.lines[i] = lines;
-            if (lines.length == 0) {
-                checkedState[data.lines.length - 1] = true;
-            }
+            //const lines = makeLines(patch.content);
+            data.lines[i] = patch.content;
+            // TODO
+            // if (lines.length == 0) {
+            //     checkedState[data.lines.length - 1] = true;
+            // }
         }
 
         // Set this last since it's what the VList loads
         data.values.push(...patches);
     }
 
-    async function loadFromFile(patchContent: string) {
+    function loadFromFile(patchContent: string) {
         const files = splitMultiFilePatch(patchContent);
         if (files.length === 0) {
             alert("No valid patches found in the file.");
             modal?.showModal();
             return;
         }
-        await loadPatches(files);
+        loadPatches(files);
     }
 
     let modal: HTMLDialogElement | null = $state(null);
@@ -155,7 +153,7 @@
             return;
         }
         modal?.close();
-        await loadFromFile(await files[0].text());
+        loadFromFile(await files[0].text());
         githubDetails = null;
     }
 
@@ -182,7 +180,7 @@
             return;
         }
         modal?.close();
-        await loadFromFile(await files[0].text());
+        loadFromFile(await files[0].text());
     }
 
     let githubUrl = $state("");
@@ -224,12 +222,12 @@
             if (type === "commit") {
                 const { info, files } = await fetchGithubCommitDiff(token, owner, repo, id);
                 githubDetails = info;
-                await loadPatches(files);
+                loadPatches(files);
                 return true;
             } else if (type === "pull") {
                 const { info, files } = await fetchGithubPRComparison(token, owner, repo, id);
                 githubDetails = info;
-                await loadPatches(files);
+                loadPatches(files);
                 return true;
             } else if (type === "compare") {
                 const refs = id.split("...");
@@ -241,7 +239,7 @@
                 const head = refs[1];
                 const { info, files } = await fetchGithubComparison(token, owner, repo, base, head);
                 githubDetails = info;
-                await loadPatches(files);
+                loadPatches(files);
                 return true;
             }
         } catch (error) {
@@ -492,10 +490,10 @@
             </div>
         </div>
         <div class="flex flex-1 flex-col border border-gray-300">
-            <VList data={data.values} style="height: 100%;" getKey={(_, i) => i} bind:this={vlist}>
+            <VList data={data.values} style="height: 100%;" getKey={(_, i) => i} bind:this={vlist} overscan={3}>
                 {#snippet children(value, index)}
-                    {@const lines = data.lines[index]}
-                    {@const image = data.images[index]}
+                    {@const lines = data.lines[index] !== undefined ? data.lines[index] : null}
+                    {@const image = data.images[index] !== undefined ? data.images[index] : null}
 
                     <div id={`file-${index}`}>
                         <div
@@ -512,7 +510,7 @@
                                     >{value.fromFile} <ArrowRight24 class="inline-block text-blue-500"></ArrowRight24> {value.toFile}</span
                                 >
                             {/if}
-                            {#if (lines !== null && lines !== undefined && lines.length > 0) || (image !== null && image !== undefined)}
+                            {#if lines !== null /*&& lines.length > 0*/ || (image !== null && image !== undefined)}
                                 <span class="rounded-md p-0.5 text-blue-500 hover:bg-gray-100 hover:shadow">
                                     {#if collapsedState[index]}
                                         <ChevronRight16></ChevronRight16>
@@ -521,35 +519,36 @@
                                     {/if}
                                 </span>
                             {/if}
-                            {#if lines !== null && lines !== undefined && lines.length === 0}
+                            <!--{#if lines !== null /*&& lines.length === 0*/}
                                 <span class="ms-2 rounded-sm bg-gray-300 px-1 text-gray-800">Patch-header-only diff</span>
-                            {/if}
+                            {/if}-->
                         </div>
-                        {#if !collapsedState[index] && ((image !== null && image !== undefined) || lines?.length > 0)}
+                        {#if !collapsedState[index] && image !== null}
                             <div class="mb border-b border-gray-300 text-sm">
-                                {#if image !== null && image !== undefined}
-                                    {#if image.load}
-                                        {#await Promise.all([image.fileA.getValue(), image.fileB.getValue()])}
-                                            <div class="flex items-center justify-center bg-gray-300 p-4">
-                                                <div class="h-8 w-8 animate-spin rounded-full border-b-2 border-blue-500"></div>
-                                            </div>
-                                        {:then images}
-                                            <ImageDiff fileA={images[0]} fileB={images[1]}></ImageDiff>
-                                        {/await}
-                                    {:else}
-                                        <div class="flex justify-center bg-gray-300 p-4">
-                                            <button
-                                                type="button"
-                                                class=" flex flex-row items-center justify-center gap-1 rounded-md bg-blue-500 px-2 py-1 text-white hover:bg-blue-600"
-                                                onclick={() => (image.load = true)}
-                                            >
-                                                <Image16></Image16><span>Load image diff</span>
-                                            </button>
+                                {#if image.load}
+                                    {#await Promise.all([image.fileA.getValue(), image.fileB.getValue()])}
+                                        <div class="flex items-center justify-center bg-gray-300 p-4">
+                                            <div class="h-8 w-8 animate-spin rounded-full border-b-2 border-blue-500"></div>
                                         </div>
-                                    {/if}
+                                    {:then images}
+                                        <ImageDiff fileA={images[0]} fileB={images[1]}></ImageDiff>
+                                    {/await}
                                 {:else}
-                                    <ConciseDiffView preRenderedPatchLines={lines}></ConciseDiffView>
+                                    <div class="flex justify-center bg-gray-300 p-4">
+                                        <button
+                                            type="button"
+                                            class=" flex flex-row items-center justify-center gap-1 rounded-md bg-blue-500 px-2 py-1 text-white hover:bg-blue-600"
+                                            onclick={() => (image.load = true)}
+                                        >
+                                            <Image16></Image16><span>Load image diff</span>
+                                        </button>
+                                    </div>
                                 {/if}
+                            </div>
+                        {/if}
+                        {#if !collapsedState[index] && lines !== null}
+                            <div class="mb border-b border-gray-300 text-sm">
+                                <ConciseDiffView rawPatchContent={lines}></ConciseDiffView>
                             </div>
                         {/if}
                     </div>
