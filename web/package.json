@@ -51,6 +51,7 @@
         "ag-grid-svelte5-extended": "^0.0.13",
         "diff": "^7.0.0",
         "luxon": "^3.5.0",
+        "shiki": "^3.2.1",
         "virtua": "^0.40.3"
     }
 }
