@@ -1,7 +1,7 @@
 import { diffArrays, parsePatch } from "diff";
 import { type Component } from "svelte";
 import NoEntry16 from "virtual:icons/octicon/no-entry-16";
-import { codeToTokens, type BundledLanguage, type BundledTheme, type CodeToTokensOptions, type GrammarState } from "shiki";
+import { codeToTokens, type BundledLanguage, type BundledTheme, type CodeToTokensOptions, type GrammarState, type TokensResult, type ThemedToken } from "shiki";
 import { guessLanguageFromExtension } from "$lib/util";
 
 export type LineSegment = {
@@ -217,6 +217,7 @@ class LineProcessor {
         }
 
         const result = await codeToTokens(text, opts);
+        result.tokens = result.tokens.map(mergeTokens);
 
         switch (state) {
             case LineProcessorState.ADD:
@@ -282,42 +283,41 @@ class LineProcessor {
         const removeLines: LineSegment[][] = [];
 
         for (let j = 0; j < this.addLinesText.length; j++) {
+            // Get syntax highlighting from Shiki for both lines
             const removeShikiResult = await this.codeToTokens(this.removeLinesText[j], LineProcessorState.REMOVE);
-            const removeShikiTokens = removeShikiResult.tokens[0];
-            const removeStringTokens = removeShikiTokens.map((token) => token.content);
-
             const addShikiResult = await this.codeToTokens(this.addLinesText[j], LineProcessorState.ADD);
-            const addShikiTokens = addShikiResult.tokens[0];
-            const addStringTokens = addShikiTokens.map((token) => token.content);
+
+            // Tokenize for diff
+            const removeStringTokens = genericTokenize(this.removeLinesText[j]);
+            const addStringTokens = genericTokenize(this.addLinesText[j]);
 
             const diffResult = diffArrays(removeStringTokens, addStringTokens, {
-                oneChangePerToken: true,
+                oneChangePerToken: false,
             });
 
+            // Map colors from Shiki to our tokens
             const addLine: LineSegment[] = [];
             const removeLine: LineSegment[] = [];
-            let contextCount = 0;
-            let addCount = 0;
-            let removeCount = 0;
-            for (let i = 0; i < diffResult.length; i++) {
-                const change = diffResult[i];
-                for (const text of change.value) {
-                    if (change.added) {
-                        const token = addShikiTokens[addCount + contextCount];
-                        addLine.push({ text: text, classes: `rounded-sm bg-green-100 my-0.5`, style: `color: ${token.color};` });
-                        addCount += 1;
-                    } else if (change.removed) {
-                        const token = removeShikiTokens[removeCount + contextCount];
-                        removeLine.push({ text: text, classes: "rounded-sm bg-red-100 my-0.5", style: `color: ${token.color};` });
-                        removeCount += 1;
-                    } else {
-                        const token = addShikiTokens[addCount + contextCount];
-                        addLine.push({ text: text, style: `color: ${token.color};` });
-                        removeLine.push({ text: text, style: `color: ${token.color};` });
-                        contextCount += 1;
-                    }
+            let removePos = 0;
+            let addPos = 0;
+
+            for (const change of diffResult) {
+                const text = change.value.join("");
+                if (change.added) {
+                    addLine.push(...this.makeSegments(addShikiResult, addPos, text, `rounded-sm bg-green-100 my-0.5`));
+                    addPos += text.length;
+                } else if (change.removed) {
+                    removeLine.push(...this.makeSegments(removeShikiResult, removePos, text, `rounded-sm bg-red-100 my-0.5`));
+                    removePos += text.length;
+                } else {
+                    addLine.push(...this.makeSegments(addShikiResult, addPos, text, ""));
+                    addPos += text.length;
+
+                    removeLine.push(...this.makeSegments(removeShikiResult, removePos, text, ""));
+                    removePos += text.length;
                 }
             }
+
             if (addLine.length !== 0) {
                 addLines.push(addLine);
             }
@@ -325,6 +325,7 @@ class LineProcessor {
                 removeLines.push(removeLine);
             }
         }
+
         removeLines.forEach((line) => {
             this.output.push({
                 content: line,
@@ -342,6 +343,72 @@ class LineProcessor {
 
         this.addLinesText = [];
         this.removeLinesText = [];
+    }
+
+    // Use the shiki color data to split the text into colored segments
+    private makeSegments(shikiResult: TokensResult, position: number, text: string, baseClasses: string): LineSegment[] {
+        const segments: LineSegment[] = [];
+        let remainingText = text;
+        let currentPos = position;
+
+        // Find which shiki tokens overlap with our text
+        for (const token of shikiResult.tokens[0]) {
+            const tokenStart = token.offset || 0;
+            const tokenEnd = tokenStart + token.content.length;
+
+            // Skip tokens that end before our position
+            if (tokenEnd <= currentPos) {
+                continue;
+            }
+
+            // Skip tokens that start after our position + text length (and stop searching)
+            if (tokenStart >= currentPos + text.length) {
+                break;
+            }
+
+            // Calculate the overlap between the token and our text
+            const overlapStart = Math.max(currentPos, tokenStart);
+            const overlapEnd = Math.min(currentPos + text.length, tokenEnd);
+
+            // If there's text before the current token that we need to process
+            if (overlapStart > currentPos) {
+                const precedingLength = overlapStart - currentPos;
+                const precedingText = remainingText.substring(0, precedingLength);
+
+                segments.push({
+                    text: precedingText,
+                    style: `color: ${shikiResult.fg};`, // Use default color
+                    classes: baseClasses,
+                });
+
+                remainingText = remainingText.substring(precedingLength);
+                currentPos = overlapStart;
+            }
+
+            // Process the overlapping part
+            const overlapLength = overlapEnd - overlapStart;
+            const overlapText = remainingText.substring(0, overlapLength);
+
+            segments.push({
+                text: overlapText,
+                style: `color: ${token.color};`,
+                classes: baseClasses,
+            });
+
+            remainingText = remainingText.substring(overlapLength);
+            currentPos = overlapEnd;
+        }
+
+        // If there's any remaining text that wasn't covered by any token
+        if (remainingText.length > 0) {
+            segments.push({
+                text: remainingText,
+                style: `color: ${shikiResult.fg};`, // Use default color
+                classes: baseClasses,
+            });
+        }
+
+        return segments;
     }
 
     private postprocess() {
@@ -378,6 +445,40 @@ class LineProcessor {
 
         return InnerPatchLineType.NONE;
     }
+}
+
+// Our tokens will be split when they intersect two shiki tokens, so we preprocess to merge tokens with same style,
+// accounting for style of whitespace being irrelevant
+function mergeTokens(tokens: ThemedToken[]): ThemedToken[] {
+    function isWhitespace(token: ThemedToken) {
+        return token.content.trim() === "";
+    }
+
+    const mergedTokens: ThemedToken[] = [];
+    let lastToken: ThemedToken | null = null;
+
+    for (const token of tokens) {
+        if (lastToken === null) {
+            lastToken = { ...token };
+        } else if (lastToken.color === token.color) {
+            lastToken.content += token.content;
+        } else if (isWhitespace(lastToken)) {
+            token.content = lastToken.content + token.content;
+            token.offset = lastToken.offset;
+            lastToken = token;
+        } else if (isWhitespace(token)) {
+            lastToken.content += token.content;
+        } else {
+            mergedTokens.push(lastToken);
+            lastToken = { ...token };
+        }
+    }
+
+    if (lastToken !== null) {
+        mergedTokens.push(lastToken);
+    }
+
+    return mergedTokens;
 }
 
 const lineProcessors: LineProcessor[] = [];
