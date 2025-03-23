@@ -322,6 +322,8 @@ function hasNonHeaderChanges(contentLines: string[]) {
     return false;
 }
 
+const indexHeaderRegex = /^index [0-9a-f]+\.\.[0-9a-f]+ \d+$/;
+
 function lineHasNonHeaderChange(line: string) {
     if (!(line.startsWith("+") || line.startsWith("-"))) {
         // context line
@@ -331,7 +333,13 @@ function lineHasNonHeaderChange(line: string) {
     // Added or removed content
     const content = line.substring(1);
     // Skip header lines and hunk headers in nested patches
-    return !(content.startsWith("+++") || content.startsWith("---") || content.startsWith("@@ -") || content.startsWith("@@ +"));
+    return !(
+        content.startsWith("+++") ||
+        content.startsWith("---") ||
+        content.startsWith("@@ -") ||
+        content.startsWith("@@ +") ||
+        content.match(indexHeaderRegex)
+    );
 }
 
 const delimiters = [

@@ -358,13 +358,14 @@
                     >
                         <FileIcon
                             class="{getFileStatusProps(value.status).classes} me-1 flex shrink-0 items-center justify-center"
-                            title={getFileStatusProps(value.status).title}
+                            aria-label={getFileStatusProps(value.status).title}
                         ></FileIcon>
                         <span class="grow overflow-hidden break-all">{value.toFile.substring(value.toFile.lastIndexOf("/") + 1)}</span>
                         <input
                             type="checkbox"
                             class="ms-1 h-[1.2em] w-[1.2em] shrink-0 rounded-sm border border-gray-300"
                             autocomplete="off"
+                            aria-label="File reviewed"
                             onchange={() => toggleChecked(getIndex(value))}
                             checked={checkedState[getIndex(value)]}
                         />
@@ -448,7 +449,7 @@
                                         <ChevronDown16></ChevronDown16>
                                     {/if}
                                 </span>
-                            {:else}
+                            {:else if value.fromFile === value.toFile}
                                 <span class="ms-2 rounded-sm bg-gray-300 px-1 text-gray-800">Patch-header-only diff</span>
                             {/if}
                         </div>

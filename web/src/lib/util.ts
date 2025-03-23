@@ -35,7 +35,13 @@ export function splitMultiFilePatch(patchContent: string): FileDetails[] {
             if (secondNewlineIndex !== -1) {
                 const line2 = fullFileMatch.substring(newlineIndex + 1, secondNewlineIndex);
 
-                if (line2.match(/^deleted file mode/)) {
+                if (fromFile !== toFile) {
+                    if (line2.match(/^similarity index/)) {
+                        status = "renamed_modified";
+                    } else {
+                        status = "renamed";
+                    }
+                } else if (line2.match(/^deleted file mode/)) {
                     status = "removed";
                 } else if (line2.match(/^new file mode/)) {
                     status = "added";

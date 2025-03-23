@@ -1,8 +1,9 @@
 import type { Component } from "svelte";
 import type { FileStatus } from "./github.svelte";
-import AddIcon from "virtual:icons/octicon/diff-added-16";
-import RemoveIcon from "virtual:icons/octicon/diff-removed-16";
-import ModifyIcon from "virtual:icons/octicon/diff-modified-16";
+import AddIcon from "virtual:icons/octicon/file-added-16";
+import RemoveIcon from "virtual:icons/octicon/file-removed-16";
+import ModifyIcon from "virtual:icons/octicon/file-diff-16";
+import MoveIcon from "virtual:icons/octicon/file-moved-16";
 
 export type FileDetails = {
     content: string;
@@ -32,6 +33,16 @@ const modifyStatusProps: FileStatusProps = {
     classes: "text-yellow-600",
     title: "Modified",
 };
+const renamedStatusProps: FileStatusProps = {
+    icon: MoveIcon,
+    classes: "text-gray-600",
+    title: "Renamed",
+};
+const renamedModifiedStatusProps: FileStatusProps = {
+    icon: MoveIcon,
+    classes: "text-yellow-600",
+    title: "Renamed and Modified",
+};
 
 export function getFileStatusProps(status: FileStatus): FileStatusProps {
     switch (status) {
@@ -39,6 +50,10 @@ export function getFileStatusProps(status: FileStatus): FileStatusProps {
             return addStatusProps;
         case "removed":
             return removeStatusProps;
+        case "renamed":
+            return renamedStatusProps;
+        case "renamed_modified":
+            return renamedModifiedStatusProps;
         default:
             return modifyStatusProps;
     }

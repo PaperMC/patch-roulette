@@ -56,8 +56,7 @@ export function installGithubApp() {
 }
 
 export type GithubPR = components["schemas"]["pull-request"];
-export type GithubDiffEntry = components["schemas"]["diff-entry"];
-export type FileStatus = GithubDiffEntry["status"];
+export type FileStatus = "added" | "removed" | "modified" | "renamed" | "renamed_modified";
 export type GithubUser = components["schemas"]["private-user"];
 export type GithubTokenResponse = {
     access_token: string;
