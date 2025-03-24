@@ -188,8 +188,8 @@ const languageMap: { [key: string]: BundledLanguage | SpecialLanguage } = {
     ".csx": "csharp",
     ".css": "css",
     ".dart": "dart",
-    ".diff": "diff",
-    ".patch": "diff",
+    // ".diff": "diff", // We highlight diffs ourselves
+    // ".patch": "diff", // We highlight diffs ourselves
     dockerfile: "docker", // No dot for Dockerfile
     ".docker": "docker",
     ".elm": "elm",
