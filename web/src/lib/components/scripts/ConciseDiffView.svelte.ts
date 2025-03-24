@@ -304,10 +304,20 @@ class LineProcessor {
             for (const change of diffResult) {
                 const text = change.value.join("");
                 if (change.added) {
-                    addLine.push(...this.makeSegments(addShikiResult, addPos, text, `rounded-sm bg-green-100 my-0.5`));
+                    const segments = this.makeSegments(addShikiResult, addPos, text, `bg-green-100 my-0.5`);
+
+                    segments[0].classes = segments[0].classes + " rounded-l-sm";
+                    segments[segments.length - 1].classes = segments[segments.length - 1].classes + " rounded-r-sm";
+
+                    addLine.push(...segments);
                     addPos += text.length;
                 } else if (change.removed) {
-                    removeLine.push(...this.makeSegments(removeShikiResult, removePos, text, `rounded-sm bg-red-100 my-0.5`));
+                    const segments = this.makeSegments(removeShikiResult, removePos, text, `bg-red-100 my-0.5`);
+
+                    segments[0].classes = segments[0].classes + " rounded-l-sm";
+                    segments[segments.length - 1].classes = segments[segments.length - 1].classes + " rounded-r-sm";
+
+                    removeLine.push(...segments);
                     removePos += text.length;
                 } else {
                     addLine.push(...this.makeSegments(addShikiResult, addPos, text, ""));
