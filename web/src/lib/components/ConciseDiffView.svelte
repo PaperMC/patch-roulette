@@ -11,7 +11,7 @@
 
     let { rawPatchContent, syntaxHighlighting = true, syntaxHighlightingTheme = "github-light", omitPatchHeaderOnlyHunks = true }: Props = $props();
 
-    let patchLines: Promise<PatchLine[]> = $state(makeLines(rawPatchContent, syntaxHighlighting, syntaxHighlightingTheme, omitPatchHeaderOnlyHunks));
+    let patchLines: Promise<PatchLine[]> = $state(new Promise<PatchLine[]>(() => []));
     $effect(() => {
         const promise = makeLines(rawPatchContent, syntaxHighlighting, syntaxHighlightingTheme, omitPatchHeaderOnlyHunks);
         promise.then(
