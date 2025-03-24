@@ -14,10 +14,16 @@
     let patchLines: Promise<PatchLine[]> = $state(makeLines(rawPatchContent, syntaxHighlighting, syntaxHighlightingTheme, omitPatchHeaderOnlyHunks));
     $effect(() => {
         const promise = makeLines(rawPatchContent, syntaxHighlighting, syntaxHighlightingTheme, omitPatchHeaderOnlyHunks);
-        promise.then(() => {
-            // Don't replace a potentially completed promise with a pending one, wait until the replacement is ready for smooth transitions
-            patchLines = promise;
-        });
+        promise.then(
+            () => {
+                // Don't replace a potentially completed promise with a pending one, wait until the replacement is ready for smooth transitions
+                patchLines = promise;
+            },
+            () => {
+                // Propagate errors
+                patchLines = promise;
+            },
+        );
     });
 </script>
 
