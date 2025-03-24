@@ -345,67 +345,55 @@ class LineProcessor {
         this.removeLinesText = [];
     }
 
-    // Use the shiki color data to split the text into colored segments
-    private makeSegments(shikiResult: TokensResult, position: number, text: string, baseClasses: string): LineSegment[] {
+    // Use the Shiki color data to split the text into colored segments
+    private makeSegments(shikiResult: TokensResult, startPosition: number, text: string, baseClasses: string): LineSegment[] {
         const segments: LineSegment[] = [];
         let remainingText = text;
-        let currentPos = position;
+        let position = startPosition;
+        const tokens = [...shikiResult.tokens[0]];
 
-        // Find which shiki tokens overlap with our text
-        for (const token of shikiResult.tokens[0]) {
-            const tokenStart = token.offset || 0;
+        let token: ThemedToken;
+        while (tokens.length > 0) {
+            token = tokens.shift()!;
+
+            const tokenStart = token.offset;
             const tokenEnd = tokenStart + token.content.length;
 
-            // Skip tokens that end before our position
-            if (tokenEnd <= currentPos) {
+            // Skip tokens that end before the current position
+            if (position >= tokenEnd) {
                 continue;
             }
 
-            // Skip tokens that start after our position + text length (and stop searching)
-            if (tokenStart >= currentPos + text.length) {
-                break;
+            if (tokenStart >= position + remainingText.length) {
+                throw Error("Encountered token that starts after the end of the text");
             }
 
-            // Calculate the overlap between the token and our text
-            const overlapStart = Math.max(currentPos, tokenStart);
-            const overlapEnd = Math.min(currentPos + text.length, tokenEnd);
-
-            // If there's text before the current token that we need to process
-            if (overlapStart > currentPos) {
-                const precedingLength = overlapStart - currentPos;
-                const precedingText = remainingText.substring(0, precedingLength);
-
-                segments.push({
-                    text: precedingText,
-                    style: `color: ${shikiResult.fg};`, // Use default color
-                    classes: baseClasses,
-                });
-
-                remainingText = remainingText.substring(precedingLength);
-                currentPos = overlapStart;
-            }
-
-            // Process the overlapping part
-            const overlapLength = overlapEnd - overlapStart;
+            // Split the text into parts that are in the Shiki token and the trailing text
+            const overlapLength = Math.min(tokenEnd - position, remainingText.length);
+            const consumedToken = overlapLength === remainingText.length;
             const overlapText = remainingText.substring(0, overlapLength);
+            const trailingText = remainingText.substring(overlapLength);
 
             segments.push({
                 text: overlapText,
-                style: `color: ${token.color};`,
                 classes: baseClasses,
+                style: `color: ${token.color};`,
             });
 
-            remainingText = remainingText.substring(overlapLength);
-            currentPos = overlapEnd;
+            remainingText = trailingText;
+            position = position + overlapLength;
+            if (!consumedToken) {
+                tokens.unshift(token);
+            }
+
+            if (remainingText.length === 0) {
+                // We reached the end of the text
+                break;
+            }
         }
 
-        // If there's any remaining text that wasn't covered by any token
         if (remainingText.length > 0) {
-            segments.push({
-                text: remainingText,
-                style: `color: ${shikiResult.fg};`, // Use default color
-                classes: baseClasses,
-            });
+            throw Error("Remaining text after processing all tokens");
         }
 
         return segments;
