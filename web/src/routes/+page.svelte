@@ -5,6 +5,8 @@
     import { fetchApi } from "$lib/api";
     import PatchesTable from "$lib/components/PatchesTable.svelte";
     import PatchesStats from "$lib/components/PatchesStats.svelte";
+    import SimpleSwitch from "$lib/components/SimpleSwitch.svelte";
+    import { Label } from "bits-ui";
 
     const views = ["table", "stats"] as const;
     type View = (typeof views)[number];
@@ -155,21 +157,8 @@
                     </div>
                 </div>
                 <div class="flex items-center">
-                    <label for="auto-refresh" class="me-2 text-sm text-nowrap text-gray-700">Auto refresh</label>
-                    <div class="relative inline-block w-10 align-middle select-none">
-                        <input id="auto-refresh" type="checkbox" class="hidden" autocomplete="off" bind:checked={autoRefresh} />
-                        <label
-                            for="auto-refresh"
-                            class="block h-6 cursor-pointer overflow-hidden rounded-full p-0.5 transition-colors ease-in-out"
-                            class:bg-gray-300={!autoRefresh}
-                            class:bg-blue-500={autoRefresh}
-                        >
-                            <span
-                                class="block h-5 w-5 transform rounded-full bg-white transition-transform duration-200 ease-in"
-                                class:translate-x-4={autoRefresh}
-                            ></span>
-                        </label>
-                    </div>
+                    <Label.Root id="auto-refresh-label" for="auto-refresh" class="me-2 text-sm text-nowrap text-gray-700">Auto refresh</Label.Root>
+                    <SimpleSwitch bind:value={autoRefresh} aria-labelledby="auto-refresh-label" id="auto-refresh" />
                 </div>
             </div>
             {#if currentView === "table"}

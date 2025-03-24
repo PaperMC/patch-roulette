@@ -28,10 +28,17 @@
     import ChevronRight16 from "virtual:icons/octicon/chevron-right-16";
     import ArrowRight24 from "virtual:icons/octicon/arrow-right-24";
     import Image16 from "virtual:icons/octicon/image-16";
+    import Gear16 from "virtual:icons/octicon/gear-16";
+    import X16 from "virtual:icons/octicon/x-16";
+    import SingleSelect16 from "virtual:icons/octicon/single-select-16";
     import { page } from "$app/state";
     import { replaceState } from "$app/navigation";
     import ImageDiff from "$lib/components/ImageDiff.svelte";
     import type { MemoizedValue } from "$lib/util.js";
+    import { Popover, Label, Select } from "bits-ui";
+    import { type BundledTheme, bundledThemes } from "shiki";
+    import SimpleSwitch from "$lib/components/SimpleSwitch.svelte";
+    import type { PatchLine } from "$lib/components/scripts/ConciseDiffView.svelte";
 
     type ImageDiffDetails = {
         fileA: MemoizedValue<Promise<string>>;
@@ -47,6 +54,17 @@
     let vlist: VList<FileDetails> | undefined = $state();
     let collapsedState: boolean[] = $state([]);
     let checkedState: boolean[] = $state([]);
+    let patchHeaderDiffOnly: boolean[] = $state([]);
+    function linesLoaded(details: FileDetails, lines: PatchLine[]) {
+        const empty = lines.length === 0;
+        const index = getIndex(details);
+        if (checkedState[index] === undefined) {
+            checkedState[index] = empty;
+        }
+        if (empty) {
+            patchHeaderDiffOnly[index] = true;
+        }
+    }
 
     let searchQuery: string = $state("");
     let debouncedSearchQuery: string = $state("");
@@ -56,6 +74,10 @@
     let sidebarCollapsed = $state(false);
     let rootNodes = $derived(makeFileTree(data.values));
     let filteredFiles: FileDetails[] = $derived(debouncedSearchQuery ? data.values.filter(filterFile) : data.values);
+
+    let syntaxHighlighting = $state(true);
+    let syntaxHighlightingTheme: BundledTheme = $state("github-light");
+    let omitPatchHeaderOnlyHunks = $state(true);
 
     function filterFile(file: FileDetails): boolean {
         const queryLower = debouncedSearchQuery.toLowerCase();
@@ -115,12 +137,7 @@
                 continue;
             }
 
-            //const lines = makeLines(patch.content);
             data.lines[i] = patch.content;
-            // TODO
-            // if (lines.length == 0) {
-            //     checkedState[data.lines.length - 1] = true;
-            // }
         }
 
         // Set this last since it's what the VList loads
@@ -303,9 +320,9 @@
 {#snippet sidebarToggle()}
     <button type="button" class="rounded-md p-1.5 text-blue-500 hover:bg-gray-100 hover:shadow" onclick={() => (sidebarCollapsed = !sidebarCollapsed)}>
         {#if sidebarCollapsed}
-            <SidebarCollapse></SidebarCollapse>
+            <SidebarCollapse />
         {:else}
-            <SidebarExpand></SidebarExpand>
+            <SidebarExpand />
         {/if}
     </button>
 {/snippet}
@@ -354,7 +371,7 @@
                 onclick={loginWithGithub}
                 type="button"
             >
-                <MarkGithub class="shrink-0"></MarkGithub>
+                <MarkGithub class="shrink-0" />
                 {#if getGithubUsername()}{getGithubUsername()}{:else}Login to GitHub{/if}
             </button>
             {#if getGithubUsername()}
@@ -370,7 +387,7 @@
                 class="flex w-fit flex-row items-center gap-2 rounded-md bg-blue-500 px-2 py-1 text-white hover:bg-blue-600"
                 onclick={installGithubApp}
             >
-                <MarkGithub class="shrink-0"></MarkGithub> Install/configure GitHub App
+                <MarkGithub class="shrink-0" /> Install/configure GitHub App
             </button>
             <span id="githubAppLabel">Install the GitHub App to view private repos.</span>
         </div>
@@ -425,7 +442,7 @@
                         <FileIcon
                             class="{getFileStatusProps(value.status).classes} me-1 flex shrink-0 items-center justify-center"
                             aria-label={getFileStatusProps(value.status).title}
-                        ></FileIcon>
+                        />
                         <span class="grow overflow-hidden break-all">{value.toFile.substring(value.toFile.lastIndexOf("/") + 1)}</span>
                         <input
                             type="checkbox"
@@ -450,12 +467,12 @@
                                 role="button"
                                 tabindex="0"
                             >
-                                <FolderIcon class="me-1 shrink-0 text-blue-500"></FolderIcon>
+                                <FolderIcon class="me-1 shrink-0 text-blue-500" />
                                 <span class="grow overflow-hidden break-all">{node.data.data}</span>
                                 {#if collapsed}
-                                    <ChevronRight16 class="shrink-0 text-blue-500"></ChevronRight16>
+                                    <ChevronRight16 class="shrink-0 text-blue-500" />
                                 {:else}
-                                    <ChevronDown16 class="shrink-0 text-blue-500"></ChevronDown16>
+                                    <ChevronDown16 class="shrink-0 text-blue-500" />
                                 {/if}
                             </div>
                         {/if}
@@ -487,6 +504,51 @@
             <div class="flex flex-row gap-2">
                 <button type="button" class="rounded-md bg-blue-500 px-2 py-1 text-white hover:bg-blue-600" onclick={expandAll}>Expand All</button>
                 <button type="button" class="rounded-md bg-blue-500 px-2 py-1 text-white hover:bg-blue-600" onclick={collapseAll}>Collapse All</button>
+                <Popover.Root>
+                    <Popover.Trigger class="rounded-md p-1.5 text-blue-500 hover:bg-gray-100 hover:shadow">
+                        <Gear16 aria-hidden="true" />
+                    </Popover.Trigger>
+                    <Popover.Portal>
+                        <Popover.Content aria-label="Options" class="mx-2 flex flex-col rounded-md border border-gray-300 bg-white p-3 shadow-md">
+                            <div class="mb-4 flex flex-row justify-between">
+                                <Gear16 aria-hidden="true" class="text-blue-500" />
+                                <Popover.Close>
+                                    <X16 class="text-blue-500" />
+                                </Popover.Close>
+                            </div>
+                            <Label.Root for="syntax-highlight-toggle" id="syntax-highlight-label" class="mb-0.5">Syntax Highlighting</Label.Root>
+                            <div class="flex flex-row items-center gap-1.5">
+                                <SimpleSwitch id="syntax-highlight-toggle" aria-labelledby="syntax-highlight-label" bind:value={syntaxHighlighting} />
+                                <Select.Root type="single" bind:value={syntaxHighlightingTheme}>
+                                    <Select.Trigger
+                                        aria-label="Select syntax highlighting theme"
+                                        class="flex w-36 cursor-pointer items-center gap-1 rounded-lg border border-gray-300 p-1 text-sm select-none hover:bg-gray-100"
+                                    >
+                                        <SingleSelect16 aria-hidden="true" class="text-base text-blue-500" />
+                                        <div aria-label="Current theme" class="grow text-center">{syntaxHighlightingTheme}</div>
+                                    </Select.Trigger>
+                                    <Select.Portal>
+                                        <Select.Content class="max-h-64 overflow-y-auto rounded-lg border border-gray-300 bg-white shadow-md">
+                                            {#each Object.keys(bundledThemes) as theme (theme)}
+                                                <Select.Item value={theme} class="data-highlighted:bg-blue-400 data-highlighted:text-white">
+                                                    {#snippet children({ selected })}
+                                                        <div class="cursor-default px-2 py-1 text-sm" class:bg-blue-500={selected} class:text-white={selected}>
+                                                            {theme}
+                                                        </div>
+                                                    {/snippet}
+                                                </Select.Item>
+                                            {/each}
+                                        </Select.Content>
+                                    </Select.Portal>
+                                </Select.Root>
+                            </div>
+                            <Label.Root id="omit-hunks-label" class="mt-2 max-w-64 break-words" for="omit-hunks">
+                                Omit hunks containing only second-level patch header line changes
+                            </Label.Root>
+                            <SimpleSwitch id="omit-hunks" aria-labelledby="omit-hunks-label" bind:value={omitPatchHeaderOnlyHunks} />
+                        </Popover.Content>
+                    </Popover.Portal>
+                </Popover.Root>
             </div>
         </div>
         <div class="flex flex-1 flex-col border border-gray-300">
@@ -506,22 +568,24 @@
                             {#if value.fromFile === value.toFile}
                                 <span class="max-w-full overflow-hidden break-all">{value.toFile}</span>
                             {:else}
-                                <span class="max-w-full overflow-hidden break-all"
-                                    >{value.fromFile} <ArrowRight24 class="inline-block text-blue-500"></ArrowRight24> {value.toFile}</span
-                                >
+                                <span class="max-w-full overflow-hidden break-all">
+                                    {value.fromFile}
+                                    <ArrowRight24 class="inline-block text-blue-500" />
+                                    {value.toFile}
+                                </span>
                             {/if}
-                            {#if lines !== null /*&& lines.length > 0*/ || (image !== null && image !== undefined)}
+                            {#if !patchHeaderDiffOnly[getIndex(value)] || (image !== null && image !== undefined)}
                                 <span class="rounded-md p-0.5 text-blue-500 hover:bg-gray-100 hover:shadow">
                                     {#if collapsedState[index]}
-                                        <ChevronRight16></ChevronRight16>
+                                        <ChevronRight16 />
                                     {:else}
-                                        <ChevronDown16></ChevronDown16>
+                                        <ChevronDown16 />
                                     {/if}
                                 </span>
                             {/if}
-                            <!--{#if lines !== null /*&& lines.length === 0*/}
+                            {#if patchHeaderDiffOnly[getIndex(value)]}
                                 <span class="ms-2 rounded-sm bg-gray-300 px-1 text-gray-800">Patch-header-only diff</span>
-                            {/if}-->
+                            {/if}
                         </div>
                         {#if !collapsedState[index] && image !== null}
                             <div class="mb border-b border-gray-300 text-sm">
@@ -531,7 +595,7 @@
                                             <div class="h-8 w-8 animate-spin rounded-full border-b-2 border-blue-500"></div>
                                         </div>
                                     {:then images}
-                                        <ImageDiff fileA={images[0]} fileB={images[1]}></ImageDiff>
+                                        <ImageDiff fileA={images[0]} fileB={images[1]} />
                                     {/await}
                                 {:else}
                                     <div class="flex justify-center bg-gray-300 p-4">
@@ -540,7 +604,7 @@
                                             class=" flex flex-row items-center justify-center gap-1 rounded-md bg-blue-500 px-2 py-1 text-white hover:bg-blue-600"
                                             onclick={() => (image.load = true)}
                                         >
-                                            <Image16></Image16><span>Load image diff</span>
+                                            <Image16 /><span>Load image diff</span>
                                         </button>
                                     </div>
                                 {/if}
@@ -548,7 +612,13 @@
                         {/if}
                         {#if !collapsedState[index] && lines !== null}
                             <div class="mb border-b border-gray-300 text-sm">
-                                <ConciseDiffView rawPatchContent={lines}></ConciseDiffView>
+                                <ConciseDiffView
+                                    rawPatchContent={lines}
+                                    {syntaxHighlighting}
+                                    {syntaxHighlightingTheme}
+                                    {omitPatchHeaderOnlyHunks}
+                                    linesLoaded={(loaded) => linesLoaded(value, loaded)}
+                                />
                             </div>
                         {/if}
                     </div>
