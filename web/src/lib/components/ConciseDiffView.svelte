@@ -7,21 +7,11 @@
         syntaxHighlighting?: boolean;
         syntaxHighlightingTheme?: BundledTheme;
         omitPatchHeaderOnlyHunks?: boolean;
-        linesLoaded?: (lines: PatchLine[]) => void;
     }
 
-    let {
-        rawPatchContent,
-        syntaxHighlighting = true,
-        syntaxHighlightingTheme = "github-light",
-        omitPatchHeaderOnlyHunks = true,
-        linesLoaded = () => {},
-    }: Props = $props();
+    let { rawPatchContent, syntaxHighlighting = true, syntaxHighlightingTheme = "github-light", omitPatchHeaderOnlyHunks = true }: Props = $props();
 
     let patchLines: Promise<PatchLine[]> = $derived(makeLines(rawPatchContent, syntaxHighlighting, syntaxHighlightingTheme, omitPatchHeaderOnlyHunks));
-    $effect(() => {
-        patchLines.then(linesLoaded);
-    });
 </script>
 
 {#await patchLines}

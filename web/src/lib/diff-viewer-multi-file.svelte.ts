@@ -4,6 +4,8 @@ import AddIcon from "virtual:icons/octicon/file-added-16";
 import RemoveIcon from "virtual:icons/octicon/file-removed-16";
 import ModifyIcon from "virtual:icons/octicon/file-diff-16";
 import MoveIcon from "virtual:icons/octicon/file-moved-16";
+import { parsePatch } from "diff";
+import { hasNonHeaderChanges } from "$lib/components/scripts/ConciseDiffView.svelte";
 
 export type FileDetails = {
     content: string;
@@ -57,4 +59,36 @@ export function getFileStatusProps(status: FileStatus): FileStatusProps {
         default:
             return modifyStatusProps;
     }
+}
+
+export function findHeaderChangeOnlyPatches(patchStrings: string[]) {
+    const result: boolean[] = [];
+
+    for (let i = 0; i < patchStrings.length; i++) {
+        const patchString = patchStrings[i];
+        if (patchString === undefined || patchString.length === 0) {
+            result.push(false);
+            continue;
+        }
+        // TODO: Parsing twice is wasteful
+        const patches = parsePatch(patchString);
+        if (patches.length !== 1) {
+            result.push(false);
+            continue;
+        }
+        const patch = patches[0];
+        if (patch.hunks.length === 0) {
+            result.push(false);
+            continue;
+        }
+        let onlyHeaderChanges = true;
+        for (let j = 0; j < patch.hunks.length; j++) {
+            if (hasNonHeaderChanges(patch.hunks[j].lines)) {
+                onlyHeaderChanges = false;
+            }
+        }
+        result.push(onlyHeaderChanges);
+    }
+
+    return result;
 }
