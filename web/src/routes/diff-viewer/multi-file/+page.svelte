@@ -570,7 +570,7 @@
                                     {value.toFile}
                                 </span>
                             {/if}
-                            {#if !patchHeaderDiffOnly[getIndex(value)] || (image !== null && image !== undefined)}
+                            {#if !patchHeaderDiffOnly[index] || (image !== null && image !== undefined)}
                                 <span class="rounded-md p-0.5 text-blue-500 hover:bg-gray-100 hover:shadow">
                                     {#if collapsedState[index]}
                                         <ChevronRight16 />
@@ -579,7 +579,7 @@
                                     {/if}
                                 </span>
                             {/if}
-                            {#if patchHeaderDiffOnly[getIndex(value)]}
+                            {#if patchHeaderDiffOnly[index]}
                                 <span class="ms-2 rounded-sm bg-gray-300 px-1 text-gray-800">Patch-header-only diff</span>
                             {/if}
                         </div>
@@ -606,7 +606,7 @@
                                 {/if}
                             </div>
                         {/if}
-                        {#if !collapsedState[index] && lines !== null}
+                        {#if !collapsedState[index] && lines !== null && !patchHeaderDiffOnly[index]}
                             <div class="mb border-b border-gray-300 text-sm">
                                 <ConciseDiffView rawPatchContent={lines} {syntaxHighlighting} {syntaxHighlightingTheme} {omitPatchHeaderOnlyHunks} />
                             </div>
