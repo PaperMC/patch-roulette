@@ -95,13 +95,29 @@ class LineProcessor {
     private lastShikiStateAdd: GrammarState | null = null;
     private lastShikiStateRemove: GrammarState | null = null;
     private lastShikiStateContext: GrammarState | null = null;
+    private syntaxHighlighting: boolean = true;
+    private syntaxHighlightingTheme: BundledTheme = "github-light";
 
-    async process(fromFile: string | undefined, toFile: string | undefined, contentLines: string[], output: PatchLine[]) {
-        this.initialize(fromFile, toFile, contentLines, output);
+    async process(
+        fromFile: string | undefined,
+        toFile: string | undefined,
+        contentLines: string[],
+        output: PatchLine[],
+        syntaxHighlighting: boolean,
+        syntaxHighlightingTheme: BundledTheme,
+    ) {
+        this.initialize(fromFile, toFile, contentLines, output, syntaxHighlighting, syntaxHighlightingTheme);
         await this.processInternal();
     }
 
-    private initialize(fromFile: string | undefined, toFile: string | undefined, contentLines: string[], output: PatchLine[]) {
+    private initialize(
+        fromFile: string | undefined,
+        toFile: string | undefined,
+        contentLines: string[],
+        output: PatchLine[],
+        syntaxHighlighting: boolean,
+        syntaxHighlightingTheme: BundledTheme,
+    ) {
         this.contentLines = contentLines;
         this.output = output;
         this.state = LineProcessorState.CONTEXT;
@@ -114,6 +130,8 @@ class LineProcessor {
         this.lastShikiStateAdd = null;
         this.lastShikiStateRemove = null;
         this.lastShikiStateContext = null;
+        this.syntaxHighlighting = syntaxHighlighting;
+        this.syntaxHighlightingTheme = syntaxHighlightingTheme;
     }
 
     private eitherFileName(): string | undefined {
@@ -196,10 +214,25 @@ class LineProcessor {
         this.postprocess();
     }
 
-    private async codeToTokens(text: string, state: LineProcessorState) {
+    private async codeToSegmentsPlain(text: string, state: LineProcessorState): Promise<LineSegment[]> {
+        const tokensResult = await this.codeToTokensResult(text, state);
+        if (tokensResult) {
+            return tokensResult.tokens[0].map((token) => {
+                return { text: token.content, style: `color: ${token.color};` };
+            });
+        } else {
+            return [{ text }];
+        }
+    }
+
+    private async codeToTokensResult(text: string, state: LineProcessorState): Promise<TokensResult | null> {
+        if (!this.syntaxHighlighting) {
+            return null;
+        }
+
         const opts: CodeToTokensOptions<BundledLanguage, BundledTheme> = {
             lang: guessLanguageFromExtension(this.eitherFileName()!),
-            theme: "github-light",
+            theme: this.syntaxHighlightingTheme,
         };
 
         // Use state from the previous line, using context to fill the gaps
@@ -239,10 +272,7 @@ class LineProcessor {
     private async appendRemainingPlain() {
         for (let i = 0; i < this.removeLinesText.length; i++) {
             const text = this.removeLinesText[i];
-            const tokensResult = await this.codeToTokens(text, LineProcessorState.REMOVE);
-            const content = tokensResult.tokens[0].map((token) => {
-                return { text: token.content, style: `color: ${token.color};` };
-            });
+            const content = await this.codeToSegmentsPlain(text, LineProcessorState.REMOVE);
             this.output.push({
                 content,
                 type: PatchLineType.REMOVE,
@@ -251,10 +281,7 @@ class LineProcessor {
         }
         for (let i = 0; i < this.addLinesText.length; i++) {
             const text = this.addLinesText[i];
-            const tokensResult = await this.codeToTokens(text, LineProcessorState.ADD);
-            const content = tokensResult.tokens[0].map((token) => {
-                return { text: token.content, style: `color: ${token.color};` };
-            });
+            const content = await this.codeToSegmentsPlain(text, LineProcessorState.ADD);
             this.output.push({
                 content,
                 type: PatchLineType.ADD,
@@ -263,10 +290,7 @@ class LineProcessor {
         }
         for (let i = 0; i < this.contextLinesText.length; i++) {
             const text = this.contextLinesText[i];
-            const tokensResult = await this.codeToTokens(text, LineProcessorState.CONTEXT);
-            const content = tokensResult.tokens[0].map((token) => {
-                return { text: token.content, style: `color: ${token.color};` };
-            });
+            const content = await this.codeToSegmentsPlain(text, LineProcessorState.CONTEXT);
             this.output.push({
                 content,
                 type: PatchLineType.CONTEXT,
@@ -284,8 +308,8 @@ class LineProcessor {
 
         for (let j = 0; j < this.addLinesText.length; j++) {
             // Get syntax highlighting from Shiki for both lines
-            const removeShikiResult = await this.codeToTokens(this.removeLinesText[j], LineProcessorState.REMOVE);
-            const addShikiResult = await this.codeToTokens(this.addLinesText[j], LineProcessorState.ADD);
+            const removeShikiResult = await this.codeToTokensResult(this.removeLinesText[j], LineProcessorState.REMOVE);
+            const addShikiResult = await this.codeToTokensResult(this.addLinesText[j], LineProcessorState.ADD);
 
             // Tokenize for diff
             const removeStringTokens = genericTokenize(this.removeLinesText[j]);
@@ -355,8 +379,16 @@ class LineProcessor {
         this.removeLinesText = [];
     }
 
+    private makeSegments(shikiResult: TokensResult | null, startPosition: number, text: string, baseClasses: string): LineSegment[] {
+        if (shikiResult) {
+            return this.makeSegmentsShiki(shikiResult, startPosition, text, baseClasses);
+        }
+
+        return [{ text, classes: baseClasses }];
+    }
+
     // Use the Shiki color data to split the text into colored segments
-    private makeSegments(shikiResult: TokensResult, startPosition: number, text: string, baseClasses: string): LineSegment[] {
+    private makeSegmentsShiki(shikiResult: TokensResult, startPosition: number, text: string, baseClasses: string): LineSegment[] {
         const segments: LineSegment[] = [];
         let remainingText = text;
         let position = startPosition;
@@ -481,16 +513,28 @@ function mergeTokens(tokens: ThemedToken[]): ThemedToken[] {
 
 const lineProcessors: LineProcessor[] = [];
 
-async function processLines(fromFile: string | undefined, toFile: string | undefined, contentLines: string[], lines: PatchLine[]) {
+async function processLines(
+    fromFile: string | undefined,
+    toFile: string | undefined,
+    contentLines: string[],
+    lines: PatchLine[],
+    syntaxHighlighting: boolean,
+    syntaxHighlightingTheme: BundledTheme,
+) {
     const lineProcessor = lineProcessors.pop() ?? new LineProcessor();
     try {
-        return await lineProcessor.process(fromFile, toFile, contentLines, lines);
+        return await lineProcessor.process(fromFile, toFile, contentLines, lines, syntaxHighlighting, syntaxHighlightingTheme);
     } finally {
         lineProcessors.push(lineProcessor);
     }
 }
 
-export async function makeLines(patchContent: string): Promise<PatchLine[]> {
+export async function makeLines(
+    patchContent: string,
+    syntaxHighlighting: boolean,
+    syntaxHighlightingTheme: BundledTheme,
+    omitPatchHeaderOnlyHunks: boolean,
+): Promise<PatchLine[]> {
     const diffs = parsePatch(patchContent);
     if (diffs.length !== 1) {
         throw Error("Only one patch is supported");
@@ -500,7 +544,7 @@ export async function makeLines(patchContent: string): Promise<PatchLine[]> {
 
     for (const hunk of diffs[0].hunks) {
         // Skip this hunk if it only contains header changes
-        if (!hasNonHeaderChanges(hunk.lines)) {
+        if (omitPatchHeaderOnlyHunks && !hasNonHeaderChanges(hunk.lines)) {
             continue;
         }
 
@@ -515,7 +559,7 @@ export async function makeLines(patchContent: string): Promise<PatchLine[]> {
         const hunkLines: PatchLine[] = [];
         const oldFileName = diffs[0].oldFileName === "/dev/null" ? undefined : diffs[0].oldFileName;
         const newFileName = diffs[0].newFileName === "/dev/null" ? undefined : diffs[0].newFileName;
-        await processLines(oldFileName, newFileName, hunk.lines, hunkLines);
+        await processLines(oldFileName, newFileName, hunk.lines, hunkLines, syntaxHighlighting, syntaxHighlightingTheme);
         lines.push(...hunkLines);
 
         // Add a separator between hunks

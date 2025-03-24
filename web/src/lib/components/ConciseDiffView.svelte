@@ -1,16 +1,26 @@
 <script lang="ts">
     import { makeLines, innerPatchLineTypeProps, type PatchLine, patchLineTypeProps } from "$lib/components/scripts/ConciseDiffView.svelte.js";
+    import type { BundledTheme } from "shiki";
 
-    let { rawPatchContent, preRenderedPatchLines } = $props<{
-        rawPatchContent?: string;
-        preRenderedPatchLines?: Promise<PatchLine[]>;
-    }>();
+    interface Props {
+        rawPatchContent: string;
+        syntaxHighlighting?: boolean;
+        syntaxHighlightingTheme?: BundledTheme;
+        omitPatchHeaderOnlyHunks?: boolean;
+        linesLoaded?: (lines: PatchLine[]) => void;
+    }
 
-    let patchLines: Promise<PatchLine[]> = $derived.by(() => {
-        if (preRenderedPatchLines) {
-            return preRenderedPatchLines;
-        }
-        return makeLines(rawPatchContent);
+    let {
+        rawPatchContent,
+        syntaxHighlighting = true,
+        syntaxHighlightingTheme = "github-light",
+        omitPatchHeaderOnlyHunks = true,
+        linesLoaded = () => {},
+    }: Props = $props();
+
+    let patchLines: Promise<PatchLine[]> = $derived(makeLines(rawPatchContent, syntaxHighlighting, syntaxHighlightingTheme, omitPatchHeaderOnlyHunks));
+    $effect(() => {
+        patchLines.then(linesLoaded);
     });
 </script>
 
