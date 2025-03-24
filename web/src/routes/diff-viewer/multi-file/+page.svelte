@@ -16,7 +16,7 @@
         logoutGithub,
     } from "$lib/github.svelte";
     import { onDestroy, onMount } from "svelte";
-    import { type FileDetails, getFileStatusProps } from "$lib/diff-viewer-multi-file.svelte";
+    import { type FileDetails, findHeaderChangeOnlyPatches, getFileStatusProps } from "$lib/diff-viewer-multi-file.svelte";
     import Tree from "$lib/components/Tree.svelte";
     import type { TreeNode } from "$lib/components/scripts/Tree.svelte";
     import FileDirectoryOpen from "virtual:icons/octicon/file-directory-open-fill-16";
@@ -38,7 +38,6 @@
     import { Popover, Label, Select } from "bits-ui";
     import { type BundledTheme, bundledThemes } from "shiki";
     import SimpleSwitch from "$lib/components/SimpleSwitch.svelte";
-    import type { PatchLine } from "$lib/components/scripts/ConciseDiffView.svelte";
 
     type ImageDiffDetails = {
         fileA: MemoizedValue<Promise<string>>;
@@ -54,17 +53,14 @@
     let vlist: VList<FileDetails> | undefined = $state();
     let collapsedState: boolean[] = $state([]);
     let checkedState: boolean[] = $state([]);
-    let patchHeaderDiffOnly: boolean[] = $state([]);
-    function linesLoaded(details: FileDetails, lines: PatchLine[]) {
-        const empty = lines.length === 0;
-        const index = getIndex(details);
-        if (checkedState[index] === undefined) {
-            checkedState[index] = empty;
+    let patchHeaderDiffOnly: boolean[] = $derived(findHeaderChangeOnlyPatches(data.lines));
+    $effect(() => {
+        for (let i = 0; i < patchHeaderDiffOnly.length; i++) {
+            if (patchHeaderDiffOnly[i] && checkedState[i] === undefined) {
+                checkedState[i] = true;
+            }
         }
-        if (empty) {
-            patchHeaderDiffOnly[index] = true;
-        }
-    }
+    });
 
     let searchQuery: string = $state("");
     let debouncedSearchQuery: string = $state("");
@@ -612,13 +608,7 @@
                         {/if}
                         {#if !collapsedState[index] && lines !== null}
                             <div class="mb border-b border-gray-300 text-sm">
-                                <ConciseDiffView
-                                    rawPatchContent={lines}
-                                    {syntaxHighlighting}
-                                    {syntaxHighlightingTheme}
-                                    {omitPatchHeaderOnlyHunks}
-                                    linesLoaded={(loaded) => linesLoaded(value, loaded)}
-                                />
+                                <ConciseDiffView rawPatchContent={lines} {syntaxHighlighting} {syntaxHighlightingTheme} {omitPatchHeaderOnlyHunks} />
                             </div>
                         {/if}
                     </div>

@@ -569,7 +569,7 @@ export async function makeLines(
     return lines;
 }
 
-function hasNonHeaderChanges(contentLines: string[]) {
+export function hasNonHeaderChanges(contentLines: string[]) {
     for (const line of contentLines) {
         if (lineHasNonHeaderChange(line)) {
             return true;
