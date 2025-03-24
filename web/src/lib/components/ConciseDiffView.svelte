@@ -11,7 +11,14 @@
 
     let { rawPatchContent, syntaxHighlighting = true, syntaxHighlightingTheme = "github-light", omitPatchHeaderOnlyHunks = true }: Props = $props();
 
-    let patchLines: Promise<PatchLine[]> = $derived(makeLines(rawPatchContent, syntaxHighlighting, syntaxHighlightingTheme, omitPatchHeaderOnlyHunks));
+    let patchLines: Promise<PatchLine[]> = $state(makeLines(rawPatchContent, syntaxHighlighting, syntaxHighlightingTheme, omitPatchHeaderOnlyHunks));
+    $effect(() => {
+        const promise = makeLines(rawPatchContent, syntaxHighlighting, syntaxHighlightingTheme, omitPatchHeaderOnlyHunks);
+        promise.then(() => {
+            // Don't replace a potentially completed promise with a pending one, wait until the replacement is ready for smooth transitions
+            patchLines = promise;
+        });
+    });
 </script>
 
 {#await patchLines}
