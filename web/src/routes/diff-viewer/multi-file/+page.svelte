@@ -53,7 +53,17 @@
     let vlist: VList<FileDetails> | undefined = $state();
     let collapsedState: boolean[] = $state([]);
     let checkedState: boolean[] = $state([]);
-    let patchHeaderDiffOnly: boolean[] = $derived(findHeaderChangeOnlyPatches(data.lines));
+
+    let syntaxHighlighting = $state(true);
+    let syntaxHighlightingTheme: BundledTheme = $state("github-light");
+    let omitPatchHeaderOnlyHunks = $state(true);
+
+    let patchHeaderDiffOnly: boolean[] = $derived.by(() => {
+        if (!omitPatchHeaderOnlyHunks) {
+            return [];
+        }
+        return findHeaderChangeOnlyPatches(data.lines);
+    });
     $effect(() => {
         for (let i = 0; i < patchHeaderDiffOnly.length; i++) {
             if (patchHeaderDiffOnly[i] && checkedState[i] === undefined) {
@@ -70,10 +80,6 @@
     let sidebarCollapsed = $state(false);
     let rootNodes = $derived(makeFileTree(data.values));
     let filteredFiles: FileDetails[] = $derived(debouncedSearchQuery ? data.values.filter(filterFile) : data.values);
-
-    let syntaxHighlighting = $state(true);
-    let syntaxHighlightingTheme: BundledTheme = $state("github-light");
-    let omitPatchHeaderOnlyHunks = $state(true);
 
     function filterFile(file: FileDetails): boolean {
         const queryLower = debouncedSearchQuery.toLowerCase();
