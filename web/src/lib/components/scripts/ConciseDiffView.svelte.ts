@@ -493,7 +493,7 @@ class LineProcessor {
                 line.content.push({
                     icon: NoEntry16,
                     caption: "No trailing newline",
-                    classes: lastSegment.classes + " bg-red-600",
+                    classes: lastSegment.classes + " text-red-600",
                 });
             }
         }
