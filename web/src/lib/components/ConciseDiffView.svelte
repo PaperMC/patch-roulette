@@ -1,6 +1,6 @@
 <script lang="ts">
-    import { makeLines, innerPatchLineTypeProps, type PatchLine, patchLineTypeProps } from "$lib/components/scripts/ConciseDiffView.svelte.js";
-    import { type BundledTheme, bundledThemes } from "shiki";
+    import { makeLines, innerPatchLineTypeProps, type PatchLine, patchLineTypeProps, getBaseColors } from "$lib/components/scripts/ConciseDiffView.svelte.js";
+    import { type BundledTheme, bundledThemes, type ThemeRegistration } from "shiki";
 
     interface Props {
         rawPatchContent: string;
@@ -26,26 +26,26 @@
         );
     });
 
-    type BaseColors = { fg: string; bg: string };
-
-    async function getBaseColors(syntaxHighlightingTheme: BundledTheme | undefined, syntaxHighlighting: boolean): Promise<BaseColors> {
-        if (!syntaxHighlightingTheme || !syntaxHighlighting) {
-            return { fg: "", bg: "" };
+    let themeData: Promise<null | { default: ThemeRegistration }> = $derived.by(() => {
+        if (!syntaxHighlightingTheme) {
+            return (async () => null)();
         }
-        const theme = await bundledThemes[syntaxHighlightingTheme]();
-        console.log(theme.default.fg, theme.default.bg, theme);
-        const colors = theme.default.colors;
-        if (!colors) {
-            return { fg: "", bg: "" };
-        }
-        const fgColor = colors["editor.foreground"];
-        const fg = fgColor ? "color: " + fgColor + ";" : "";
-        const bgColor = colors["editor.background"];
-        const bg = bgColor ? "background-color: " + bgColor + ";" : "";
-        return { fg, bg };
-    }
+        return bundledThemes[syntaxHighlightingTheme]();
+    });
 
-    let baseColors: Promise<BaseColors> = $derived(getBaseColors(syntaxHighlightingTheme, syntaxHighlighting));
+    let baseColors: Promise<string> = $state(new Promise<string>(() => []));
+    $effect(() => {
+        const promise = getBaseColors(themeData, syntaxHighlighting);
+        // Same idea as above
+        promise.then(
+            () => {
+                baseColors = promise;
+            },
+            () => {
+                baseColors = promise;
+            },
+        );
+    });
 </script>
 
 {#await Promise.all([baseColors, patchLines])}
@@ -53,10 +53,10 @@
         <div class="h-8 w-8 animate-spin rounded-full border-b-2 border-blue-500"></div>
     </div>
 {:then [baseColors, lines]}
-    {#each lines as line (line)}
-        {@const lineType = patchLineTypeProps[line.type]}
-        {@const innerLineType = innerPatchLineTypeProps[line.innerPatchLineType]}
-        <div style="{baseColors.bg} {baseColors.fg}">
+    <div style={baseColors} class="diff-content bg-[var(--editor-bg)] text-[var(--editor-fg)] selection:bg-[var(--select-bg)]">
+        {#each lines as line (line)}
+            {@const lineType = patchLineTypeProps[line.type]}
+            {@const innerLineType = innerPatchLineTypeProps[line.innerPatchLineType]}
             <div class="h-auto py-1 ps-0.5 {lineType.classes} flex w-full flex-row break-all">
                 {#if lineType.prefix}
                     <span class="inline-block shrink-0 font-mono whitespace-pre-wrap">{lineType.prefix}</span>
@@ -65,15 +65,33 @@
                     <span class="inline w-full font-mono whitespace-pre-wrap {innerLineType.classes}">
                         {#each line.content as segment, index (index)}
                             {@const Icon = segment.icon}
-                            {#if segment.classes}
-                                <span class="inline font-mono whitespace-pre-wrap {segment.classes}" style={segment.style || ""}>{segment.text}</span>
-                            {:else if Icon}
-                                <Icon class="ms-0.5 inline text-red-600" aria-label={segment.caption}></Icon>
-                            {:else}<span class="inline font-mono whitespace-pre-wrap" style={segment.style || ""}>{segment.text}</span>{/if}
+                            {#if Icon}
+                                <Icon class="ms-0.5 inline {segment.classes || ''}" aria-label={segment.caption} />
+                            {:else}<span class="inline font-mono whitespace-pre-wrap {segment.classes || ''}" style={segment.style || ""}>{segment.text}</span
+                                >{/if}
                         {/each}
                     </span>
                 </div>
             </div>
-        </div>
-    {/each}
+        {/each}
+    </div>
 {/await}
+
+<style>
+    .diff-content {
+        /* TODO: find default tailwind vars for fallbacks */
+        --editor-fg: var(--editor-fg-themed, var(--color-black));
+        --select-bg: var(--select-bg-themed, var(--color-blue-300));
+        --editor-bg: var(--editor-bg-themed, var(--color-white));
+
+        --inserted-text-bg: var(--inserted-text-bg-themed, initial);
+        --removed-text-bg: var(--removed-text-bg-themed, initial);
+        --inserted-line-bg: var(--inserted-line-bg-themed, initial);
+        --removed-line-bg: var(--removed-line-bg-themed, initial);
+
+        --color-editor-bg-600: oklch(0.6 var(--editor-background-c) var(--editor-background-h));
+        --color-editor-fg-200: oklch(calc(max(0.9, var(--editor-foreground-l))) var(--editor-foreground-c) var(--editor-foreground-h));
+        --hunk-header-bg: var(--hunk-header-bg-themed, var(--color-editor-bg-600, var(--color-gray-200)));
+        --hunk-header-fg: var(--hunk-header-fg-themed, var(--editor-fg));
+    }
+</style>
