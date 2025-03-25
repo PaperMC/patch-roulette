@@ -104,7 +104,7 @@ class LineProcessor {
         contentLines: string[],
         output: PatchLine[],
         syntaxHighlighting: boolean,
-        syntaxHighlightingTheme: BundledTheme,
+        syntaxHighlightingTheme: BundledTheme | undefined,
     ) {
         this.initialize(fromFile, toFile, contentLines, output, syntaxHighlighting, syntaxHighlightingTheme);
         await this.processInternal();
@@ -116,7 +116,7 @@ class LineProcessor {
         contentLines: string[],
         output: PatchLine[],
         syntaxHighlighting: boolean,
-        syntaxHighlightingTheme: BundledTheme,
+        syntaxHighlightingTheme: BundledTheme | undefined,
     ) {
         this.contentLines = contentLines;
         this.output = output;
@@ -131,7 +131,7 @@ class LineProcessor {
         this.lastShikiStateRemove = null;
         this.lastShikiStateContext = null;
         this.syntaxHighlighting = syntaxHighlighting;
-        this.syntaxHighlightingTheme = syntaxHighlightingTheme;
+        this.syntaxHighlightingTheme = syntaxHighlightingTheme || this.syntaxHighlightingTheme;
     }
 
     private eitherFileName(): string | undefined {
@@ -519,7 +519,7 @@ async function processLines(
     contentLines: string[],
     lines: PatchLine[],
     syntaxHighlighting: boolean,
-    syntaxHighlightingTheme: BundledTheme,
+    syntaxHighlightingTheme: BundledTheme | undefined,
 ) {
     const lineProcessor = lineProcessors.pop() ?? new LineProcessor();
     try {
@@ -532,7 +532,7 @@ async function processLines(
 export async function makeLines(
     patchContent: string,
     syntaxHighlighting: boolean,
-    syntaxHighlightingTheme: BundledTheme,
+    syntaxHighlightingTheme: BundledTheme | undefined,
     omitPatchHeaderOnlyHunks: boolean,
 ): Promise<PatchLine[]> {
     const diffs = parsePatch(patchContent);
