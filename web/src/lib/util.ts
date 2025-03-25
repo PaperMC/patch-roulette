@@ -289,7 +289,7 @@ const languageMap: { [key: string]: BundledLanguage | SpecialLanguage } = {
 export function guessLanguageFromExtension(fileName: string): BundledLanguage | SpecialLanguage {
     const lowerFileName = fileName.toLowerCase();
     const extensionIndex = lowerFileName.lastIndexOf(".");
-    if (extensionIndex === -1) return "plaintext";
+    if (extensionIndex === -1) return "text";
     const extension = lowerFileName.slice(extensionIndex);
-    return languageMap[extension] || "plaintext";
+    return languageMap[extension] || "text";
 }

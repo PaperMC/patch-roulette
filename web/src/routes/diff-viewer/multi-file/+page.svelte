@@ -55,7 +55,7 @@
     let checkedState: boolean[] = $state([]);
 
     let syntaxHighlighting = $state(true);
-    let syntaxHighlightingTheme: BundledTheme = $state("github-light");
+    let syntaxHighlightingTheme: BundledTheme = $state("github-light-default");
     let omitPatchHeaderOnlyHunks = $state(true);
 
     let patchHeaderDiffOnly: boolean[] = $derived.by(() => {
