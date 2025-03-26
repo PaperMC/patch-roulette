@@ -56,10 +56,11 @@
 </script>
 
 {#snippet renderNode({ node })}
-    {@render nodeRenderer({ node, collapsed: collapsedNodes.has(node.backingNode), toggleCollapse: () => toggleCollapse(node.backingNode) })}
-    {#if !collapsedNodes.has(node.backingNode) && node.visibleChildren.length > 0}
+    {@const collapsed = collapsedNodes.has(node.backingNode)}
+    {@render nodeRenderer({ node, collapsed, toggleCollapse: () => toggleCollapse(node.backingNode) })}
+    {#if !collapsed && node.visibleChildren.length > 0}
         {#if childWrapper !== null}
-            {@render childWrapper({ node, collapsed: collapsedNodes.has(node.backingNode), children: renderChildren })}
+            {@render childWrapper({ node, collapsed, children: renderChildren })}
         {:else}
             <div class="ps-4">
                 {@render renderChildren({ node })}
