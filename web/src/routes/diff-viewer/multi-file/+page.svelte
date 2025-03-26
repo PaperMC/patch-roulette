@@ -58,12 +58,7 @@
     let syntaxHighlightingTheme: BundledTheme = $state("github-light-default");
     let omitPatchHeaderOnlyHunks = $state(true);
 
-    let patchHeaderDiffOnly: boolean[] = $derived.by(() => {
-        if (!omitPatchHeaderOnlyHunks) {
-            return [];
-        }
-        return findHeaderChangeOnlyPatches(data.lines);
-    });
+    let patchHeaderDiffOnly: boolean[] = $derived(findHeaderChangeOnlyPatches(data.lines));
     $effect(() => {
         for (let i = 0; i < patchHeaderDiffOnly.length; i++) {
             if (patchHeaderDiffOnly[i] && checkedState[i] === undefined) {
@@ -576,18 +571,20 @@
                                     {value.toFile}
                                 </span>
                             {/if}
-                            {#if !patchHeaderDiffOnly[index] || (image !== null && image !== undefined)}
-                                <span class="rounded-md p-0.5 text-blue-500 hover:bg-gray-100 hover:shadow">
-                                    {#if collapsedState[index]}
-                                        <ChevronRight16 />
-                                    {:else}
-                                        <ChevronDown16 />
-                                    {/if}
-                                </span>
-                            {/if}
-                            {#if patchHeaderDiffOnly[index]}
-                                <span class="ms-2 rounded-sm bg-gray-300 px-1 text-gray-800">Patch-header-only diff</span>
-                            {/if}
+                            <div class="ms-0.5 flex items-center gap-2">
+                                {#if patchHeaderDiffOnly[index]}
+                                    <span class="rounded-sm bg-gray-300 px-1 text-gray-800">Patch-header-only diff</span>
+                                {/if}
+                                {#if !patchHeaderDiffOnly[index] || !omitPatchHeaderOnlyHunks || (image !== null && image !== undefined)}
+                                    <span class="rounded-md p-0.5 text-blue-500 hover:bg-gray-100 hover:shadow">
+                                        {#if collapsedState[index]}
+                                            <ChevronRight16 />
+                                        {:else}
+                                            <ChevronDown16 />
+                                        {/if}
+                                    </span>
+                                {/if}
+                            </div>
                         </div>
                         {#if !collapsedState[index] && image !== null}
                             <div class="mb border-b border-gray-300 text-sm">
@@ -612,7 +609,7 @@
                                 {/if}
                             </div>
                         {/if}
-                        {#if !collapsedState[index] && lines !== null && !patchHeaderDiffOnly[index]}
+                        {#if !collapsedState[index] && lines !== null && (!patchHeaderDiffOnly[index] || !omitPatchHeaderOnlyHunks)}
                             <div class="mb border-b border-gray-300 text-sm">
                                 <ConciseDiffView rawPatchContent={lines} {syntaxHighlighting} {syntaxHighlightingTheme} {omitPatchHeaderOnlyHunks} />
                             </div>
