@@ -72,15 +72,15 @@ export const innerPatchLineTypeProps: Record<InnerPatchLineType, InnerPatchLineT
         // Make sure tailwind emits these props
         // "bg-green-100 bg-green-300 bg-green-400 bg-green-800"
         style: `
-          --fg-override: var(--inner-inserted-line-fg-themed, var(--color-green-800));
-          background-color: var(--inner-inserted-line-bg-themed, var(--color-green-300));`,
+          --fg-override: var(--inner-inserted-line-fg);
+          background-color: var(--inner-inserted-line-bg);`,
     },
     [InnerPatchLineType.REMOVE]: {
         // Make sure tailwind emits these props
         // "bg-red-100 bg-red-300 bg-red-400 bg-red-800"
         style: `
-          --fg-override: var(--inner-removed-line-fg-themed, var(--color-red-800));
-          background-color: var(--inner-removed-line-bg-themed, var(--color-red-300));`,
+          --fg-override: var(--inner-removed-line-fg);
+          background-color: var(--inner-removed-line-bg);`,
     },
     [InnerPatchLineType.NONE]: {
         style: "",
@@ -779,6 +779,10 @@ export async function getBaseColors(themePromise: Promise<null | { default: Them
               --removed-text-bg-themed: var(--color-red-400);
               --inserted-line-bg-themed: var(--color-green-100);
               --removed-line-bg-themed: var(--color-red-100);
+              --inner-inserted-line-bg-themed: var(--color-green-300);
+              --inner-removed-line-bg-themed: var(--color-red-300);
+              --inner-inserted-line-fg-themed: var(--color-green-800);
+              --inner-removed-line-fg-themed: var(--color-red-800);
               `;
     }
     const tokenColors = theme.default.tokenColors || [];
@@ -831,6 +835,10 @@ export async function getBaseColors(themePromise: Promise<null | { default: Them
         style.set("--inserted-line-bg-themed", insertLineBg);
         style.set("--inner-inserted-line-bg-themed", moreChroma(insertLineBg, 0.5));
         style.set("--inserted-text-bg-themed", darken(moreChroma(insertLineBg, 1.25), 0.25));
+
+        // Only use the fg color if we have a bg color -- otherwise it will conflict with the top level diff add/remove lines
+        // Increase chroma to match our adjustments to bg color above
+        style.set("--inner-inserted-line-fg-themed", moreChroma(extractColor(theme.default, { fgTokenScope: "markup.inserted" })));
     } else {
         style.set("--inserted-line-fg-themed", extractColor(theme.default, { fgTokenScope: "markup.inserted" }));
     }
@@ -850,13 +858,13 @@ export async function getBaseColors(themePromise: Promise<null | { default: Them
         style.set("--removed-line-bg-themed", removeLineBg);
         style.set("--inner-removed-line-bg-themed", moreChroma(removeLineBg, 0.5));
         style.set("--removed-text-bg-themed", darken(moreChroma(removeLineBg, 1.25), 0.25));
+
+        // Only use the fg color if we have a bg color -- otherwise it will conflict with the top level diff add/remove lines
+        // Increase chroma to match our adjustments to bg color above
+        style.set("--inner-removed-line-fg-themed", moreChroma(extractColor(theme.default, { fgTokenScope: "markup.deleted" })));
     } else {
         style.set("--removed-line-fg-themed", extractColor(theme.default, { fgTokenScope: "markup.deleted" }));
     }
-
-    // Increase chroma to match our adjustments to bg color above
-    style.set("--inner-inserted-line-fg-themed", moreChroma(extractColor(theme.default, { fgTokenScope: "markup.inserted" })));
-    style.set("--inner-removed-line-fg-themed", moreChroma(extractColor(theme.default, { fgTokenScope: "markup.deleted" })));
 
     // One or both of these is often missing, see ConciseDiffView.svelte <style> for fallback behavior
     style.set("--hunk-header-bg-themed", extractColor(theme.default, { color: "sideBarSectionHeader.background" }));

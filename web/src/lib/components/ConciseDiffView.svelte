@@ -88,6 +88,10 @@
         --removed-text-bg: var(--removed-text-bg-themed, initial);
         --inserted-line-bg: var(--inserted-line-bg-themed, initial);
         --removed-line-bg: var(--removed-line-bg-themed, initial);
+        --inner-inserted-line-bg: var(--inner-inserted-line-bg-themed, initial);
+        --inner-removed-line-bg: var(--inner-removed-line-bg-themed, initial);
+        --inner-inserted-line-fg: var(--inner-inserted-line-fg-themed, initial);
+        --inner-removed-line-fg: var(--inner-removed-line-fg-themed, initial);
 
         --color-editor-bg-600: oklch(0.6 var(--editor-background-c) var(--editor-background-h));
         --color-editor-fg-200: oklch(calc(max(0.9, var(--editor-foreground-l))) var(--editor-foreground-c) var(--editor-foreground-h));
