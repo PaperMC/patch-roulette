@@ -1,6 +1,7 @@
 <script lang="ts">
     import { makeLines, innerPatchLineTypeProps, type PatchLine, patchLineTypeProps, getBaseColors } from "$lib/components/scripts/ConciseDiffView.svelte.js";
     import { type BundledTheme, bundledThemes, type ThemeRegistration } from "shiki";
+    import Spinner from "$lib/components/Spinner.svelte";
 
     interface Props {
         rawPatchContent: string;
@@ -49,9 +50,7 @@
 </script>
 
 {#await Promise.all([baseColors, patchLines])}
-    <div class="flex items-center justify-center bg-gray-300 p-4">
-        <div class="h-8 w-8 animate-spin rounded-full border-b-2 border-blue-500"></div>
-    </div>
+    <div class="flex items-center justify-center bg-gray-300 p-4"><Spinner /></div>
 {:then [baseColors, lines]}
     <div style={baseColors} class="diff-content bg-[var(--editor-bg)] text-[var(--editor-fg)] selection:bg-[var(--select-bg)]">
         {#each lines as line (line)}

@@ -7,6 +7,8 @@ import MoveIcon from "virtual:icons/octicon/file-moved-16";
 import { parsePatch } from "diff";
 import { hasNonHeaderChanges } from "$lib/components/scripts/ConciseDiffView.svelte";
 
+export type AddOrRemove = "add" | "remove";
+
 export type FileDetails = {
     content: string;
     fromFile: string;

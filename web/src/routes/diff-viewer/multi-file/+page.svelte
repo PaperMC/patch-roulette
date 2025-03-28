@@ -18,6 +18,7 @@
     import { onDestroy, onMount } from "svelte";
     import { type FileDetails, findHeaderChangeOnlyPatches, getFileStatusProps } from "$lib/diff-viewer-multi-file.svelte";
     import Tree from "$lib/components/Tree.svelte";
+    import Spinner from "$lib/components/Spinner.svelte";
     import type { TreeNode } from "$lib/components/scripts/Tree.svelte";
     import FileDirectoryOpen from "virtual:icons/octicon/file-directory-open-fill-16";
     import FileDirectory from "virtual:icons/octicon/file-directory-fill-16";
@@ -611,19 +612,15 @@
                                 {#if image.load}
                                     {#if image.fileA !== null && image.fileB !== null}
                                         {#await Promise.all([image.fileA.getValue(), image.fileB.getValue()])}
-                                            <div class="flex items-center justify-center bg-gray-300 p-4">
-                                                <div class="h-8 w-8 animate-spin rounded-full border-b-2 border-blue-500"></div>
-                                            </div>
+                                            <div class="flex items-center justify-center bg-gray-300 p-4"><Spinner /></div>
                                         {:then images}
                                             <ImageDiff fileA={images[0]} fileB={images[1]} />
                                         {/await}
                                     {:else}
                                         {#await (image.fileA || image.fileB).getValue()}
-                                            <div class="flex items-center justify-center bg-gray-300 p-4">
-                                                <div class="h-8 w-8 animate-spin rounded-full border-b-2 border-blue-500"></div>
-                                            </div>
+                                            <div class="flex items-center justify-center bg-gray-300 p-4"><Spinner /></div>
                                         {:then file}
-                                            <AddedOrRemovedImage {file} mode={image.fileA === null ? "added" : "removed"} />
+                                            <AddedOrRemovedImage {file} mode={image.fileA === null ? "add" : "remove"} />
                                         {/await}
                                     {/if}
                                 {:else}

@@ -2,10 +2,11 @@
     import Columns from "virtual:icons/octicon/columns-16";
     import Image from "virtual:icons/octicon/image-16";
     import Grabber from "virtual:icons/octicon/grabber-16";
-    import AddIcon from "virtual:icons/octicon/file-added-16";
-    import RemoveIcon from "virtual:icons/octicon/file-removed-16";
     import type { Component } from "svelte";
     import { Slider } from "bits-ui";
+    import Spinner from "$lib/components/Spinner.svelte";
+    import { getDimensions, type ImageDimensions } from "$lib/image";
+    import AddedOrRemovedImageLabel from "$lib/components/AddedOrRemovedImageLabel.svelte";
 
     interface Props {
         fileA: string;
@@ -15,7 +16,6 @@
     const { fileA, fileB }: Props = $props();
 
     type Mode = "side-by-side" | "slide" | "fade";
-    type ImageDimensions = { width: number; height: number };
     type DimensionData = {
         a: ImageDimensions;
         b: ImageDimensions;
@@ -36,15 +36,6 @@
     let percentDragged: number = $state(50);
     let dragging: boolean = $state(false);
     let fadePercent: number = $state(50);
-
-    async function getDimensions(src: string): Promise<ImageDimensions> {
-        const res = await fetch(src);
-        if (!res.ok) {
-            throw new Error(`Failed to fetch image (${res.status}): ${await res.text()}`);
-        }
-        const { width, height } = await createImageBitmap(await res.blob());
-        return { width, height };
-    }
 
     function getMaxW(img: string, dims: DimensionData): string {
         if (img === "a") {
@@ -134,24 +125,18 @@
     <div class="grid w-full grid-cols-1 gap-4 sm:grid-cols-2">
         <div class="flex flex-col items-center justify-center gap-4">
             <img src={fileA} alt="A" class="png-bg h-auto border-2 border-red-600 shadow-md" style={getMaxW("a", dims)} />
-            <div class="rounded-sm bg-white p-2 text-red-600 shadow-sm">
-                <RemoveIcon />
-            </div>
+            <AddedOrRemovedImageLabel mode="remove" dims={dims.a} />
         </div>
         <div class="flex flex-col items-center justify-center gap-4">
             <img src={fileB} alt="B" class="png-bg h-auto border-2 border-green-600 shadow-md" style={getMaxW("b", dims)} />
-            <div class="rounded-sm bg-white p-2 text-green-600 shadow-sm">
-                <AddIcon />
-            </div>
+            <AddedOrRemovedImageLabel mode="add" dims={dims.b} />
         </div>
     </div>
 {/snippet}
 
 {#snippet slide(dims: DimensionData)}
     <div class="flex flex-row items-center gap-4">
-        <div class="rounded-sm bg-white p-2 text-red-600 shadow-sm">
-            <RemoveIcon />
-        </div>
+        <AddedOrRemovedImageLabel mode="remove" dims={dims.a} />
         <div class="relative grid grid-cols-1 gap-4">
             <img src={fileA} alt="A" class="png-bg h-auto w-full border-2 border-red-600 shadow-md" draggable="false" style={getMaxW("a", dims)} />
             <img
@@ -171,17 +156,13 @@
                 <Grabber />
             </div>
         </div>
-        <div class="rounded-sm bg-white p-2 text-green-600 shadow-sm">
-            <AddIcon />
-        </div>
+        <AddedOrRemovedImageLabel mode="add" dims={dims.b} />
     </div>
 {/snippet}
 
 {#snippet fade(dims: DimensionData)}
     <div class="flex flex-row items-center gap-4">
-        <div class="rounded-sm bg-white p-2 text-red-600 shadow-sm">
-            <RemoveIcon />
-        </div>
+        <AddedOrRemovedImageLabel mode="remove" dims={dims.a} />
         <div class="relative grid grid-cols-1 gap-4">
             <img src={fileA} alt="A" class="png-bg h-auto w-full border-2 border-red-600 shadow-md" draggable="false" style={getMaxW("a", dims)} />
             <img
@@ -193,9 +174,7 @@
                 style="opacity: {fadePercent}%; {getMaxW('b', dims)}"
             />
         </div>
-        <div class="rounded-sm bg-white p-2 text-green-600 shadow-sm">
-            <AddIcon />
-        </div>
+        <AddedOrRemovedImageLabel mode="add" dims={dims.b} />
     </div>
     <div class="mt-4 flex w-full max-w-[280px] items-center">
         <Slider.Root type="single" bind:value={fadePercent} class="relative flex w-full touch-none items-center select-none">
@@ -211,7 +190,7 @@
 <div class="flex flex-col items-center justify-center bg-gray-300 p-4">
     {@render modeSelector()}
     {#await dimensions}
-        <span>Loading...</span>
+        <Spinner />
     {:then dims}
         {#if mode === "side-by-side"}
             {@render sideBySide(dims)}
