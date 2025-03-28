@@ -1,8 +1,4 @@
 <script lang="ts">
-    import Columns from "virtual:icons/octicon/columns-16";
-    import Image from "virtual:icons/octicon/image-16";
-    import Grabber from "virtual:icons/octicon/grabber-16";
-    import type { Component } from "svelte";
     import { Slider } from "bits-ui";
     import Spinner from "$lib/components/Spinner.svelte";
     import { getDimensions, type ImageDimensions } from "$lib/image";
@@ -102,22 +98,22 @@
 </script>
 
 {#snippet modeSelector()}
-    {#snippet modeButton(forMode: Mode, Icon: Component)}
+    {#snippet modeButton(forMode: Mode, iconClass: string)}
         <button
             type="button"
-            class="rounded-sm p-1.5 text-blue-500 hover:bg-gray-100 hover:shadow"
+            class="flex items-center justify-center rounded-sm p-1.5 text-blue-500 hover:bg-gray-100 hover:shadow"
             onclick={() => (mode = forMode)}
             class:bg-gray-200={mode === forMode}
             class:hover:bg-gray-200={mode === forMode}
             class:shadow={mode === forMode}
         >
-            <Icon />
+            <span class="iconify {iconClass} me-1 size-4" aria-hidden="true"></span>{forMode}
         </button>
     {/snippet}
     <div class="mb-4 flex flex-row gap-2 rounded-lg bg-white p-2 shadow-sm">
-        {@render modeButton("slide", Image)}
-        {@render modeButton("side-by-side", Columns)}
-        {@render modeButton("fade", Image)}
+        {@render modeButton("slide", "octicon--image-16")}
+        {@render modeButton("side-by-side", "octicon--columns-16")}
+        {@render modeButton("fade", "octicon--image-16")}
     </div>
 {/snippet}
 
@@ -150,10 +146,10 @@
             <div class="absolute top-1/2 h-full w-0.5 -translate-x-1/2 -translate-y-1/2 bg-gray-600" style="left: calc({percentDragged}%);"></div>
             <div
                 use:dragSlider
-                class="absolute top-1/2 -translate-x-1/2 -translate-y-1/2 cursor-col-resize rounded-sm bg-white px-0.5 py-1 shadow-sm select-none"
+                class="absolute top-1/2 flex -translate-x-1/2 -translate-y-1/2 cursor-col-resize items-center justify-center rounded-sm bg-white px-0.5 py-1 shadow-sm select-none"
                 style="left: calc({percentDragged}%);"
             >
-                <Grabber />
+                <span class="iconify size-4 octicon--grabber-16"></span>
             </div>
         </div>
         <AddedOrRemovedImageLabel mode="add" dims={dims.b} />

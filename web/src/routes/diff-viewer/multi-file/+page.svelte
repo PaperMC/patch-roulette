@@ -20,18 +20,6 @@
     import Tree from "$lib/components/Tree.svelte";
     import Spinner from "$lib/components/Spinner.svelte";
     import type { TreeNode } from "$lib/components/scripts/Tree.svelte";
-    import FileDirectoryOpen from "virtual:icons/octicon/file-directory-open-fill-16";
-    import FileDirectory from "virtual:icons/octicon/file-directory-fill-16";
-    import MarkGithub from "virtual:icons/octicon/mark-github-16";
-    import SidebarCollapse from "virtual:icons/octicon/sidebar-collapse-16";
-    import SidebarExpand from "virtual:icons/octicon/sidebar-expand-16";
-    import ChevronDown16 from "virtual:icons/octicon/chevron-down-16";
-    import ChevronRight16 from "virtual:icons/octicon/chevron-right-16";
-    import ArrowRight24 from "virtual:icons/octicon/arrow-right-24";
-    import Image16 from "virtual:icons/octicon/image-16";
-    import Gear16 from "virtual:icons/octicon/gear-16";
-    import X16 from "virtual:icons/octicon/x-16";
-    import SingleSelect16 from "virtual:icons/octicon/single-select-16";
     import { page } from "$app/state";
     import { replaceState } from "$app/navigation";
     import ImageDiff from "$lib/components/ImageDiff.svelte";
@@ -335,11 +323,11 @@
 </script>
 
 {#snippet sidebarToggle()}
-    <button type="button" class="rounded-md p-1.5 text-blue-500 hover:bg-gray-100 hover:shadow" onclick={() => (sidebarCollapsed = !sidebarCollapsed)}>
+    <button type="button" class="size-8 rounded-md p-1.5 text-blue-500 hover:bg-gray-100 hover:shadow" onclick={() => (sidebarCollapsed = !sidebarCollapsed)}>
         {#if sidebarCollapsed}
-            <SidebarCollapse />
+            <span class="iconify octicon--sidebar-collapse-16"></span>
         {:else}
-            <SidebarExpand />
+            <span class="iconify octicon--sidebar-expand-16"></span>
         {/if}
     </button>
 {/snippet}
@@ -360,8 +348,8 @@
                 <div class="file-drop-target flex flex-col" data-drag-active={dragActive}>
                     <div class="relative mb-4 flex flex-row items-center justify-center">
                         <Dialog.Title class="text-lg font-semibold">Load a diff</Dialog.Title>
-                        <Dialog.Close class="absolute top-0 right-0 rounded-md p-1.5 text-blue-500 hover:bg-gray-100 hover:shadow">
-                            <X16 />
+                        <Dialog.Close class="absolute top-0 right-0 size-8 rounded-md p-1.5 text-blue-500 hover:bg-gray-100 hover:shadow">
+                            <span class="iconify octicon--x-16"></span>
                         </Dialog.Close>
                     </div>
                     <hr class="mb-2 text-gray-300" />
@@ -394,7 +382,7 @@
                             onclick={loginWithGithub}
                             type="button"
                         >
-                            <MarkGithub class="shrink-0" />
+                            <span class="iconify shrink-0 octicon--mark-github-16"></span>
                             {#if getGithubUsername()}{getGithubUsername()}{:else}Login to GitHub{/if}
                         </button>
                         {#if getGithubUsername()}
@@ -410,7 +398,7 @@
                             class="flex w-fit flex-row items-center gap-2 rounded-md bg-blue-500 px-2 py-1 text-white hover:bg-blue-600"
                             onclick={installGithubApp}
                         >
-                            <MarkGithub class="shrink-0" /> Install/configure GitHub App
+                            <span class="iconify shrink-0 octicon--mark-github-16"></span> Install/configure GitHub App
                         </button>
                         <span id="githubAppLabel">Install the GitHub App to view private repos.</span>
                     </div>
@@ -429,15 +417,15 @@
 
 {#snippet settingsPopover()}
     <Popover.Root>
-        <Popover.Trigger class="rounded-md p-1.5 text-blue-500 hover:bg-gray-100 hover:shadow">
-            <Gear16 aria-hidden="true" />
+        <Popover.Trigger class="size-8 rounded-md p-1.5 text-blue-500 hover:bg-gray-100 hover:shadow">
+            <span class="iconify octicon--gear-16" aria-hidden="true"></span>
         </Popover.Trigger>
         <Popover.Portal>
             <Popover.Content aria-label="Options" class="mx-2 flex flex-col rounded-md border border-gray-300 bg-white p-3 shadow-md">
                 <div class="mb-4 flex flex-row justify-between">
-                    <Gear16 aria-hidden="true" class="text-blue-500" />
+                    <span class="iconify text-blue-500 octicon--gear-16" aria-hidden="true"></span>
                     <Popover.Close>
-                        <X16 class="text-blue-500" />
+                        <span class="iconify text-blue-500 octicon--x-16"></span>
                     </Popover.Close>
                 </div>
                 <Label.Root for="syntax-highlight-toggle" id="syntax-highlight-label" class="mb-0.5">Syntax Highlighting</Label.Root>
@@ -448,7 +436,7 @@
                             aria-label="Select syntax highlighting theme"
                             class="flex w-36 cursor-pointer items-center gap-1 rounded-lg border border-gray-300 p-1 text-sm select-none hover:bg-gray-100"
                         >
-                            <SingleSelect16 aria-hidden="true" class="text-base text-blue-500" />
+                            <span aria-hidden="true" class="iconify shrink-0 text-base text-blue-500 octicon--single-select-16"></span>
                             <div aria-label="Current theme" class="grow text-center">{syntaxHighlightingTheme}</div>
                         </Select.Trigger>
                         <Select.Portal>
@@ -506,7 +494,6 @@
         <div class="flex h-full flex-col overflow-y-auto border-t border-gray-300">
             <div class="h-100">
                 {#snippet fileSnippet(value: FileDetails)}
-                    {@const FileIcon = getFileStatusProps(value.status).icon}
                     <div
                         class="flex cursor-pointer items-center justify-between px-2 py-1 hover:bg-gray-100"
                         onclick={(e) => scrollToFileClick(e, getIndex(value))}
@@ -514,10 +501,10 @@
                         role="button"
                         tabindex="0"
                     >
-                        <FileIcon
-                            class="{getFileStatusProps(value.status).classes} me-1 flex shrink-0 items-center justify-center"
+                        <span
+                            class="{getFileStatusProps(value.status).iconClasses} me-1 flex shrink-0 items-center justify-center"
                             aria-label={getFileStatusProps(value.status).title}
-                        />
+                        ></span>
                         <span class="grow overflow-hidden break-all">{value.toFile.substring(value.toFile.lastIndexOf("/") + 1)}</span>
                         <input
                             type="checkbox"
@@ -531,7 +518,7 @@
                 {/snippet}
                 <Tree roots={rootNodes} filter={filterFileNode}>
                     {#snippet nodeRenderer({ node, collapsed, toggleCollapse })}
-                        {@const FolderIcon = collapsed ? FileDirectory : FileDirectoryOpen}
+                        {@const folderIcon = collapsed ? "octicon--file-directory-fill-16" : "octicon--file-directory-open-fill-16"}
                         {#if node.data.type === "file"}
                             {@render fileSnippet(node.data.data as FileDetails)}
                         {:else}
@@ -542,12 +529,12 @@
                                 role="button"
                                 tabindex="0"
                             >
-                                <FolderIcon class="me-1 shrink-0 text-blue-500" />
+                                <span class="me-1 iconify shrink-0 text-blue-500 {folderIcon}"></span>
                                 <span class="grow overflow-hidden break-all">{node.data.data}</span>
                                 {#if collapsed}
-                                    <ChevronRight16 class="shrink-0 text-blue-500" />
+                                    <span class="iconify shrink-0 text-blue-500 octicon--chevron-right-16"></span>
                                 {:else}
-                                    <ChevronDown16 class="shrink-0 text-blue-500" />
+                                    <span class="iconify shrink-0 text-blue-500 octicon--chevron-down-16"></span>
                                 {/if}
                             </div>
                         {/if}
@@ -590,9 +577,9 @@
                             {#if value.fromFile === value.toFile}
                                 <span class="max-w-full overflow-hidden break-all">{value.toFile}</span>
                             {:else}
-                                <span class="max-w-full overflow-hidden break-all">
+                                <span class="flex max-w-full flex-wrap items-center gap-0.5 overflow-hidden break-all">
                                     {value.fromFile}
-                                    <ArrowRight24 class="inline-block text-blue-500" />
+                                    <span class="iconify inline-block text-blue-500 octicon--arrow-right-16"></span>
                                     {value.toFile}
                                 </span>
                             {/if}
@@ -601,11 +588,11 @@
                                     <span class="rounded-sm bg-gray-300 px-1 text-gray-800">Patch-header-only diff</span>
                                 {/if}
                                 {#if !patchHeaderDiffOnly[index] || !omitPatchHeaderOnlyHunks || (image !== null && image !== undefined)}
-                                    <span class="rounded-md p-0.5 text-blue-500 hover:bg-gray-100 hover:shadow">
+                                    <span class="size-6 rounded-md p-0.5 text-blue-500 hover:bg-gray-100 hover:shadow">
                                         {#if collapsedState[index]}
-                                            <ChevronRight16 />
+                                            <span class="iconify shrink-0 text-blue-500 octicon--chevron-right-16"></span>
                                         {:else}
-                                            <ChevronDown16 />
+                                            <span class="iconify shrink-0 text-blue-500 octicon--chevron-down-16"></span>
                                         {/if}
                                     </span>
                                 {/if}
@@ -634,7 +621,7 @@
                                             class=" flex flex-row items-center justify-center gap-1 rounded-md bg-blue-500 px-2 py-1 text-white hover:bg-blue-600"
                                             onclick={() => (image.load = true)}
                                         >
-                                            <Image16 /><span>Load image diff</span>
+                                            <span class="iconify size-4 shrink-0 octicon--image-16"></span><span>Load image diff</span>
                                         </button>
                                     </div>
                                 {/if}

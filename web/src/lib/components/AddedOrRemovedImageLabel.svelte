@@ -1,6 +1,4 @@
 <script lang="ts">
-    import AddIcon from "virtual:icons/octicon/file-added-16";
-    import RemoveIcon from "virtual:icons/octicon/file-removed-16";
     import { type ImageDimensions } from "$lib/image";
     import type { AddOrRemove } from "$lib/diff-viewer-multi-file.svelte";
 
@@ -11,12 +9,11 @@
 
     const { dims, mode }: Props = $props();
 
-    let Icon = $derived(mode === "add" ? AddIcon : RemoveIcon);
-    let iconColor = $derived(mode === "add" ? "text-green-600" : "text-red-600");
+    let iconClasses = $derived(mode === "add" ? "octicon--file-added-16 text-green-600" : "octicon--file-removed-16 text-red-600");
 </script>
 
 <div class="flex flex-col items-center justify-center rounded-sm bg-white p-2 shadow-sm">
-    <Icon class="{iconColor} mb-1" />
+    <span class="iconify size-4 {iconClasses} mb-1"></span>
     {#await dims then { width, height }}
         <span class="text-xs"><span class="font-semibold">W:</span> {width}px</span>
         <span class="text-xs"><span class="font-semibold">H:</span> {height}px</span>

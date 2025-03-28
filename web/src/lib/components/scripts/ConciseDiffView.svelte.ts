@@ -1,6 +1,4 @@
 import { diffArrays, parsePatch } from "diff";
-import { type Component } from "svelte";
-import NoEntry16 from "virtual:icons/octicon/no-entry-16";
 import {
     codeToTokens,
     type BundledLanguage,
@@ -17,7 +15,7 @@ import chroma from "chroma-js";
 
 export type LineSegment = {
     text?: string | null;
-    icon?: Component | null;
+    iconClass?: string | null;
     caption?: string | null;
     classes?: string;
     style?: string;
@@ -499,7 +497,7 @@ class LineProcessor {
                     line.content.pop();
                 }
                 line.content.push({
-                    icon: NoEntry16,
+                    iconClass: "octicon--no-entry-16",
                     caption: "No trailing newline",
                     classes: lastSegment.classes + " text-red-600",
                 });

@@ -52,22 +52,21 @@
 {#await Promise.all([baseColors, patchLines])}
     <div class="flex items-center justify-center bg-gray-300 p-4"><Spinner /></div>
 {:then [baseColors, lines]}
-    <div style={baseColors} class="diff-content bg-[var(--editor-bg)] text-[var(--editor-fg)] selection:bg-[var(--select-bg)]">
-        {#each lines as line (line)}
+    <div style={baseColors} class="diff-content text-patch-line bg-[var(--editor-bg)] font-mono text-[var(--editor-fg)] selection:bg-[var(--select-bg)]">
+        {#each lines as line, index (index)}
             {@const lineType = patchLineTypeProps[line.type]}
             {@const innerLineType = innerPatchLineTypeProps[line.innerPatchLineType]}
-            <div class="h-auto py-1 ps-0.5 {lineType.classes} flex w-full flex-row break-all">
+            <div class="h-auto py-1 ps-0.5 {lineType.classes}  flex w-full flex-row">
                 {#if lineType.prefix}
-                    <span class="inline-block shrink-0 font-mono whitespace-pre-wrap">{lineType.prefix}</span>
+                    <span class="inline-block shrink-0">{lineType.prefix}</span>
                 {/if}
                 <div class="flex grow items-center">
-                    <span class="inline font-mono whitespace-pre-wrap" style={innerLineType.style}>
+                    <span class="inline" style={innerLineType.style}>
                         {#each line.content as segment, index (index)}
-                            {@const Icon = segment.icon}
-                            {#if Icon}
-                                <Icon class="ms-0.5 inline {segment.classes || ''}" aria-label={segment.caption} />
-                            {:else}<span class="inline font-mono whitespace-pre-wrap {segment.classes || ''}" style={segment.style || ""}>{segment.text}</span
-                                >{/if}
+                            {@const iconClass = segment.iconClass}
+                            {#if iconClass}
+                                <span class="ms-0.5 iconify inline-block size-4 {segment.classes || ''} {iconClass}" aria-label={segment.caption}></span>
+                            {:else}<span class="inline {segment.classes || ''}" style={segment.style || ""}>{segment.text}</span>{/if}
                         {/each}
                     </span>
                 </div>
@@ -96,5 +95,9 @@
         --color-editor-fg-200: oklch(calc(max(0.9, var(--editor-foreground-l))) var(--editor-foreground-c) var(--editor-foreground-h));
         --hunk-header-bg: var(--hunk-header-bg-themed, var(--color-editor-bg-600, var(--color-gray-200)));
         --hunk-header-fg: var(--hunk-header-fg-themed, var(--editor-fg));
+
+        word-break: break-all;
+        overflow-wrap: anywhere;
+        white-space: pre-wrap;
     }
 </style>
