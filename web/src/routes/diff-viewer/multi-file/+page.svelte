@@ -336,10 +336,16 @@
             Load another diff
         </Dialog.Trigger>
         <Dialog.Portal>
-            <Dialog.Overlay class="fixed inset-0 z-60" ondragover={handleDragOver} ondrop={handleFileDrop} ondragleavecapture={handleDragLeave} />
             <Dialog.Overlay class="fixed inset-0 z-50 bg-black/50" />
             <Dialog.Content class="fixed top-1/2 left-1/2 z-50 w-full max-w-fit -translate-x-1/2 -translate-y-1/2 rounded-md bg-white p-4 shadow-md">
-                <div class="file-drop-target flex flex-col" data-drag-active={dragActive}>
+                <!-- svelte-ignore a11y_no_static_element_interactions -->
+                <div
+                    class="file-drop-target flex flex-col"
+                    data-drag-active={dragActive}
+                    ondragover={handleDragOver}
+                    ondrop={handleFileDrop}
+                    ondragleavecapture={handleDragLeave}
+                >
                     <div class="relative mb-4 flex flex-row items-center justify-center">
                         <Dialog.Title class="text-lg font-semibold">Load a diff</Dialog.Title>
                         <Dialog.Close
