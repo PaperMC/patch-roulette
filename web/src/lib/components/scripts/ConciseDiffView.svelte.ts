@@ -278,7 +278,16 @@ class LineProcessor {
                 break;
         }
 
-        const result = await codeToTokens(text, opts);
+        let result;
+        try {
+            result = await codeToTokens(text, opts);
+        } catch (err) {
+            this.lastShikiStateContext = null;
+            this.lastShikiStateAdd = null;
+            this.lastShikiStateRemove = null;
+            console.error(`Error tokenizing line '${text}' of file '${this.fromFile}' -> '${this.toFile}'`, err);
+            return null;
+        }
         result.tokens = result.tokens.map(mergeTokens);
 
         switch (state) {
