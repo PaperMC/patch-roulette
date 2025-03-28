@@ -16,16 +16,16 @@
         logoutGithub,
     } from "$lib/github.svelte";
     import { onDestroy, onMount } from "svelte";
-    import { type FileDetails, findHeaderChangeOnlyPatches, getFileStatusProps } from "$lib/diff-viewer-multi-file.svelte";
+    import { type FileDetails, findHeaderChangeOnlyPatches, getFileStatusProps, GlobalOptions } from "$lib/diff-viewer-multi-file.svelte";
     import Tree from "$lib/components/Tree.svelte";
     import Spinner from "$lib/components/Spinner.svelte";
     import type { TreeNode } from "$lib/components/scripts/Tree.svelte";
     import { page } from "$app/state";
-    import { replaceState } from "$app/navigation";
+    import { goto } from "$app/navigation";
     import ImageDiff from "$lib/components/ImageDiff.svelte";
     import type { MemoizedPromise } from "$lib/util.js";
     import { Popover, Label, Select, Dialog } from "bits-ui";
-    import { type BundledTheme, bundledThemes } from "shiki";
+    import { bundledThemes } from "shiki";
     import SimpleSwitch from "$lib/components/SimpleSwitch.svelte";
     import AddedOrRemovedImage from "$lib/components/AddedOrRemovedImage.svelte";
 
@@ -44,9 +44,7 @@
     let collapsedState: boolean[] = $state([]);
     let checkedState: boolean[] = $state([]);
 
-    let syntaxHighlighting = $state(true);
-    let syntaxHighlightingTheme: BundledTheme = $state("github-light-default");
-    let omitPatchHeaderOnlyHunks = $state(true);
+    let globalOptions: GlobalOptions = GlobalOptions.load();
 
     let patchHeaderDiffOnly: boolean[] = $derived(findHeaderChangeOnlyPatches(data.lines));
     $effect(() => {
@@ -221,7 +219,7 @@
         if (success) {
             const newUrl = new URL(page.url);
             newUrl.searchParams.set(GITHUB_URL_PARAM, githubUrl);
-            replaceState(newUrl, page.state);
+            await goto(`?${newUrl.searchParams}`);
             return;
         }
         modalOpen = true;
@@ -428,14 +426,14 @@
                 </div>
                 <Label.Root for="syntax-highlight-toggle" id="syntax-highlight-label" class="mb-0.5">Syntax Highlighting</Label.Root>
                 <div class="flex flex-row items-center gap-1.5">
-                    <SimpleSwitch id="syntax-highlight-toggle" aria-labelledby="syntax-highlight-label" bind:checked={syntaxHighlighting} />
-                    <Select.Root type="single" bind:value={syntaxHighlightingTheme}>
+                    <SimpleSwitch id="syntax-highlight-toggle" aria-labelledby="syntax-highlight-label" bind:checked={globalOptions.syntaxHighlighting} />
+                    <Select.Root type="single" bind:value={globalOptions.syntaxHighlightingTheme}>
                         <Select.Trigger
                             aria-label="Select syntax highlighting theme"
                             class="flex w-36 cursor-pointer items-center gap-1 rounded-lg border border-gray-300 p-1 text-sm select-none hover:bg-gray-100"
                         >
                             <span aria-hidden="true" class="iconify shrink-0 text-base text-blue-500 octicon--single-select-16"></span>
-                            <div aria-label="Current theme" class="grow text-center">{syntaxHighlightingTheme}</div>
+                            <div aria-label="Current theme" class="grow text-center">{globalOptions.syntaxHighlightingTheme}</div>
                         </Select.Trigger>
                         <Select.Portal>
                             <Select.Content class="max-h-64 overflow-y-auto rounded-lg border border-gray-300 bg-white shadow-md">
@@ -455,7 +453,7 @@
                 <Label.Root id="omit-hunks-label" class="mt-2 max-w-64 break-words" for="omit-hunks">
                     Omit hunks containing only second-level patch header line changes
                 </Label.Root>
-                <SimpleSwitch id="omit-hunks" aria-labelledby="omit-hunks-label" bind:checked={omitPatchHeaderOnlyHunks} />
+                <SimpleSwitch id="omit-hunks" aria-labelledby="omit-hunks-label" bind:checked={globalOptions.omitPatchHeaderOnlyHunks} />
             </Popover.Content>
         </Popover.Portal>
     </Popover.Root>
@@ -585,7 +583,7 @@
                                 {#if patchHeaderDiffOnly[index]}
                                     <span class="rounded-sm bg-gray-300 px-1 text-gray-800">Patch-header-only diff</span>
                                 {/if}
-                                {#if !patchHeaderDiffOnly[index] || !omitPatchHeaderOnlyHunks || (image !== null && image !== undefined)}
+                                {#if !patchHeaderDiffOnly[index] || !globalOptions.omitPatchHeaderOnlyHunks || (image !== null && image !== undefined)}
                                     <span class="flex size-6 items-center justify-center rounded-md p-0.5 text-blue-500 hover:bg-gray-100 hover:shadow">
                                         {#if collapsedState[index]}
                                             <span class="iconify size-4 shrink-0 text-blue-500 octicon--chevron-right-16"></span>
@@ -625,9 +623,14 @@
                                 {/if}
                             </div>
                         {/if}
-                        {#if !collapsedState[index] && lines !== null && (!patchHeaderDiffOnly[index] || !omitPatchHeaderOnlyHunks)}
+                        {#if !collapsedState[index] && lines !== null && (!patchHeaderDiffOnly[index] || !globalOptions.omitPatchHeaderOnlyHunks)}
                             <div class="mb border-b border-gray-300 text-sm">
-                                <ConciseDiffView rawPatchContent={lines} {syntaxHighlighting} {syntaxHighlightingTheme} {omitPatchHeaderOnlyHunks} />
+                                <ConciseDiffView
+                                    rawPatchContent={lines}
+                                    syntaxHighlighting={globalOptions.syntaxHighlighting}
+                                    syntaxHighlightingTheme={globalOptions.syntaxHighlightingTheme}
+                                    omitPatchHeaderOnlyHunks={globalOptions.omitPatchHeaderOnlyHunks}
+                                />
                             </div>
                         {/if}
                     </div>

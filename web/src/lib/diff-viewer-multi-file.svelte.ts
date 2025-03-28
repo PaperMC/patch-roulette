@@ -1,6 +1,61 @@
 import type { FileStatus } from "./github.svelte";
 import { parsePatch } from "diff";
 import { hasNonHeaderChanges } from "$lib/components/scripts/ConciseDiffView.svelte";
+import type { BundledTheme } from "shiki";
+import { browser } from "$app/environment";
+
+export class GlobalOptions {
+    syntaxHighlighting = $state(true);
+    syntaxHighlightingTheme: BundledTheme = $state("github-light-default");
+    omitPatchHeaderOnlyHunks = $state(true);
+
+    private constructor() {
+        $effect(() => {
+            this.save();
+        });
+    }
+
+    static load() {
+        if (!browser) {
+            return new GlobalOptions();
+        }
+        const serialized = localStorage.getItem("diff-viewer-global-options");
+        if (serialized === null) {
+            return new GlobalOptions();
+        }
+        return GlobalOptions.deserialize(serialized);
+    }
+
+    private save() {
+        if (!browser) {
+            return;
+        }
+        localStorage.setItem("diff-viewer-global-options", this.serialize());
+    }
+
+    private serialize() {
+        return JSON.stringify({
+            syntaxHighlighting: this.syntaxHighlighting,
+            syntaxHighlightingTheme: this.syntaxHighlightingTheme,
+            omitPatchHeaderOnlyHunks: this.omitPatchHeaderOnlyHunks,
+        });
+    }
+
+    private static deserialize(serialized: string) {
+        const jsonObject = JSON.parse(serialized);
+        const instance = new GlobalOptions();
+        if (jsonObject.syntaxHighlighting !== undefined) {
+            instance.syntaxHighlighting = jsonObject.syntaxHighlighting;
+        }
+        if (jsonObject.syntaxHighlightingTheme !== undefined) {
+            instance.syntaxHighlightingTheme = jsonObject.syntaxHighlightingTheme as BundledTheme;
+        }
+        if (jsonObject.omitPatchHeaderOnlyHunks !== undefined) {
+            instance.omitPatchHeaderOnlyHunks = jsonObject.omitPatchHeaderOnlyHunks;
+        }
+        return instance;
+    }
+}
 
 export type AddOrRemove = "add" | "remove";
 
