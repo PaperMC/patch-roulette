@@ -426,7 +426,7 @@
             <Popover.Content aria-label="Options" class="mx-2 flex flex-col rounded-md border border-gray-300 bg-white p-3 shadow-md">
                 <div class="mb-4 flex flex-row justify-between">
                     <span class="iconify text-blue-500 octicon--gear-16" aria-hidden="true"></span>
-                    <Popover.Close>
+                    <Popover.Close class="size-4">
                         <span class="iconify text-blue-500 octicon--x-16"></span>
                     </Popover.Close>
                 </div>
