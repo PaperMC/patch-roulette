@@ -125,7 +125,7 @@ export function makeFileTree(paths: FileDetails[]): TreeNode<FileTreeNodeData>[]
     return [root];
 }
 
-const imageExtensions: Set<string> = new Set(["jpg", "jpeg", "png", "gif", "webp", "bmp", "svg", "tiff", "ico"]);
+const imageExtensions: Set<string> = new Set(["jpg", "jpeg", "png", "gif", "webp", "bmp", /*"svg",*/ "tiff", "ico"]);
 
 export function isImageFile(fileName: string | null) {
     if (fileName === null) {
@@ -139,19 +139,25 @@ export function isImageFile(fileName: string | null) {
     return imageExtensions.has(extension);
 }
 
-export type MemoizedValue<T> = {
+export type MemoizedPromise<T> = {
     hasValue: () => boolean;
-    getValue: () => T;
+    getValue: () => Promise<T>;
 };
 
-export function memoize<T>(fn: () => T): MemoizedValue<T> {
+export function memoizePromise<T>(fn: () => Promise<T>): MemoizedPromise<T> {
     let value: T | null = null;
+    let pendingValue: Promise<T> | null = null;
     return {
-        hasValue: () => value !== null,
-        getValue: () => {
-            if (value === null) {
-                value = fn();
+        hasValue: () => pendingValue !== null || value !== null,
+        getValue: async () => {
+            if (value !== null) {
+                return value;
             }
+            if (pendingValue !== null) {
+                return pendingValue;
+            }
+            pendingValue = fn();
+            value = await pendingValue;
             return value;
         },
     };

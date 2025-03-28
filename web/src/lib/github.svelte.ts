@@ -179,7 +179,7 @@ export async function fetchGithubCommitDiff(token: string | null, owner: string,
     }
 }
 
-export async function fetchGithubFile(token: string | null, owner: string, repo: string, path: string, ref: string): Promise<string> {
+export async function fetchGithubFile(token: string | null, owner: string, repo: string, path: string, ref: string): Promise<Blob> {
     const opts: RequestInit = {
         headers: {
             Accept: "application/vnd.github.v3.raw",
@@ -188,8 +188,7 @@ export async function fetchGithubFile(token: string | null, owner: string, repo:
     injectOptionalToken(token, opts);
     const response = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${path}?ref=${ref}`, opts);
     if (response.ok) {
-        const blob = await response.blob();
-        return URL.createObjectURL(blob);
+        return await response.blob();
     } else {
         throw Error(`Failed to retrieve file (${response.status}): ${await response.text()}`);
     }

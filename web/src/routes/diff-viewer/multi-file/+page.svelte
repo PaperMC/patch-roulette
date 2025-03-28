@@ -1,6 +1,6 @@
 <script lang="ts">
     import ConciseDiffView from "$lib/components/ConciseDiffView.svelte";
-    import { debounce, type FileTreeNodeData, isImageFile, makeFileTree, memoize, splitMultiFilePatch } from "$lib/util";
+    import { debounce, type FileTreeNodeData, isImageFile, makeFileTree, memoizePromise, splitMultiFilePatch } from "$lib/util";
     import { VList } from "virtua/svelte";
     import {
         fetchGithubCommitDiff,
@@ -34,14 +34,15 @@
     import { page } from "$app/state";
     import { replaceState } from "$app/navigation";
     import ImageDiff from "$lib/components/ImageDiff.svelte";
-    import type { MemoizedValue } from "$lib/util.js";
-    import { Popover, Label, Select } from "bits-ui";
+    import type { MemoizedPromise } from "$lib/util.js";
+    import { Popover, Label, Select, Dialog } from "bits-ui";
     import { type BundledTheme, bundledThemes } from "shiki";
     import SimpleSwitch from "$lib/components/SimpleSwitch.svelte";
+    import AddedOrRemovedImage from "$lib/components/AddedOrRemovedImage.svelte";
 
     type ImageDiffDetails = {
-        fileA: MemoizedValue<Promise<string>>;
-        fileB: MemoizedValue<Promise<string>>;
+        fileA: MemoizedPromise<string> | null;
+        fileB: MemoizedPromise<string> | null;
         load: boolean;
     };
 
@@ -90,15 +91,17 @@
             const image = data.images[i];
             if (image !== null && image !== undefined) {
                 image.load = false;
-                if (image.fileA.hasValue()) {
+                const fileA = image.fileA;
+                if (fileA?.hasValue()) {
                     (async () => {
-                        const a = await image.fileA.getValue();
+                        const a = await fileA.getValue();
                         URL.revokeObjectURL(a);
                     })();
                 }
-                if (image.fileB.hasValue()) {
+                const fileB = image.fileB;
+                if (fileB?.hasValue()) {
                     (async () => {
-                        const b = await image.fileB.getValue();
+                        const b = await fileB.getValue();
                         URL.revokeObjectURL(b);
                     })();
                 }
@@ -124,12 +127,29 @@
 
             if (githubDetails && isImageFile(patch.fromFile) && isImageFile(patch.toFile)) {
                 const githubDetailsCopy = githubDetails;
-                const fileA = memoize(() =>
-                    fetchGithubFile(getGithubToken(), githubDetailsCopy.owner, githubDetailsCopy.repo, patch.fromFile, githubDetailsCopy.base),
-                );
-                const fileB = memoize(() =>
-                    fetchGithubFile(getGithubToken(), githubDetailsCopy.owner, githubDetailsCopy.repo, patch.toFile, githubDetailsCopy.head),
-                );
+
+                let fileA: MemoizedPromise<string> | null;
+                if (patch.status === "added") {
+                    fileA = null;
+                } else {
+                    fileA = memoizePromise(async () =>
+                        URL.createObjectURL(
+                            await fetchGithubFile(getGithubToken(), githubDetailsCopy.owner, githubDetailsCopy.repo, patch.fromFile, githubDetailsCopy.base),
+                        ),
+                    );
+                }
+
+                let fileB: MemoizedPromise<string> | null;
+                if (patch.status === "removed") {
+                    fileB = null;
+                } else {
+                    fileB = memoizePromise(async () =>
+                        URL.createObjectURL(
+                            await fetchGithubFile(getGithubToken(), githubDetailsCopy.owner, githubDetailsCopy.repo, patch.toFile, githubDetailsCopy.head),
+                        ),
+                    );
+                }
+
                 data.images[i] = { fileA, fileB, load: false };
                 continue;
             }
@@ -141,20 +161,17 @@
         data.values.push(...patches);
     }
 
+    let modalOpen = $state(false);
+
     function loadFromFile(patchContent: string) {
         const files = splitMultiFilePatch(patchContent);
         if (files.length === 0) {
             alert("No valid patches found in the file.");
-            modal?.showModal();
+            modalOpen = true;
             return;
         }
         loadPatches(files);
     }
-
-    let modal: HTMLDialogElement | null = $state(null);
-    onMount(() => {
-        modal?.showModal();
-    });
 
     async function handleFileUpload(event: Event) {
         const input = event.target as HTMLInputElement;
@@ -166,7 +183,7 @@
             alert("Only one file can be loaded at a time.");
             return;
         }
-        modal?.close();
+        modalOpen = false;
         loadFromFile(await files[0].text());
         githubDetails = null;
     }
@@ -193,7 +210,7 @@
             alert("Only one file can be dropped at a time.");
             return;
         }
-        modal?.close();
+        modalOpen = false;
         loadFromFile(await files[0].text());
     }
 
@@ -204,11 +221,13 @@
         if (url !== null) {
             githubUrl = url;
             await handleGithubUrl();
+        } else {
+            modalOpen = true;
         }
     });
 
     async function handleGithubUrl() {
-        modal?.close();
+        modalOpen = false;
         const success = await loadFromGithubApi(githubUrl);
         if (success) {
             const newUrl = new URL(page.url);
@@ -216,7 +235,7 @@
             replaceState(newUrl, page.state);
             return;
         }
-        modal?.showModal();
+        modalOpen = true;
     }
 
     // convert commit or PR url to an API url
@@ -324,79 +343,89 @@
     </button>
 {/snippet}
 
-<dialog
-    bind:this={modal}
-    class="file-drop-target fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 rounded-md p-4 backdrop:bg-black/50"
-    ondrop={handleFileDrop}
-    ondragover={handleDragOver}
-    ondragleave={handleDragLeave}
-    data-drag-active={dragActive}
->
-    <div class="flex flex-col">
-        <div class="mb-2 flex flex-row justify-end">
-            <button type="button" class="rounded-md bg-blue-500 px-2 py-1 text-white hover:bg-blue-600 focus-visible:outline-0" onclick={() => modal?.close()}>
-                Close
-            </button>
-        </div>
-        <hr class="mb-2 text-gray-300" />
-
-        <label for="githubUrl">
-            <span>Load from GitHub URL</span>
-            <br />
-            <span class="text-sm text-gray-600">Supports commit, PR, and comparison URLs</span>
-        </label>
-        <div class="mb-4 flex flex-row items-center gap-2">
-            <input
-                id="githubUrl"
-                type="text"
-                class="grow rounded-sm border border-gray-300"
-                bind:value={githubUrl}
-                onkeyup={(event) => {
-                    if (event.key === "Enter") {
-                        handleGithubUrl();
-                    }
-                }}
-                autocomplete="off"
-            />
-            <button type="button" onclick={handleGithubUrl} class="rounded-md bg-blue-500 px-2 py-1 text-white hover:bg-blue-600">Go</button>
-        </div>
-
-        <div class="mb-2 flex flex-row items-center gap-2">
-            <button
-                aria-labelledby="loginToGitHubLabel"
-                class="flex w-fit flex-row items-center justify-between gap-2 rounded-md bg-blue-500 px-2 py-1 text-white hover:bg-blue-600"
-                onclick={loginWithGithub}
-                type="button"
+{#snippet mainDialog()}
+    <Dialog.Root bind:open={modalOpen}>
+        <Dialog.Trigger class="rounded-md bg-blue-500 px-2 py-1 text-white hover:bg-blue-600" onclick={() => (dragActive = false)}>
+            Load another diff
+        </Dialog.Trigger>
+        <Dialog.Portal>
+            <Dialog.Overlay class="fixed inset-0 z-50 bg-black/50" />
+            <Dialog.Content
+                class="fixed top-1/2 left-1/2 z-50 w-full max-w-fit -translate-x-1/2 -translate-y-1/2 rounded-md bg-white p-4 shadow-md"
+                ondrop={handleFileDrop}
+                ondragover={handleDragOver}
+                ondragleave={handleDragLeave}
             >
-                <MarkGithub class="shrink-0" />
-                {#if getGithubUsername()}{getGithubUsername()}{:else}Login to GitHub{/if}
-            </button>
-            {#if getGithubUsername()}
-                <button type="button" class="rounded-md bg-red-400 px-2 py-1 text-white hover:bg-red-500" onclick={logoutGithub}>Logout</button>
-            {:else}
-                <span id="loginToGitHubLabel">Login to GitHub for higher rate limits.</span>
-            {/if}
-        </div>
-        <div class="mb-4 flex flex-row items-center gap-2">
-            <button
-                aria-labelledby="githubAppLabel"
-                type="button"
-                class="flex w-fit flex-row items-center gap-2 rounded-md bg-blue-500 px-2 py-1 text-white hover:bg-blue-600"
-                onclick={installGithubApp}
-            >
-                <MarkGithub class="shrink-0" /> Install/configure GitHub App
-            </button>
-            <span id="githubAppLabel">Install the GitHub App to view private repos.</span>
-        </div>
+                <div class="file-drop-target flex flex-col" data-drag-active={dragActive}>
+                    <div class="relative mb-4 flex flex-row items-center justify-center">
+                        <Dialog.Title class="text-lg font-semibold">Load a diff</Dialog.Title>
+                        <Dialog.Close class="absolute top-0 right-0 rounded-md p-1.5 text-blue-500 hover:bg-gray-100 hover:shadow">
+                            <X16 />
+                        </Dialog.Close>
+                    </div>
+                    <hr class="mb-2 text-gray-300" />
 
-        <div class="w-fit cursor-pointer rounded-md bg-blue-500 px-2 py-1 text-white hover:bg-blue-600">
-            <label for="patchUpload">
-                Load Patch File
-                <input id="patchUpload" type="file" class="hidden" onchange={handleFileUpload} />
-            </label>
-        </div>
-    </div>
-</dialog>
+                    <label for="githubUrl">
+                        <span>Load from GitHub URL</span>
+                        <br />
+                        <span class="text-sm text-gray-600">Supports commit, PR, and comparison URLs</span>
+                    </label>
+                    <div class="mb-4 flex flex-row items-center gap-2">
+                        <input
+                            id="githubUrl"
+                            type="text"
+                            class="grow rounded-md border border-gray-300 px-2 py-1"
+                            bind:value={githubUrl}
+                            onkeyup={(event) => {
+                                if (event.key === "Enter") {
+                                    handleGithubUrl();
+                                }
+                            }}
+                            autocomplete="off"
+                        />
+                        <button type="button" onclick={handleGithubUrl} class="rounded-md bg-blue-500 px-2 py-1 text-white hover:bg-blue-600">Go</button>
+                    </div>
+
+                    <div class="mb-2 flex flex-row items-center gap-2">
+                        <button
+                            aria-labelledby="loginToGitHubLabel"
+                            class="flex w-fit flex-row items-center justify-between gap-2 rounded-md bg-blue-500 px-2 py-1 text-white hover:bg-blue-600"
+                            onclick={loginWithGithub}
+                            type="button"
+                        >
+                            <MarkGithub class="shrink-0" />
+                            {#if getGithubUsername()}{getGithubUsername()}{:else}Login to GitHub{/if}
+                        </button>
+                        {#if getGithubUsername()}
+                            <button type="button" class="rounded-md bg-red-400 px-2 py-1 text-white hover:bg-red-500" onclick={logoutGithub}>Logout</button>
+                        {:else}
+                            <span id="loginToGitHubLabel">Login to GitHub for higher rate limits.</span>
+                        {/if}
+                    </div>
+                    <div class="mb-4 flex flex-row items-center gap-2">
+                        <button
+                            aria-labelledby="githubAppLabel"
+                            type="button"
+                            class="flex w-fit flex-row items-center gap-2 rounded-md bg-blue-500 px-2 py-1 text-white hover:bg-blue-600"
+                            onclick={installGithubApp}
+                        >
+                            <MarkGithub class="shrink-0" /> Install/configure GitHub App
+                        </button>
+                        <span id="githubAppLabel">Install the GitHub App to view private repos.</span>
+                    </div>
+
+                    <div class="w-fit cursor-pointer rounded-md bg-blue-500 px-2 py-1 text-white hover:bg-blue-600">
+                        <label for="patchUpload">
+                            Load Patch File
+                            <input id="patchUpload" type="file" class="hidden" onchange={handleFileUpload} />
+                        </label>
+                    </div>
+                </div>
+            </Dialog.Content>
+        </Dialog.Portal>
+    </Dialog.Root>
+{/snippet}
+
 <div class="relative flex min-h-screen flex-row justify-center">
     <div
         class="absolute top-0 left-0 z-10 h-full w-full flex-col border-e border-gray-300 bg-white md:w-[350px] md:shadow-md lg:static lg:h-auto lg:shadow-none"
@@ -487,16 +516,7 @@
         <div class="mb-2 flex justify-between gap-2">
             <div class="flex flex-row items-center gap-2">
                 {@render sidebarToggle()}
-                <button
-                    type="button"
-                    class="rounded-md bg-blue-500 px-2 py-1 text-white hover:bg-blue-600"
-                    onclick={() => {
-                        dragActive = false;
-                        modal?.showModal();
-                    }}
-                >
-                    Load another diff
-                </button>
+                {@render mainDialog()}
             </div>
             <div class="flex flex-row gap-2">
                 <button type="button" class="rounded-md bg-blue-500 px-2 py-1 text-white hover:bg-blue-600" onclick={expandAll}>Expand All</button>
@@ -515,7 +535,7 @@
                             </div>
                             <Label.Root for="syntax-highlight-toggle" id="syntax-highlight-label" class="mb-0.5">Syntax Highlighting</Label.Root>
                             <div class="flex flex-row items-center gap-1.5">
-                                <SimpleSwitch id="syntax-highlight-toggle" aria-labelledby="syntax-highlight-label" bind:value={syntaxHighlighting} />
+                                <SimpleSwitch id="syntax-highlight-toggle" aria-labelledby="syntax-highlight-label" bind:checked={syntaxHighlighting} />
                                 <Select.Root type="single" bind:value={syntaxHighlightingTheme}>
                                     <Select.Trigger
                                         aria-label="Select syntax highlighting theme"
@@ -542,7 +562,7 @@
                             <Label.Root id="omit-hunks-label" class="mt-2 max-w-64 break-words" for="omit-hunks">
                                 Omit hunks containing only second-level patch header line changes
                             </Label.Root>
-                            <SimpleSwitch id="omit-hunks" aria-labelledby="omit-hunks-label" bind:value={omitPatchHeaderOnlyHunks} />
+                            <SimpleSwitch id="omit-hunks" aria-labelledby="omit-hunks-label" bind:checked={omitPatchHeaderOnlyHunks} />
                         </Popover.Content>
                     </Popover.Portal>
                 </Popover.Root>
@@ -589,13 +609,23 @@
                         {#if !collapsedState[index] && image !== null}
                             <div class="mb border-b border-gray-300 text-sm">
                                 {#if image.load}
-                                    {#await Promise.all([image.fileA.getValue(), image.fileB.getValue()])}
-                                        <div class="flex items-center justify-center bg-gray-300 p-4">
-                                            <div class="h-8 w-8 animate-spin rounded-full border-b-2 border-blue-500"></div>
-                                        </div>
-                                    {:then images}
-                                        <ImageDiff fileA={images[0]} fileB={images[1]} />
-                                    {/await}
+                                    {#if image.fileA !== null && image.fileB !== null}
+                                        {#await Promise.all([image.fileA.getValue(), image.fileB.getValue()])}
+                                            <div class="flex items-center justify-center bg-gray-300 p-4">
+                                                <div class="h-8 w-8 animate-spin rounded-full border-b-2 border-blue-500"></div>
+                                            </div>
+                                        {:then images}
+                                            <ImageDiff fileA={images[0]} fileB={images[1]} />
+                                        {/await}
+                                    {:else}
+                                        {#await (image.fileA || image.fileB).getValue()}
+                                            <div class="flex items-center justify-center bg-gray-300 p-4">
+                                                <div class="h-8 w-8 animate-spin rounded-full border-b-2 border-blue-500"></div>
+                                            </div>
+                                        {:then file}
+                                            <AddedOrRemovedImage {file} mode={image.fileA === null ? "added" : "removed"} />
+                                        {/await}
+                                    {/if}
                                 {:else}
                                     <div class="flex justify-center bg-gray-300 p-4">
                                         <button

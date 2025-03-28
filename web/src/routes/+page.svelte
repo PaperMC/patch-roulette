@@ -158,7 +158,7 @@
                 </div>
                 <div class="flex items-center">
                     <Label.Root id="auto-refresh-label" for="auto-refresh" class="me-2 text-sm text-nowrap text-gray-700">Auto refresh</Label.Root>
-                    <SimpleSwitch bind:value={autoRefresh} aria-labelledby="auto-refresh-label" id="auto-refresh" />
+                    <SimpleSwitch bind:checked={autoRefresh} aria-labelledby="auto-refresh-label" id="auto-refresh" />
                 </div>
             </div>
             {#if currentView === "table"}

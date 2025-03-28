@@ -1,1 +1,5 @@
 @import "tailwindcss";
+
+.png-bg {
+    background: url("/png.gif") right bottom var(--color-gray-300);
+}
