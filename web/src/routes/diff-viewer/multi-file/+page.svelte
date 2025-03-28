@@ -552,7 +552,7 @@
                 {@render sidebarToggle()}
                 {@render mainDialog()}
             </div>
-            <div class="flex flex-row gap-2">
+            <div class="flex flex-row items-center gap-2">
                 <button type="button" class="rounded-md bg-blue-500 px-2 py-1 text-white hover:bg-blue-600" onclick={expandAll}>Expand All</button>
                 <button type="button" class="rounded-md bg-blue-500 px-2 py-1 text-white hover:bg-blue-600" onclick={collapseAll}>Collapse All</button>
                 {@render settingsPopover()}
