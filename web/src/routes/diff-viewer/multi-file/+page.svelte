@@ -427,6 +427,54 @@
     </Dialog.Root>
 {/snippet}
 
+{#snippet settingsPopover()}
+    <Popover.Root>
+        <Popover.Trigger class="rounded-md p-1.5 text-blue-500 hover:bg-gray-100 hover:shadow">
+            <Gear16 aria-hidden="true" />
+        </Popover.Trigger>
+        <Popover.Portal>
+            <Popover.Content aria-label="Options" class="mx-2 flex flex-col rounded-md border border-gray-300 bg-white p-3 shadow-md">
+                <div class="mb-4 flex flex-row justify-between">
+                    <Gear16 aria-hidden="true" class="text-blue-500" />
+                    <Popover.Close>
+                        <X16 class="text-blue-500" />
+                    </Popover.Close>
+                </div>
+                <Label.Root for="syntax-highlight-toggle" id="syntax-highlight-label" class="mb-0.5">Syntax Highlighting</Label.Root>
+                <div class="flex flex-row items-center gap-1.5">
+                    <SimpleSwitch id="syntax-highlight-toggle" aria-labelledby="syntax-highlight-label" bind:checked={syntaxHighlighting} />
+                    <Select.Root type="single" bind:value={syntaxHighlightingTheme}>
+                        <Select.Trigger
+                            aria-label="Select syntax highlighting theme"
+                            class="flex w-36 cursor-pointer items-center gap-1 rounded-lg border border-gray-300 p-1 text-sm select-none hover:bg-gray-100"
+                        >
+                            <SingleSelect16 aria-hidden="true" class="text-base text-blue-500" />
+                            <div aria-label="Current theme" class="grow text-center">{syntaxHighlightingTheme}</div>
+                        </Select.Trigger>
+                        <Select.Portal>
+                            <Select.Content class="max-h-64 overflow-y-auto rounded-lg border border-gray-300 bg-white shadow-md">
+                                {#each Object.keys(bundledThemes) as theme (theme)}
+                                    <Select.Item value={theme} class="data-highlighted:bg-blue-400 data-highlighted:text-white">
+                                        {#snippet children({ selected })}
+                                            <div class="cursor-default px-2 py-1 text-sm" class:bg-blue-500={selected} class:text-white={selected}>
+                                                {theme}
+                                            </div>
+                                        {/snippet}
+                                    </Select.Item>
+                                {/each}
+                            </Select.Content>
+                        </Select.Portal>
+                    </Select.Root>
+                </div>
+                <Label.Root id="omit-hunks-label" class="mt-2 max-w-64 break-words" for="omit-hunks">
+                    Omit hunks containing only second-level patch header line changes
+                </Label.Root>
+                <SimpleSwitch id="omit-hunks" aria-labelledby="omit-hunks-label" bind:checked={omitPatchHeaderOnlyHunks} />
+            </Popover.Content>
+        </Popover.Portal>
+    </Popover.Root>
+{/snippet}
+
 <div class="relative flex min-h-screen flex-row justify-center">
     <div
         class="absolute top-0 left-0 z-10 h-full w-full flex-col border-e border-gray-300 bg-white md:w-[350px] md:shadow-md lg:static lg:h-auto lg:shadow-none"
@@ -522,51 +570,7 @@
             <div class="flex flex-row gap-2">
                 <button type="button" class="rounded-md bg-blue-500 px-2 py-1 text-white hover:bg-blue-600" onclick={expandAll}>Expand All</button>
                 <button type="button" class="rounded-md bg-blue-500 px-2 py-1 text-white hover:bg-blue-600" onclick={collapseAll}>Collapse All</button>
-                <Popover.Root>
-                    <Popover.Trigger class="rounded-md p-1.5 text-blue-500 hover:bg-gray-100 hover:shadow">
-                        <Gear16 aria-hidden="true" />
-                    </Popover.Trigger>
-                    <Popover.Portal>
-                        <Popover.Content aria-label="Options" class="mx-2 flex flex-col rounded-md border border-gray-300 bg-white p-3 shadow-md">
-                            <div class="mb-4 flex flex-row justify-between">
-                                <Gear16 aria-hidden="true" class="text-blue-500" />
-                                <Popover.Close>
-                                    <X16 class="text-blue-500" />
-                                </Popover.Close>
-                            </div>
-                            <Label.Root for="syntax-highlight-toggle" id="syntax-highlight-label" class="mb-0.5">Syntax Highlighting</Label.Root>
-                            <div class="flex flex-row items-center gap-1.5">
-                                <SimpleSwitch id="syntax-highlight-toggle" aria-labelledby="syntax-highlight-label" bind:checked={syntaxHighlighting} />
-                                <Select.Root type="single" bind:value={syntaxHighlightingTheme}>
-                                    <Select.Trigger
-                                        aria-label="Select syntax highlighting theme"
-                                        class="flex w-36 cursor-pointer items-center gap-1 rounded-lg border border-gray-300 p-1 text-sm select-none hover:bg-gray-100"
-                                    >
-                                        <SingleSelect16 aria-hidden="true" class="text-base text-blue-500" />
-                                        <div aria-label="Current theme" class="grow text-center">{syntaxHighlightingTheme}</div>
-                                    </Select.Trigger>
-                                    <Select.Portal>
-                                        <Select.Content class="max-h-64 overflow-y-auto rounded-lg border border-gray-300 bg-white shadow-md">
-                                            {#each Object.keys(bundledThemes) as theme (theme)}
-                                                <Select.Item value={theme} class="data-highlighted:bg-blue-400 data-highlighted:text-white">
-                                                    {#snippet children({ selected })}
-                                                        <div class="cursor-default px-2 py-1 text-sm" class:bg-blue-500={selected} class:text-white={selected}>
-                                                            {theme}
-                                                        </div>
-                                                    {/snippet}
-                                                </Select.Item>
-                                            {/each}
-                                        </Select.Content>
-                                    </Select.Portal>
-                                </Select.Root>
-                            </div>
-                            <Label.Root id="omit-hunks-label" class="mt-2 max-w-64 break-words" for="omit-hunks">
-                                Omit hunks containing only second-level patch header line changes
-                            </Label.Root>
-                            <SimpleSwitch id="omit-hunks" aria-labelledby="omit-hunks-label" bind:checked={omitPatchHeaderOnlyHunks} />
-                        </Popover.Content>
-                    </Popover.Portal>
-                </Popover.Root>
+                {@render settingsPopover()}
             </div>
         </div>
         <div class="flex flex-1 flex-col border border-gray-300">
