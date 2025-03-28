@@ -1,12 +1,12 @@
 import type { FileStatus } from "./github.svelte";
 import { parsePatch } from "diff";
-import { hasNonHeaderChanges } from "$lib/components/scripts/ConciseDiffView.svelte";
+import { DEFAULT_THEME, hasNonHeaderChanges } from "$lib/components/scripts/ConciseDiffView.svelte";
 import type { BundledTheme } from "shiki";
 import { browser } from "$app/environment";
 
 export class GlobalOptions {
     syntaxHighlighting = $state(true);
-    syntaxHighlightingTheme: BundledTheme = $state("github-light-default");
+    syntaxHighlightingTheme: BundledTheme = $state(DEFAULT_THEME);
     omitPatchHeaderOnlyHunks = $state(true);
 
     private constructor() {
@@ -34,11 +34,15 @@ export class GlobalOptions {
     }
 
     private serialize() {
-        return JSON.stringify({
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const cereal: any = {
             syntaxHighlighting: this.syntaxHighlighting,
-            syntaxHighlightingTheme: this.syntaxHighlightingTheme,
             omitPatchHeaderOnlyHunks: this.omitPatchHeaderOnlyHunks,
-        });
+        };
+        if (this.syntaxHighlightingTheme !== DEFAULT_THEME) {
+            cereal.syntaxHighlightingTheme = this.syntaxHighlightingTheme;
+        }
+        return JSON.stringify(cereal);
     }
 
     private static deserialize(serialized: string) {
