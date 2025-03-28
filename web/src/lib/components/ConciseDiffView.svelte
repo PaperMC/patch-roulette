@@ -56,7 +56,7 @@
         {#each lines as line, index (index)}
             {@const lineType = patchLineTypeProps[line.type]}
             {@const innerLineType = innerPatchLineTypeProps[line.innerPatchLineType]}
-            <div class="h-auto py-1 ps-0.5 {lineType.classes}  flex w-full flex-row">
+            <div class="flex h-auto w-full flex-row py-1 ps-0.5 {lineType.classes}">
                 {#if lineType.prefix}
                     <span class="inline-block shrink-0">{lineType.prefix}</span>
                 {/if}

@@ -508,7 +508,7 @@
                         <span class="grow overflow-hidden break-all">{value.toFile.substring(value.toFile.lastIndexOf("/") + 1)}</span>
                         <input
                             type="checkbox"
-                            class="ms-1 h-[1.2em] w-[1.2em] shrink-0 rounded-sm border border-gray-300"
+                            class="ms-1 size-4 shrink-0 rounded-sm border border-gray-300"
                             autocomplete="off"
                             aria-label="File reviewed"
                             onchange={() => toggleChecked(getIndex(value))}
@@ -588,11 +588,11 @@
                                     <span class="rounded-sm bg-gray-300 px-1 text-gray-800">Patch-header-only diff</span>
                                 {/if}
                                 {#if !patchHeaderDiffOnly[index] || !omitPatchHeaderOnlyHunks || (image !== null && image !== undefined)}
-                                    <span class="size-6 rounded-md p-0.5 text-blue-500 hover:bg-gray-100 hover:shadow">
+                                    <span class="flex size-6 items-center justify-center rounded-md p-0.5 text-blue-500 hover:bg-gray-100 hover:shadow">
                                         {#if collapsedState[index]}
-                                            <span class="iconify shrink-0 text-blue-500 octicon--chevron-right-16"></span>
+                                            <span class="iconify size-4 shrink-0 text-blue-500 octicon--chevron-right-16"></span>
                                         {:else}
-                                            <span class="iconify shrink-0 text-blue-500 octicon--chevron-down-16"></span>
+                                            <span class="iconify size-4 shrink-0 text-blue-500 octicon--chevron-down-16"></span>
                                         {/if}
                                     </span>
                                 {/if}
