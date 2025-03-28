@@ -348,7 +348,9 @@
                 <div class="file-drop-target flex flex-col" data-drag-active={dragActive}>
                     <div class="relative mb-4 flex flex-row items-center justify-center">
                         <Dialog.Title class="text-lg font-semibold">Load a diff</Dialog.Title>
-                        <Dialog.Close class="absolute top-0 right-0 size-8 rounded-md p-1.5 text-blue-500 hover:bg-gray-100 hover:shadow">
+                        <Dialog.Close
+                            class="absolute top-0 right-0 flex size-8 items-center justify-center rounded-md text-blue-500 hover:bg-gray-100 hover:shadow"
+                        >
                             <span class="iconify octicon--x-16"></span>
                         </Dialog.Close>
                     </div>
