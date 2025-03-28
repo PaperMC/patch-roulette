@@ -221,7 +221,7 @@
 
     // convert commit or PR url to an API url
     async function loadFromGithubApi(url: string): Promise<boolean> {
-        const regex = /^https:\/\/github\.com\/([^/]+)\/([^/]+)\/(commit|pull|compare)\/([^/]+)$/;
+        const regex = /^https:\/\/github\.com\/([^/]+)\/([^/]+)\/(commit|pull|compare)\/([^/]+)\/?$/;
         const match = url.match(regex);
 
         if (!match) {
