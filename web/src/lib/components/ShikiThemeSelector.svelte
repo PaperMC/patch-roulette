@@ -1,6 +1,6 @@
 <script lang="ts">
     import { type BundledTheme, bundledThemes } from "shiki";
-    import { Label, Select } from "bits-ui";
+    import { Label, Select, useId } from "bits-ui";
     import { capitalizeFirstLetter, resizeObserver } from "$lib/util";
 
     let {
@@ -15,20 +15,23 @@
     let triggerLabelContainerW: number = $state(0);
     let triggerLabelW: number = $state(0);
     let scrollDistance: number = $derived(triggerLabelW - triggerLabelContainerW);
+    let labelId = useId();
+    let triggerId = useId();
 </script>
 
 <div {...restProps}>
-    <Label.Root class="text-sm">{capitalizeFirstLetter(mode)} mode theme</Label.Root>
+    <Label.Root id={labelId} for={triggerId} class="text-sm">{capitalizeFirstLetter(mode)} theme</Label.Root>
     <Select.Root type="single" bind:value>
         <Select.Trigger
-            aria-label="Select {mode} mode syntax highlighting theme"
+            aria-labelledby={labelId}
+            id={triggerId}
             class="flex w-44 cursor-pointer items-center gap-1 rounded-lg border border-gray-300 px-2 py-1 text-sm  select-none hover:bg-gray-100 dark:border-gray-700 dark:hover:bg-gray-800"
         >
             <span aria-hidden="true" class="iconify shrink-0 text-base text-blue-500 octicon--single-select-16"></span>
             <div bind:clientWidth={triggerLabelContainerW} class="flex grow overflow-hidden" class:reveal-right={scrollDistance !== 0}>
                 <div
                     use:resizeObserver={(e) => (triggerLabelW = e[0].target.scrollWidth)}
-                    aria-label="Current {mode} mode theme"
+                    aria-label="Current {mode} syntax highlighting theme"
                     class="scrolling-text grow text-center text-nowrap"
                     style="--scroll-distance: -{scrollDistance}px;"
                 >
