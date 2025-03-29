@@ -30,11 +30,11 @@ export class GlobalOptions {
             };
         });
 
-        const loadNewOptions = this.deserialize;
+        const opts = this;
         onMount(() => {
             function storageChanged(event: StorageEvent) {
                 if (event.storageArea === localStorage && event.key === optionsKey && event.newValue) {
-                    loadNewOptions(event.newValue);
+                    opts.deserialize(event.newValue);
                 }
             }
 
