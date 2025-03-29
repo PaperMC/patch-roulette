@@ -788,10 +788,13 @@ export async function getBaseColors(themePromise: Promise<null | { default: Them
         let styles = "";
         if (getEffectiveGlobalTheme() === "dark") {
             // Make sure tailwind emits these props
-            // "text-green-600 text-red-600 text-green-700 text-red-700 text-green-800 text-red-800"
+            // "text-green-600 text-red-600 text-green-700 text-red-700 text-green-800 text-red-800 text-blue-800"
             styles += `
               --editor-bg-themed: var(--color-gray-950);
               --editor-fg-themed: var(--color-white);
+              --hunk-header-bg-themed: var(--color-gray-800);
+              --select-bg-themed: var(--color-blue-800);
+
               --inserted-text-bg-themed: var(--color-green-700);
               --removed-text-bg-themed: var(--color-red-700);
               --inserted-line-bg-themed: var(--color-green-800);
@@ -800,13 +803,9 @@ export async function getBaseColors(themePromise: Promise<null | { default: Them
               --inner-removed-line-bg-themed: var(--color-red-600);
               --inner-inserted-line-fg-themed: var(--color-green-300);
               --inner-removed-line-fg-themed: var(--color-red-300);
-              
-              --hunk-header-bg-themed: var(--color-gray-800);
               `;
         } else {
             styles += `
-              --editor-bg-themed: var(--color-white);
-              --editor-fg-themed: var(--color-black);
               --inserted-text-bg-themed: var(--color-green-400);
               --removed-text-bg-themed: var(--color-red-400);
               --inserted-line-bg-themed: var(--color-green-100);

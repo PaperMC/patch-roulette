@@ -77,7 +77,7 @@
 
 <style>
     .diff-content {
-        /* TODO: find default tailwind vars for fallbacks */
+        /* TODO: find default tailwind vars for fallbacks, remove dark mode overrides */
         --editor-fg: var(--editor-fg-themed, var(--color-black));
         --select-bg: var(--select-bg-themed, var(--color-blue-300));
         --editor-bg: var(--editor-bg-themed, var(--color-white));
