@@ -1,7 +1,7 @@
 <script lang="ts">
     import { type BundledTheme, bundledThemes } from "shiki";
     import { Label, Select } from "bits-ui";
-    import { capitalizeFirstLetter } from "$lib/util";
+    import { capitalizeFirstLetter, resizeObserver } from "$lib/util";
 
     let {
         value = $bindable<BundledTheme>(),
@@ -14,17 +14,6 @@
 
     let triggerLabelContainerW: number = $state(0);
     let triggerLabelW: number = $state(0);
-    function observeScrollW(e: HTMLDivElement) {
-        const observer = new ResizeObserver(() => {
-            triggerLabelW = e.scrollWidth;
-        });
-        observer.observe(e);
-        return {
-            destroy() {
-                observer.disconnect();
-            },
-        };
-    }
     let scrollDistance: number = $derived(triggerLabelW - triggerLabelContainerW);
 </script>
 
@@ -38,7 +27,7 @@
             <span aria-hidden="true" class="iconify shrink-0 text-base text-blue-500 octicon--single-select-16"></span>
             <div bind:clientWidth={triggerLabelContainerW} class="flex grow overflow-hidden" class:reveal-right={scrollDistance !== 0}>
                 <div
-                    use:observeScrollW
+                    use:resizeObserver={(e) => (triggerLabelW = e[0].target.scrollWidth)}
                     aria-label="Current {mode} mode theme"
                     class="scrolling-text grow text-center text-nowrap"
                     style="--scroll-distance: -{scrollDistance}px;"

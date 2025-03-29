@@ -4,6 +4,7 @@ import type { FileStatus } from "./github.svelte";
 import type { TreeNode } from "$lib/components/scripts/Tree.svelte";
 import type { BundledLanguage, SpecialLanguage } from "shiki";
 import { onMount } from "svelte";
+import type { Action } from "svelte/action";
 
 export function debounce<T extends (...args: any[]) => any>(fn: T, delay: number): (...args: Parameters<T>) => void {
     let timeout: ReturnType<typeof setTimeout> | null = null;
@@ -322,3 +323,13 @@ export function watchLocalStorage(key: string, callback: (newValue: string | nul
         };
     });
 }
+
+export const resizeObserver: Action<HTMLElement, ResizeObserverCallback> = (node, callback) => {
+    const observer = new ResizeObserver(callback);
+    observer.observe(node);
+    return {
+        destroy() {
+            observer.disconnect();
+        },
+    };
+};
