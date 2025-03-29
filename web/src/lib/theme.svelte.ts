@@ -3,7 +3,7 @@ import { watchLocalStorage } from "$lib/util";
 
 export type Theme = "dark" | "light" | "auto";
 
-// Used indirectly in root layout
+// Used indirectly in app.html
 const themeKey = "theme";
 
 function initialTheme() {
