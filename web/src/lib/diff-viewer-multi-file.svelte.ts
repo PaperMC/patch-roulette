@@ -4,10 +4,13 @@ import { DEFAULT_THEME_DARK, DEFAULT_THEME_LIGHT, hasNonHeaderChanges } from "$l
 import type { BundledTheme } from "shiki";
 import { browser } from "$app/environment";
 import { MediaQuery } from "svelte/reactivity";
+import { onMount } from "svelte";
 
 export type Theme = "dark" | "light" | "auto";
 
 const prefersDark = new MediaQuery("prefers-color-scheme: dark");
+
+const optionsKey = "diff-viewer-global-options";
 
 export class GlobalOptions {
     syntaxHighlighting = $state(true);
@@ -24,6 +27,22 @@ export class GlobalOptions {
             document.documentElement.setAttribute("data-theme", this.theme);
             return () => {
                 document.documentElement.removeAttribute("data-theme");
+            };
+        });
+
+        const loadNewOptions = this.deserialize;
+        onMount(() => {
+            function storageChanged(event: StorageEvent) {
+                if (event.storageArea === localStorage && event.key === optionsKey && event.newValue) {
+                    loadNewOptions(event.newValue);
+                }
+            }
+
+            window.addEventListener("storage", storageChanged);
+            return {
+                destroy() {
+                    window.removeEventListener("storage", storageChanged);
+                },
             };
         });
     }
@@ -44,21 +63,22 @@ export class GlobalOptions {
     }
 
     static load() {
+        const opts = new GlobalOptions();
         if (!browser) {
-            return new GlobalOptions();
+            return opts;
         }
-        const serialized = localStorage.getItem("diff-viewer-global-options");
-        if (serialized === null) {
-            return new GlobalOptions();
+        const serialized = localStorage.getItem(optionsKey);
+        if (serialized !== null) {
+            opts.deserialize(serialized);
         }
-        return GlobalOptions.deserialize(serialized);
+        return opts;
     }
 
     private save() {
         if (!browser) {
             return;
         }
-        localStorage.setItem("diff-viewer-global-options", this.serialize());
+        localStorage.setItem(optionsKey, this.serialize());
     }
 
     private serialize() {
@@ -77,25 +97,27 @@ export class GlobalOptions {
         return JSON.stringify(cereal);
     }
 
-    private static deserialize(serialized: string) {
+    private deserialize(serialized: string) {
         const jsonObject = JSON.parse(serialized);
-        const instance = new GlobalOptions();
         if (jsonObject.syntaxHighlighting !== undefined) {
-            instance.syntaxHighlighting = jsonObject.syntaxHighlighting;
+            this.syntaxHighlighting = jsonObject.syntaxHighlighting;
         }
         if (jsonObject.syntaxHighlightingThemeLight !== undefined) {
-            instance.syntaxHighlightingThemeLight = jsonObject.syntaxHighlightingThemeLight as BundledTheme;
+            this.syntaxHighlightingThemeLight = jsonObject.syntaxHighlightingThemeLight as BundledTheme;
+        } else {
+            this.syntaxHighlightingThemeLight = DEFAULT_THEME_LIGHT;
         }
         if (jsonObject.syntaxHighlightingThemeDark !== undefined) {
-            instance.syntaxHighlightingThemeDark = jsonObject.syntaxHighlightingThemeDark as BundledTheme;
+            this.syntaxHighlightingThemeDark = jsonObject.syntaxHighlightingThemeDark as BundledTheme;
+        } else {
+            this.syntaxHighlightingThemeDark = DEFAULT_THEME_DARK;
         }
         if (jsonObject.omitPatchHeaderOnlyHunks !== undefined) {
-            instance.omitPatchHeaderOnlyHunks = jsonObject.omitPatchHeaderOnlyHunks;
+            this.omitPatchHeaderOnlyHunks = jsonObject.omitPatchHeaderOnlyHunks;
         }
         if (jsonObject.theme !== undefined) {
-            instance.theme = jsonObject.theme;
+            this.theme = jsonObject.theme;
         }
-        return instance;
     }
 }
 
