@@ -54,7 +54,7 @@
 
 <style>
     .reveal-right {
-        mask-image: linear-gradient(to right, black 0%, black 90%, transparent 100%);
+        mask-image: linear-gradient(to right, var(--color-gray-950) 0%, var(--color-gray-950) 90%, transparent 100%);
     }
     .reveal-right:hover {
         mask-image: initial;
