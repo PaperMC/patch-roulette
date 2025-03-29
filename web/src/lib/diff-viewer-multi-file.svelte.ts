@@ -30,6 +30,7 @@ export class GlobalOptions {
             };
         });
 
+        // eslint-disable-next-line @typescript-eslint/no-this-alias
         const opts = this;
         onMount(() => {
             function storageChanged(event: StorageEvent) {
