@@ -24,10 +24,10 @@
     import { goto } from "$app/navigation";
     import ImageDiff from "$lib/components/ImageDiff.svelte";
     import type { MemoizedPromise } from "$lib/util.js";
-    import { Popover, Label, Select, Dialog } from "bits-ui";
-    import { bundledThemes } from "shiki";
+    import { Popover, Label, Dialog, Separator, RadioGroup } from "bits-ui";
     import SimpleSwitch from "$lib/components/SimpleSwitch.svelte";
     import AddedOrRemovedImage from "$lib/components/AddedOrRemovedImage.svelte";
+    import ShikiThemeSelector from "$lib/components/ShikiThemeSelector.svelte";
 
     type ImageDiffDetails = {
         fileA: MemoizedPromise<string> | null;
@@ -321,7 +321,11 @@
 </script>
 
 {#snippet sidebarToggle()}
-    <button type="button" class="size-8 rounded-md p-1.5 text-blue-500 hover:bg-gray-100 hover:shadow" onclick={() => (sidebarCollapsed = !sidebarCollapsed)}>
+    <button
+        type="button"
+        class="size-8 rounded-md p-1.5 text-blue-500 hover:bg-gray-100 hover:shadow dark:hover:bg-gray-800"
+        onclick={() => (sidebarCollapsed = !sidebarCollapsed)}
+    >
         {#if sidebarCollapsed}
             <span class="iconify octicon--sidebar-collapse-16"></span>
         {:else}
@@ -336,8 +340,10 @@
             Load another diff
         </Dialog.Trigger>
         <Dialog.Portal>
-            <Dialog.Overlay class="fixed inset-0 z-50 bg-black/50" />
-            <Dialog.Content class="fixed top-1/2 left-1/2 z-50 w-full max-w-fit -translate-x-1/2 -translate-y-1/2 rounded-md bg-white p-4 shadow-md">
+            <Dialog.Overlay class="fixed inset-0 z-50 bg-black/50 dark:bg-white/20" />
+            <Dialog.Content
+                class="fixed top-1/2 left-1/2 z-50 w-full max-w-fit -translate-x-1/2 -translate-y-1/2 rounded-md bg-white p-4 shadow-md dark:bg-gray-950"
+            >
                 <!-- svelte-ignore a11y_no_static_element_interactions -->
                 <div
                     class="file-drop-target flex flex-col"
@@ -349,12 +355,12 @@
                     <div class="relative mb-4 flex flex-row items-center justify-center">
                         <Dialog.Title class="text-lg font-semibold">Load a diff</Dialog.Title>
                         <Dialog.Close
-                            class="absolute top-0 right-0 flex size-8 items-center justify-center rounded-md text-blue-500 hover:bg-gray-100 hover:shadow"
+                            class="absolute top-0 right-0 flex size-8 items-center justify-center rounded-md text-blue-500 hover:bg-gray-100 hover:shadow dark:hover:bg-gray-800"
                         >
                             <span class="iconify octicon--x-16"></span>
                         </Dialog.Close>
                     </div>
-                    <hr class="mb-2 text-gray-300" />
+                    <Separator.Root class="mb-2 h-[1px] w-full bg-gray-300 dark:bg-gray-700" />
 
                     <label for="githubUrl">
                         <span>Load from GitHub URL</span>
@@ -365,7 +371,7 @@
                         <input
                             id="githubUrl"
                             type="text"
-                            class="grow rounded-md border border-gray-300 px-2 py-1"
+                            class="grow rounded-md border border-gray-300 px-2 py-1 dark:border-gray-700"
                             bind:value={githubUrl}
                             onkeyup={(event) => {
                                 if (event.key === "Enter") {
@@ -419,44 +425,52 @@
 
 {#snippet settingsPopover()}
     <Popover.Root>
-        <Popover.Trigger class="size-8 rounded-md p-1.5 text-blue-500 hover:bg-gray-100 hover:shadow">
+        <Popover.Trigger class="size-8 rounded-md p-1.5 text-blue-500 hover:bg-gray-100 hover:shadow dark:hover:bg-gray-800">
             <span class="iconify octicon--gear-16" aria-hidden="true"></span>
         </Popover.Trigger>
         <Popover.Portal>
-            <Popover.Content aria-label="Options" class="mx-2 flex flex-col rounded-md border border-gray-300 bg-white p-3 shadow-md">
+            <Popover.Content
+                aria-label="Options"
+                class="mx-2 flex flex-col rounded-md border border-gray-300 bg-white p-3 shadow-md dark:border-gray-700 dark:bg-gray-950"
+            >
                 <div class="mb-4 flex flex-row justify-between">
                     <span class="iconify text-blue-500 octicon--gear-16" aria-hidden="true"></span>
                     <Popover.Close class="size-4">
                         <span class="iconify text-blue-500 octicon--x-16"></span>
                     </Popover.Close>
                 </div>
-                <Label.Root for="syntax-highlight-toggle" id="syntax-highlight-label" class="mb-0.5">Syntax Highlighting</Label.Root>
-                <div class="flex flex-row items-center gap-1.5">
-                    <SimpleSwitch id="syntax-highlight-toggle" aria-labelledby="syntax-highlight-label" bind:checked={globalOptions.syntaxHighlighting} />
-                    <Select.Root type="single" bind:value={globalOptions.syntaxHighlightingTheme}>
-                        <Select.Trigger
-                            aria-label="Select syntax highlighting theme"
-                            class="flex w-36 cursor-pointer items-center gap-1 rounded-lg border border-gray-300 p-1 text-sm select-none hover:bg-gray-100"
-                        >
-                            <span aria-hidden="true" class="iconify shrink-0 text-base text-blue-500 octicon--single-select-16"></span>
-                            <div aria-label="Current theme" class="grow text-center">{globalOptions.syntaxHighlightingTheme}</div>
-                        </Select.Trigger>
-                        <Select.Portal>
-                            <Select.Content class="max-h-64 overflow-y-auto rounded-lg border border-gray-300 bg-white shadow-md">
-                                {#each Object.keys(bundledThemes) as theme (theme)}
-                                    <Select.Item value={theme} class="data-highlighted:bg-blue-400 data-highlighted:text-white">
-                                        {#snippet children({ selected })}
-                                            <div class="cursor-default px-2 py-1 text-sm" class:bg-blue-500={selected} class:text-white={selected}>
-                                                {theme}
-                                            </div>
-                                        {/snippet}
-                                    </Select.Item>
-                                {/each}
-                            </Select.Content>
-                        </Select.Portal>
-                    </Select.Root>
+                <div class="flex flex-col">
+                    <span>Theme</span>
+                    {#snippet themeItem(id, label)}
+                        <Label.Root id="theme-{id}-label" for="theme-{id}" class="flex flex-row items-center gap-1 text-sm">
+                            <RadioGroup.Item
+                                class="flex size-4 items-center justify-center rounded-full border border-gray-300 hover:bg-gray-100 dark:border-gray-700 dark:hover:bg-gray-800"
+                                value={id}
+                                id="theme-{id}"
+                                aria-labelledby="theme-{id}-label"
+                            >
+                                {#snippet children({ checked })}
+                                    {#if checked}
+                                        <span class="size-2.5 rounded-full bg-blue-500"></span>
+                                    {/if}
+                                {/snippet}
+                            </RadioGroup.Item>
+                            {label}
+                        </Label.Root>
+                    {/snippet}
+                    <RadioGroup.Root class="flex flex-row items-center gap-2" bind:value={globalOptions.theme}>
+                        {@render themeItem("light", "Light")}
+                        {@render themeItem("dark", "Dark")}
+                        {@render themeItem("auto", "Auto")}
+                    </RadioGroup.Root>
                 </div>
-                <Label.Root id="omit-hunks-label" class="mt-2 max-w-64 break-words" for="omit-hunks">
+                <Separator.Root class="my-2 h-[1px] w-full bg-gray-300 dark:bg-gray-700" />
+                <Label.Root for="syntax-highlight-toggle" id="syntax-highlight-label" class="mb-0.5">Syntax Highlighting</Label.Root>
+                <SimpleSwitch id="syntax-highlight-toggle" aria-labelledby="syntax-highlight-label" bind:checked={globalOptions.syntaxHighlighting} />
+                <ShikiThemeSelector class="flex flex-col gap-0.5" bind:value={globalOptions.syntaxHighlightingThemeLight} mode="light" />
+                <ShikiThemeSelector class="flex flex-col gap-0.5" bind:value={globalOptions.syntaxHighlightingThemeDark} mode="dark" />
+                <Separator.Root class="my-2 h-[1px] w-full bg-gray-300 dark:bg-gray-700" />
+                <Label.Root id="omit-hunks-label" class="max-w-64 break-words" for="omit-hunks">
                     Omit hunks containing only second-level patch header line changes
                 </Label.Root>
                 <SimpleSwitch id="omit-hunks" aria-labelledby="omit-hunks-label" bind:checked={globalOptions.omitPatchHeaderOnlyHunks} />
@@ -467,7 +481,7 @@
 
 <div class="relative flex min-h-screen flex-row justify-center">
     <div
-        class="absolute top-0 left-0 z-10 h-full w-full flex-col border-e border-gray-300 bg-white md:w-[350px] md:shadow-md lg:static lg:h-auto lg:shadow-none"
+        class="absolute top-0 left-0 z-10 h-full w-full flex-col border-e border-gray-300 bg-white md:w-[350px] md:shadow-md lg:static lg:h-auto lg:shadow-none dark:border-gray-700 dark:bg-gray-950"
         class:flex={!sidebarCollapsed}
         class:hidden={sidebarCollapsed}
     >
@@ -477,7 +491,7 @@
                     type="text"
                     placeholder="Search files..."
                     bind:value={searchQuery}
-                    class="w-full rounded-md border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                    class="w-full rounded-md border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none dark:border-gray-700"
                     autocomplete="off"
                 />
                 {#if debouncedSearchQuery}
@@ -493,11 +507,11 @@
                 Showing {filteredFiles.length} of {data.values.length} files
             </div>
         {/if}
-        <div class="flex h-full flex-col overflow-y-auto border-t border-gray-300">
+        <div class="flex h-full flex-col overflow-y-auto border-t border-gray-300 dark:border-gray-700">
             <div class="h-100">
                 {#snippet fileSnippet(value: FileDetails)}
                     <div
-                        class="flex cursor-pointer items-center justify-between px-2 py-1 hover:bg-gray-100"
+                        class="flex cursor-pointer items-center justify-between px-2 py-1 hover:bg-gray-100 dark:hover:bg-gray-800"
                         onclick={(e) => scrollToFileClick(e, getIndex(value))}
                         onkeydown={(e) => e.key === "Enter" && scrollToFile(getIndex(value))}
                         role="button"
@@ -510,7 +524,7 @@
                         <span class="grow overflow-hidden break-all">{value.toFile.substring(value.toFile.lastIndexOf("/") + 1)}</span>
                         <input
                             type="checkbox"
-                            class="ms-1 size-4 shrink-0 rounded-sm border border-gray-300"
+                            class="ms-1 size-4 shrink-0 rounded-sm border border-gray-300 dark:border-gray-700"
                             autocomplete="off"
                             aria-label="File reviewed"
                             onchange={() => toggleChecked(getIndex(value))}
@@ -525,7 +539,7 @@
                             {@render fileSnippet(node.data.data as FileDetails)}
                         {:else}
                             <div
-                                class="flex cursor-pointer items-center justify-between px-2 py-1 hover:bg-gray-100"
+                                class="flex cursor-pointer items-center justify-between px-2 py-1 hover:bg-gray-100 dark:hover:bg-gray-800"
                                 onclick={toggleCollapse}
                                 onkeydown={(e) => e.key === "Enter" && toggleCollapse()}
                                 role="button"
@@ -550,7 +564,7 @@
             </div>
         </div>
     </div>
-    <div class="flex grow flex-col bg-white p-3">
+    <div class="flex grow flex-col bg-white p-3 dark:bg-gray-950">
         <div class="mb-2 flex justify-between gap-2">
             <div class="flex flex-row items-center gap-2">
                 {@render sidebarToggle()}
@@ -562,7 +576,7 @@
                 {@render settingsPopover()}
             </div>
         </div>
-        <div class="flex flex-1 flex-col border border-gray-300">
+        <div class="flex flex-1 flex-col border border-gray-300 dark:border-gray-700">
             <VList data={data.values} style="height: 100%;" getKey={(_, i) => i} bind:this={vlist} overscan={3}>
                 {#snippet children(value, index)}
                     {@const lines = data.lines[index] !== undefined ? data.lines[index] : null}
@@ -570,7 +584,7 @@
 
                     <div id={`file-${index}`}>
                         <div
-                            class="sticky top-0 flex cursor-pointer flex-row items-center justify-between gap-2 border-b border-gray-300 bg-white px-2 py-1 shadow-sm"
+                            class="sticky top-0 flex cursor-pointer flex-row items-center justify-between gap-2 border-b border-gray-300 bg-white px-2 py-1 shadow-sm dark:border-gray-700 dark:bg-gray-950"
                             onclick={() => toggleCollapse(index)}
                             tabindex="0"
                             onkeyup={(event) => event.key === "Enter" && toggleCollapse(index)}
@@ -590,7 +604,9 @@
                                     <span class="rounded-sm bg-gray-300 px-1 text-gray-800">Patch-header-only diff</span>
                                 {/if}
                                 {#if !patchHeaderDiffOnly[index] || !globalOptions.omitPatchHeaderOnlyHunks || (image !== null && image !== undefined)}
-                                    <span class="flex size-6 items-center justify-center rounded-md p-0.5 text-blue-500 hover:bg-gray-100 hover:shadow">
+                                    <span
+                                        class="flex size-6 items-center justify-center rounded-md p-0.5 text-blue-500 hover:bg-gray-100 hover:shadow dark:hover:bg-gray-800"
+                                    >
                                         {#if collapsedState[index]}
                                             <span class="iconify size-4 shrink-0 text-blue-500 octicon--chevron-right-16"></span>
                                         {:else}
@@ -601,23 +617,23 @@
                             </div>
                         </div>
                         {#if !collapsedState[index] && image !== null}
-                            <div class="mb border-b border-gray-300 text-sm">
+                            <div class="mb border-b border-gray-300 text-sm dark:border-gray-700">
                                 {#if image.load}
                                     {#if image.fileA !== null && image.fileB !== null}
                                         {#await Promise.all([image.fileA.getValue(), image.fileB.getValue()])}
-                                            <div class="flex items-center justify-center bg-gray-300 p-4"><Spinner /></div>
+                                            <div class="flex items-center justify-center bg-gray-300 p-4 dark:bg-gray-700"><Spinner /></div>
                                         {:then images}
                                             <ImageDiff fileA={images[0]} fileB={images[1]} />
                                         {/await}
                                     {:else}
                                         {#await (image.fileA || image.fileB).getValue()}
-                                            <div class="flex items-center justify-center bg-gray-300 p-4"><Spinner /></div>
+                                            <div class="flex items-center justify-center bg-gray-300 p-4 dark:bg-gray-700"><Spinner /></div>
                                         {:then file}
                                             <AddedOrRemovedImage {file} mode={image.fileA === null ? "add" : "remove"} />
                                         {/await}
                                     {/if}
                                 {:else}
-                                    <div class="flex justify-center bg-gray-300 p-4">
+                                    <div class="flex justify-center bg-gray-300 p-4 dark:bg-gray-700">
                                         <button
                                             type="button"
                                             class=" flex flex-row items-center justify-center gap-1 rounded-md bg-blue-500 px-2 py-1 text-white hover:bg-blue-600"
@@ -630,11 +646,11 @@
                             </div>
                         {/if}
                         {#if !collapsedState[index] && lines !== null && (!patchHeaderDiffOnly[index] || !globalOptions.omitPatchHeaderOnlyHunks)}
-                            <div class="mb border-b border-gray-300 text-sm">
+                            <div class="mb border-b border-gray-300 text-sm dark:border-gray-700">
                                 <ConciseDiffView
                                     rawPatchContent={lines}
                                     syntaxHighlighting={globalOptions.syntaxHighlighting}
-                                    syntaxHighlightingTheme={globalOptions.syntaxHighlightingTheme}
+                                    syntaxHighlightingTheme={globalOptions.getSyntaxHighlightingTheme()}
                                     omitPatchHeaderOnlyHunks={globalOptions.omitPatchHeaderOnlyHunks}
                                 />
                             </div>

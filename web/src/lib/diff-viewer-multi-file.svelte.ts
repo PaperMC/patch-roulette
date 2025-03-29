@@ -1,18 +1,43 @@
 import type { FileStatus } from "./github.svelte";
 import { parsePatch } from "diff";
-import { DEFAULT_THEME, hasNonHeaderChanges } from "$lib/components/scripts/ConciseDiffView.svelte";
+import { DEFAULT_THEME_DARK, DEFAULT_THEME_LIGHT, hasNonHeaderChanges } from "$lib/components/scripts/ConciseDiffView.svelte";
 import type { BundledTheme } from "shiki";
 import { browser } from "$app/environment";
+import { MediaQuery } from "svelte/reactivity";
+
+export type Theme = "dark" | "light" | "auto";
+
+const prefersDark = new MediaQuery("prefers-color-scheme: dark");
 
 export class GlobalOptions {
     syntaxHighlighting = $state(true);
-    syntaxHighlightingTheme: BundledTheme = $state(DEFAULT_THEME);
+    syntaxHighlightingThemeLight: BundledTheme = $state(DEFAULT_THEME_LIGHT);
+    syntaxHighlightingThemeDark: BundledTheme = $state(DEFAULT_THEME_DARK);
     omitPatchHeaderOnlyHunks = $state(true);
+    theme: Theme = $state("auto");
 
     private constructor() {
         $effect(() => {
             this.save();
         });
+        $effect(() => {
+            document.documentElement.setAttribute("data-theme", this.theme);
+        });
+    }
+
+    getSyntaxHighlightingTheme() {
+        switch (this.theme) {
+            case "dark":
+                return this.syntaxHighlightingThemeDark;
+            case "light":
+                return this.syntaxHighlightingThemeLight;
+            case "auto":
+                if (prefersDark) {
+                    return this.syntaxHighlightingThemeDark;
+                } else {
+                    return this.syntaxHighlightingThemeLight;
+                }
+        }
     }
 
     static load() {
@@ -38,9 +63,13 @@ export class GlobalOptions {
         const cereal: any = {
             syntaxHighlighting: this.syntaxHighlighting,
             omitPatchHeaderOnlyHunks: this.omitPatchHeaderOnlyHunks,
+            theme: this.theme,
         };
-        if (this.syntaxHighlightingTheme !== DEFAULT_THEME) {
-            cereal.syntaxHighlightingTheme = this.syntaxHighlightingTheme;
+        if (this.syntaxHighlightingThemeLight !== DEFAULT_THEME_LIGHT) {
+            cereal.syntaxHighlightingThemeLight = this.syntaxHighlightingThemeLight;
+        }
+        if (this.syntaxHighlightingThemeDark !== DEFAULT_THEME_DARK) {
+            cereal.syntaxHighlightingThemeDark = this.syntaxHighlightingThemeDark;
         }
         return JSON.stringify(cereal);
     }
@@ -51,11 +80,17 @@ export class GlobalOptions {
         if (jsonObject.syntaxHighlighting !== undefined) {
             instance.syntaxHighlighting = jsonObject.syntaxHighlighting;
         }
-        if (jsonObject.syntaxHighlightingTheme !== undefined) {
-            instance.syntaxHighlightingTheme = jsonObject.syntaxHighlightingTheme as BundledTheme;
+        if (jsonObject.syntaxHighlightingThemeLight !== undefined) {
+            instance.syntaxHighlightingThemeLight = jsonObject.syntaxHighlightingThemeLight as BundledTheme;
+        }
+        if (jsonObject.syntaxHighlightingThemeDark !== undefined) {
+            instance.syntaxHighlightingThemeDark = jsonObject.syntaxHighlightingThemeDark as BundledTheme;
         }
         if (jsonObject.omitPatchHeaderOnlyHunks !== undefined) {
             instance.omitPatchHeaderOnlyHunks = jsonObject.omitPatchHeaderOnlyHunks;
+        }
+        if (jsonObject.theme !== undefined) {
+            instance.theme = jsonObject.theme;
         }
         return instance;
     }

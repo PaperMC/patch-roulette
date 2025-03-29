@@ -13,7 +13,8 @@ import { guessLanguageFromExtension } from "$lib/util";
 import type { IRawThemeSetting } from "shiki/textmate";
 import chroma from "chroma-js";
 
-export const DEFAULT_THEME: BundledTheme = "github-light-default";
+export const DEFAULT_THEME_LIGHT: BundledTheme = "github-light-default";
+export const DEFAULT_THEME_DARK: BundledTheme = "github-dark-default";
 
 export type LineSegment = {
     text?: string | null;
@@ -115,7 +116,7 @@ class LineProcessor {
     private lastShikiStateRemove: GrammarState | null = null;
     private lastShikiStateContext: GrammarState | null = null;
     private syntaxHighlighting: boolean = true;
-    private syntaxHighlightingTheme: BundledTheme = DEFAULT_THEME;
+    private syntaxHighlightingTheme: BundledTheme = DEFAULT_THEME_LIGHT;
 
     async process(
         fromFile: string | undefined,

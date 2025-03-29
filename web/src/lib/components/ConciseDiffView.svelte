@@ -50,7 +50,7 @@
 </script>
 
 {#await Promise.all([baseColors, patchLines])}
-    <div class="flex items-center justify-center bg-gray-300 p-4"><Spinner /></div>
+    <div class="flex items-center justify-center bg-gray-300 p-4 dark:bg-gray-700"><Spinner /></div>
 {:then [baseColors, lines]}
     <div style={baseColors} class="diff-content text-patch-line bg-[var(--editor-bg)] font-mono text-[var(--editor-fg)] selection:bg-[var(--select-bg)]">
         {#each lines as line, index (index)}

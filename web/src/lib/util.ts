@@ -299,3 +299,7 @@ export function guessLanguageFromExtension(fileName: string): BundledLanguage | 
     const extension = lowerFileName.slice(extensionIndex);
     return languageMap[extension] || "text";
 }
+
+export function capitalizeFirstLetter(val: string): string {
+    return val.charAt(0).toUpperCase() + val.slice(1);
+}
