@@ -3,6 +3,7 @@ import { watchLocalStorage } from "$lib/util";
 
 export type Theme = "dark" | "light" | "auto";
 
+// Used indirectly in root layout
 const themeKey = "theme";
 
 function initialTheme() {
@@ -17,7 +18,7 @@ function initialTheme() {
 
 let theme: Theme = $state(initialTheme());
 
-export function initTheme() {
+export function initThemeHooks() {
     watchLocalStorage(themeKey, (newValue) => {
         if (newValue) {
             theme = newValue as Theme;
