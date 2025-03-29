@@ -12,6 +12,7 @@ import {
 import { guessLanguageFromExtension } from "$lib/util";
 import type { IRawThemeSetting } from "shiki/textmate";
 import chroma from "chroma-js";
+import { getEffectiveGlobalTheme } from "$lib/theme.svelte";
 
 export const DEFAULT_THEME_LIGHT: BundledTheme = "github-light-default";
 export const DEFAULT_THEME_DARK: BundledTheme = "github-dark-default";
@@ -784,7 +785,30 @@ function makeTransparent(hex: string | undefined) {
 export async function getBaseColors(themePromise: Promise<null | { default: ThemeRegistration }>, syntaxHighlighting: boolean): Promise<string> {
     const theme = await themePromise;
     if (!syntaxHighlighting || !theme) {
-        return `
+        let styles = "";
+        if (getEffectiveGlobalTheme() === "dark") {
+            // Make sure tailwind emits these props
+            // "text-green-600 text-red-600 text-green-700 text-red-700"
+            styles += `
+              --editor-bg-themed: var(--color-gray-950);
+              --editor-fg-themed: var(--color-white);
+              --inserted-text-bg-themed: var(--color-green-700);
+              --removed-text-bg-themed: var(--color-red-700);
+              --inserted-line-bg-themed: var(--color-green-800);
+              --removed-line-bg-themed: var(--color-red-800);
+              --inner-inserted-line-bg-themed: var(--color-green-600);
+              --inner-removed-line-bg-themed: var(--color-red-600);
+              --inner-inserted-line-fg-themed: var(--color-green-300);
+              --inner-removed-line-fg-themed: var(--color-red-300);
+              
+              --hunk-header-bg-themed: var(--color-gray-800);
+              `;
+        } else {
+            // Make sure tailwind emits these props
+            // "text-green-400 text-red-400 text-green-100 text-red-100 text-green-300 text-red-300 text-green-800 text-red-800"
+            styles += `
+              --editor-bg-themed: var(--color-white);
+              --editor-fg-themed: var(--color-black);
               --inserted-text-bg-themed: var(--color-green-400);
               --removed-text-bg-themed: var(--color-red-400);
               --inserted-line-bg-themed: var(--color-green-100);
@@ -794,6 +818,8 @@ export async function getBaseColors(themePromise: Promise<null | { default: Them
               --inner-inserted-line-fg-themed: var(--color-green-800);
               --inner-removed-line-fg-themed: var(--color-red-800);
               `;
+        }
+        return styles;
     }
     const tokenColors = theme.default.tokenColors || [];
 

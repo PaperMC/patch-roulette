@@ -1,5 +1,6 @@
 import { browser } from "$app/environment";
 import { watchLocalStorage } from "$lib/util";
+import { MediaQuery } from "svelte/reactivity";
 
 export type Theme = "dark" | "light" | "auto";
 
@@ -18,6 +19,8 @@ function initialTheme() {
 
 let theme: Theme = $state(initialTheme());
 
+const prefersDark = new MediaQuery("prefers-color-scheme: dark");
+
 export function initThemeHooks() {
     watchLocalStorage(themeKey, (newValue) => {
         if (newValue) {
@@ -35,5 +38,12 @@ export function setGlobalTheme(newTheme: Theme) {
 }
 
 export function getGlobalTheme(): Theme {
+    return theme;
+}
+
+export function getEffectiveGlobalTheme(): "dark" | "light" {
+    if (theme === "auto") {
+        return prefersDark.current ? "dark" : "light";
+    }
     return theme;
 }

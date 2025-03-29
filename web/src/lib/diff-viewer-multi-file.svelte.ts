@@ -3,11 +3,8 @@ import { parsePatch } from "diff";
 import { DEFAULT_THEME_DARK, DEFAULT_THEME_LIGHT, hasNonHeaderChanges } from "$lib/components/scripts/ConciseDiffView.svelte";
 import type { BundledTheme } from "shiki";
 import { browser } from "$app/environment";
-import { MediaQuery } from "svelte/reactivity";
-import { getGlobalTheme } from "$lib/theme.svelte";
+import { getEffectiveGlobalTheme } from "$lib/theme.svelte";
 import { watchLocalStorage } from "$lib/util";
-
-const prefersDark = new MediaQuery("prefers-color-scheme: dark");
 
 const optionsKey = "diff-viewer-global-options";
 
@@ -30,17 +27,11 @@ export class GlobalOptions {
     }
 
     getSyntaxHighlightingTheme() {
-        switch (getGlobalTheme()) {
+        switch (getEffectiveGlobalTheme()) {
             case "dark":
                 return this.syntaxHighlightingThemeDark;
             case "light":
                 return this.syntaxHighlightingThemeLight;
-            case "auto":
-                if (prefersDark.current) {
-                    return this.syntaxHighlightingThemeDark;
-                } else {
-                    return this.syntaxHighlightingThemeLight;
-                }
         }
     }
 
