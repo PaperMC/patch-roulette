@@ -22,6 +22,9 @@ export class GlobalOptions {
         });
         $effect(() => {
             document.documentElement.setAttribute("data-theme", this.theme);
+            return () => {
+                document.documentElement.removeAttribute("data-theme");
+            };
         });
     }
 
