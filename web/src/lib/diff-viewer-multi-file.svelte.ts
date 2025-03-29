@@ -32,7 +32,7 @@ export class GlobalOptions {
             case "light":
                 return this.syntaxHighlightingThemeLight;
             case "auto":
-                if (prefersDark) {
+                if (prefersDark.current) {
                     return this.syntaxHighlightingThemeDark;
                 } else {
                     return this.syntaxHighlightingThemeLight;

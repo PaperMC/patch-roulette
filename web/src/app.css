@@ -8,8 +8,10 @@
         @slot;
     }
     /* Enable dark mode when data-theme attribute = auto and prefers-color-scheme is dark */
-    &:where([data-theme="auto"], [data-theme="auto"] *) @media (prefers-color-scheme: dark) {
-        @slot;
+    @media (prefers-color-scheme: dark) {
+        &:where([data-theme="auto"], [data-theme="auto"] *) {
+            @slot;
+        }
     }
 }
 * {
