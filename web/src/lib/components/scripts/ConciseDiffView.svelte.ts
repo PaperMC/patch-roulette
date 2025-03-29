@@ -788,7 +788,7 @@ export async function getBaseColors(themePromise: Promise<null | { default: Them
         let styles = "";
         if (getEffectiveGlobalTheme() === "dark") {
             // Make sure tailwind emits these props
-            // "text-green-600 text-red-600 text-green-700 text-red-700"
+            // "text-green-600 text-red-600 text-green-700 text-red-700 text-green-800 text-red-800"
             styles += `
               --editor-bg-themed: var(--color-gray-950);
               --editor-fg-themed: var(--color-white);
@@ -804,8 +804,6 @@ export async function getBaseColors(themePromise: Promise<null | { default: Them
               --hunk-header-bg-themed: var(--color-gray-800);
               `;
         } else {
-            // Make sure tailwind emits these props
-            // "text-green-400 text-red-400 text-green-100 text-red-100 text-green-300 text-red-300 text-green-800 text-red-800"
             styles += `
               --editor-bg-themed: var(--color-white);
               --editor-fg-themed: var(--color-black);
