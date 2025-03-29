@@ -28,6 +28,7 @@
     import SimpleSwitch from "$lib/components/SimpleSwitch.svelte";
     import AddedOrRemovedImage from "$lib/components/AddedOrRemovedImage.svelte";
     import ShikiThemeSelector from "$lib/components/ShikiThemeSelector.svelte";
+    import { getGlobalTheme, setGlobalTheme } from "$lib/theme.svelte";
 
     type ImageDiffDetails = {
         fileA: MemoizedPromise<string> | null;
@@ -458,7 +459,7 @@
                             {label}
                         </Label.Root>
                     {/snippet}
-                    <RadioGroup.Root class="flex flex-row items-center gap-2" bind:value={globalOptions.theme}>
+                    <RadioGroup.Root class="flex flex-row items-center gap-2" bind:value={getGlobalTheme, setGlobalTheme}>
                         {@render themeItem("light", "Light")}
                         {@render themeItem("dark", "Dark")}
                         {@render themeItem("auto", "Auto")}

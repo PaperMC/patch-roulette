@@ -3,6 +3,7 @@ import type { FileDetails } from "./diff-viewer-multi-file.svelte";
 import type { FileStatus } from "./github.svelte";
 import type { TreeNode } from "$lib/components/scripts/Tree.svelte";
 import type { BundledLanguage, SpecialLanguage } from "shiki";
+import { onMount } from "svelte";
 
 export function debounce<T extends (...args: any[]) => any>(fn: T, delay: number): (...args: Parameters<T>) => void {
     let timeout: ReturnType<typeof setTimeout> | null = null;
@@ -302,4 +303,22 @@ export function guessLanguageFromExtension(fileName: string): BundledLanguage | 
 
 export function capitalizeFirstLetter(val: string): string {
     return val.charAt(0).toUpperCase() + val.slice(1);
+}
+
+// Watches for changes to local storage in other tabs
+export function watchLocalStorage(key: string, callback: (newValue: string | null) => void) {
+    onMount(() => {
+        function storageChanged(event: StorageEvent) {
+            if (event.storageArea === localStorage && event.key === key) {
+                callback(event.newValue);
+            }
+        }
+
+        window.addEventListener("storage", storageChanged);
+        return {
+            destroy() {
+                window.removeEventListener("storage", storageChanged);
+            },
+        };
+    });
 }

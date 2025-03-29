@@ -4,9 +4,8 @@ import { DEFAULT_THEME_DARK, DEFAULT_THEME_LIGHT, hasNonHeaderChanges } from "$l
 import type { BundledTheme } from "shiki";
 import { browser } from "$app/environment";
 import { MediaQuery } from "svelte/reactivity";
-import { onMount } from "svelte";
-
-export type Theme = "dark" | "light" | "auto";
+import { getGlobalTheme } from "$lib/theme.svelte";
+import { watchLocalStorage } from "$lib/util";
 
 const prefersDark = new MediaQuery("prefers-color-scheme: dark");
 
@@ -17,39 +16,21 @@ export class GlobalOptions {
     syntaxHighlightingThemeLight: BundledTheme = $state(DEFAULT_THEME_LIGHT);
     syntaxHighlightingThemeDark: BundledTheme = $state(DEFAULT_THEME_DARK);
     omitPatchHeaderOnlyHunks = $state(true);
-    theme: Theme = $state("auto");
 
     private constructor() {
         $effect(() => {
             this.save();
         });
-        $effect(() => {
-            document.documentElement.setAttribute("data-theme", this.theme);
-            return () => {
-                document.documentElement.removeAttribute("data-theme");
-            };
-        });
 
-        // eslint-disable-next-line @typescript-eslint/no-this-alias
-        const opts = this;
-        onMount(() => {
-            function storageChanged(event: StorageEvent) {
-                if (event.storageArea === localStorage && event.key === optionsKey && event.newValue) {
-                    opts.deserialize(event.newValue);
-                }
+        watchLocalStorage(optionsKey, (newValue) => {
+            if (newValue) {
+                this.deserialize(newValue);
             }
-
-            window.addEventListener("storage", storageChanged);
-            return {
-                destroy() {
-                    window.removeEventListener("storage", storageChanged);
-                },
-            };
         });
     }
 
     getSyntaxHighlightingTheme() {
-        switch (this.theme) {
+        switch (getGlobalTheme()) {
             case "dark":
                 return this.syntaxHighlightingThemeDark;
             case "light":
@@ -87,7 +68,6 @@ export class GlobalOptions {
         const cereal: any = {
             syntaxHighlighting: this.syntaxHighlighting,
             omitPatchHeaderOnlyHunks: this.omitPatchHeaderOnlyHunks,
-            theme: this.theme,
         };
         if (this.syntaxHighlightingThemeLight !== DEFAULT_THEME_LIGHT) {
             cereal.syntaxHighlightingThemeLight = this.syntaxHighlightingThemeLight;
@@ -115,9 +95,6 @@ export class GlobalOptions {
         }
         if (jsonObject.omitPatchHeaderOnlyHunks !== undefined) {
             this.omitPatchHeaderOnlyHunks = jsonObject.omitPatchHeaderOnlyHunks;
-        }
-        if (jsonObject.theme !== undefined) {
-            this.theme = jsonObject.theme;
         }
     }
 }
