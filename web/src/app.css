@@ -2,6 +2,22 @@
 @plugin "@iconify/tailwind4" {
     prefixes: octicon;
 }
+@custom-variant dark {
+    /* Enable dark mode when data-theme attribute = dark */
+    &:where([data-theme="dark"], [data-theme="dark"] *) {
+        @slot;
+    }
+    /* Enable dark mode when data-theme attribute = auto and prefers-color-scheme is dark */
+    @media (prefers-color-scheme: dark) {
+        &:where([data-theme="auto"], [data-theme="auto"] *) {
+            @slot;
+        }
+    }
+}
+* {
+    /* Set color-scheme to dark for all elements when the dark variant is active (lets browser handle defaults like white text and dark scrollbars) */
+    @apply dark:[color-scheme:dark];
+}
 
 .png-bg {
     background: url("/png.gif") right bottom var(--color-gray-300);

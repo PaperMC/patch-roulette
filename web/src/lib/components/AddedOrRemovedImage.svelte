@@ -14,7 +14,7 @@
     let dims = $derived(getDimensions(file));
 </script>
 
-<div class="grid w-full grid-cols-1 gap-4 bg-gray-300 p-4">
+<div class="grid w-full grid-cols-1 gap-4 bg-gray-300 p-4 dark:bg-gray-700">
     <div class="flex flex-col items-center justify-center gap-4">
         <img src={file} alt={mode} class="png-bg h-auto border-2 {borderColor} shadow-md" />
         <AddedOrRemovedImageLabel {mode} {dims} />

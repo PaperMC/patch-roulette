@@ -1,36 +1,57 @@
 import type { FileStatus } from "./github.svelte";
 import { parsePatch } from "diff";
-import { DEFAULT_THEME, hasNonHeaderChanges } from "$lib/components/scripts/ConciseDiffView.svelte";
+import { DEFAULT_THEME_DARK, DEFAULT_THEME_LIGHT, hasNonHeaderChanges } from "$lib/components/scripts/ConciseDiffView.svelte";
 import type { BundledTheme } from "shiki";
 import { browser } from "$app/environment";
+import { getEffectiveGlobalTheme } from "$lib/theme.svelte";
+import { watchLocalStorage } from "$lib/util";
+
+const optionsKey = "diff-viewer-global-options";
 
 export class GlobalOptions {
     syntaxHighlighting = $state(true);
-    syntaxHighlightingTheme: BundledTheme = $state(DEFAULT_THEME);
+    syntaxHighlightingThemeLight: BundledTheme = $state(DEFAULT_THEME_LIGHT);
+    syntaxHighlightingThemeDark: BundledTheme = $state(DEFAULT_THEME_DARK);
     omitPatchHeaderOnlyHunks = $state(true);
 
     private constructor() {
         $effect(() => {
             this.save();
         });
+
+        watchLocalStorage(optionsKey, (newValue) => {
+            if (newValue) {
+                this.deserialize(newValue);
+            }
+        });
+    }
+
+    getSyntaxHighlightingTheme() {
+        switch (getEffectiveGlobalTheme()) {
+            case "dark":
+                return this.syntaxHighlightingThemeDark;
+            case "light":
+                return this.syntaxHighlightingThemeLight;
+        }
     }
 
     static load() {
+        const opts = new GlobalOptions();
         if (!browser) {
-            return new GlobalOptions();
+            return opts;
         }
-        const serialized = localStorage.getItem("diff-viewer-global-options");
-        if (serialized === null) {
-            return new GlobalOptions();
+        const serialized = localStorage.getItem(optionsKey);
+        if (serialized !== null) {
+            opts.deserialize(serialized);
         }
-        return GlobalOptions.deserialize(serialized);
+        return opts;
     }
 
     private save() {
         if (!browser) {
             return;
         }
-        localStorage.setItem("diff-viewer-global-options", this.serialize());
+        localStorage.setItem(optionsKey, this.serialize());
     }
 
     private serialize() {
@@ -39,25 +60,33 @@ export class GlobalOptions {
             syntaxHighlighting: this.syntaxHighlighting,
             omitPatchHeaderOnlyHunks: this.omitPatchHeaderOnlyHunks,
         };
-        if (this.syntaxHighlightingTheme !== DEFAULT_THEME) {
-            cereal.syntaxHighlightingTheme = this.syntaxHighlightingTheme;
+        if (this.syntaxHighlightingThemeLight !== DEFAULT_THEME_LIGHT) {
+            cereal.syntaxHighlightingThemeLight = this.syntaxHighlightingThemeLight;
+        }
+        if (this.syntaxHighlightingThemeDark !== DEFAULT_THEME_DARK) {
+            cereal.syntaxHighlightingThemeDark = this.syntaxHighlightingThemeDark;
         }
         return JSON.stringify(cereal);
     }
 
-    private static deserialize(serialized: string) {
+    private deserialize(serialized: string) {
         const jsonObject = JSON.parse(serialized);
-        const instance = new GlobalOptions();
         if (jsonObject.syntaxHighlighting !== undefined) {
-            instance.syntaxHighlighting = jsonObject.syntaxHighlighting;
+            this.syntaxHighlighting = jsonObject.syntaxHighlighting;
         }
-        if (jsonObject.syntaxHighlightingTheme !== undefined) {
-            instance.syntaxHighlightingTheme = jsonObject.syntaxHighlightingTheme as BundledTheme;
+        if (jsonObject.syntaxHighlightingThemeLight !== undefined) {
+            this.syntaxHighlightingThemeLight = jsonObject.syntaxHighlightingThemeLight as BundledTheme;
+        } else {
+            this.syntaxHighlightingThemeLight = DEFAULT_THEME_LIGHT;
+        }
+        if (jsonObject.syntaxHighlightingThemeDark !== undefined) {
+            this.syntaxHighlightingThemeDark = jsonObject.syntaxHighlightingThemeDark as BundledTheme;
+        } else {
+            this.syntaxHighlightingThemeDark = DEFAULT_THEME_DARK;
         }
         if (jsonObject.omitPatchHeaderOnlyHunks !== undefined) {
-            instance.omitPatchHeaderOnlyHunks = jsonObject.omitPatchHeaderOnlyHunks;
+            this.omitPatchHeaderOnlyHunks = jsonObject.omitPatchHeaderOnlyHunks;
         }
-        return instance;
     }
 }
 
