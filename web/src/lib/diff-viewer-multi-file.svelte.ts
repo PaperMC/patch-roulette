@@ -7,8 +7,14 @@ import {
     getGithubToken,
     type GithubDiff,
 } from "./github.svelte";
-import { parsePatch } from "diff";
-import { ConciseDiffViewPersistentState, DEFAULT_THEME_DARK, DEFAULT_THEME_LIGHT, hasNonHeaderChanges } from "$lib/components/scripts/ConciseDiffView.svelte";
+import { type ParsedDiff, parsePatch } from "diff";
+import {
+    ConciseDiffViewPersistentState,
+    DEFAULT_THEME_DARK,
+    DEFAULT_THEME_LIGHT,
+    hasNonHeaderChanges,
+    parseSinglePatch,
+} from "$lib/components/scripts/ConciseDiffView.svelte";
 import type { BundledTheme } from "shiki";
 import { browser } from "$app/environment";
 import { getEffectiveGlobalTheme } from "$lib/theme.svelte";
@@ -189,6 +195,13 @@ export type ImageDiffDetails = {
     load: boolean;
 };
 
+export type ViewerStatistics = {
+    addedLines: number;
+    removedLines: number;
+    fileAddedLines: number[];
+    fileRemovedLines: number[];
+};
+
 export class MultiFileDiffViewerState {
     searchQuery: string = $state("");
     debouncedSearchQuery: string = $state("");
@@ -196,9 +209,38 @@ export class MultiFileDiffViewerState {
     checked: boolean[] = $state([]);
     fileDetails: FileDetails[] = $state([]);
     diffText: string[] = $state([]);
+    diffs: Promise<ParsedDiff>[] = $state([]);
     diffViewCache: Map<FileDetails, ConciseDiffViewPersistentState> = new Map();
     images: ImageDiffDetails[] = $state([]);
     vlist: VList<FileDetails> | undefined = $state();
+    stats: Promise<ViewerStatistics> = $derived.by(async () => {
+        let addedLines = 0;
+        let removedLines = 0;
+        const fileAddedLines: number[] = [];
+        const fileRemovedLines: number[] = [];
+
+        for (let i = 0; i < this.diffs.length; i++) {
+            const diff = await this.diffs[i];
+
+            for (let j = 0; j < diff.hunks.length; j++) {
+                const hunk = diff.hunks[j];
+
+                for (let k = 0; k < hunk.lines.length; k++) {
+                    const line = hunk.lines[k];
+
+                    if (line.startsWith("+")) {
+                        addedLines++;
+                        fileAddedLines[i] = (fileAddedLines[i] || 0) + 1;
+                    } else if (line.startsWith("-")) {
+                        removedLines++;
+                        fileRemovedLines[i] = (fileRemovedLines[i] || 0) + 1;
+                    }
+                }
+            }
+        }
+
+        return { addedLines, removedLines, fileAddedLines, fileRemovedLines };
+    });
 
     readonly fileTreeRoots: TreeNode<FileTreeNodeData>[] = $derived(makeFileTree(this.fileDetails));
     readonly filteredFileDetails: FileDetails[] = $derived(this.debouncedSearchQuery ? this.fileDetails.filter((f) => this.filterFile(f)) : this.fileDetails);
@@ -295,6 +337,7 @@ export class MultiFileDiffViewerState {
         this.checked = [];
         this.fileDetails = [];
         this.diffText = [];
+        this.diffs = [];
         this.clearImages();
         this.vlist?.scrollToIndex(0, { align: "start" });
 
@@ -332,6 +375,9 @@ export class MultiFileDiffViewerState {
             }
 
             this.diffText[i] = patch.content;
+            this.diffs[i] = (async () => {
+                return parseSinglePatch(patch.content);
+            })();
         }
 
         // Set this last since it's what the VList loads

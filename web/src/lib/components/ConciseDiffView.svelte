@@ -5,12 +5,15 @@
         getBaseColors,
         ConciseDiffViewState,
         ConciseDiffViewPersistentState,
+        parseSinglePatch,
     } from "$lib/components/scripts/ConciseDiffView.svelte.js";
     import { type BundledTheme } from "shiki";
     import Spinner from "$lib/components/Spinner.svelte";
+    import { type ParsedDiff } from "diff";
 
     interface Props {
-        rawPatchContent: string;
+        rawPatchContent?: string;
+        patch?: Promise<ParsedDiff>;
         syntaxHighlighting?: boolean;
         syntaxHighlightingTheme?: BundledTheme;
         omitPatchHeaderOnlyHunks?: boolean;
@@ -19,11 +22,19 @@
         cacheKey?: K;
     }
 
-    let { rawPatchContent, syntaxHighlighting = true, syntaxHighlightingTheme, omitPatchHeaderOnlyHunks = true, cache, cacheKey }: Props = $props();
+    let { rawPatchContent, patch, syntaxHighlighting = true, syntaxHighlightingTheme, omitPatchHeaderOnlyHunks = true, cache, cacheKey }: Props = $props();
 
     const view = new ConciseDiffViewState(cache, cacheKey);
+    const parsedPatch = $derived.by(async () => {
+        if (rawPatchContent) {
+            return parseSinglePatch(rawPatchContent);
+        } else if (patch) {
+            return patch;
+        }
+        throw Error("Either rawPatchContent or patch must be provided");
+    });
     $effect(() => {
-        view.update(rawPatchContent, syntaxHighlighting, syntaxHighlightingTheme, omitPatchHeaderOnlyHunks);
+        view.update(parsedPatch, syntaxHighlighting, syntaxHighlightingTheme, omitPatchHeaderOnlyHunks);
     });
 
     let baseColors: Promise<string> = $state(new Promise<string>(() => []));

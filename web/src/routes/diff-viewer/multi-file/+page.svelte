@@ -16,6 +16,7 @@
     import AddedOrRemovedImage from "$lib/components/AddedOrRemovedImage.svelte";
     import ShikiThemeSelector from "$lib/components/ShikiThemeSelector.svelte";
     import GlobalThemeRadio from "$lib/components/GlobalThemeRadio.svelte";
+    import DiffStats from "$lib/components/DiffStats.svelte";
 
     const globalOptions: GlobalOptions = GlobalOptions.load();
     const viewer = new MultiFileDiffViewerState();
@@ -337,20 +338,26 @@
                 {@render mainDialog()}
             </div>
             <div class="flex flex-row items-center gap-2">
-                <button type="button" class="rounded-md bg-blue-500 px-2 py-1 text-white hover:bg-blue-600" onclick={() => viewer.expandAll()}
-                    >Expand All</button
-                >
-                <button type="button" class="rounded-md bg-blue-500 px-2 py-1 text-white hover:bg-blue-600" onclick={() => viewer.collapseAll()}
-                    >Collapse All</button
-                >
+                <button type="button" class="rounded-md bg-blue-500 px-2 py-1 text-white hover:bg-blue-600" onclick={() => viewer.expandAll()}>
+                    Expand All
+                </button>
+                <button type="button" class="rounded-md bg-blue-500 px-2 py-1 text-white hover:bg-blue-600" onclick={() => viewer.collapseAll()}>
+                    Collapse All
+                </button>
                 {@render settingsPopover()}
             </div>
         </div>
+        {#await viewer.stats}
+            <DiffStats add={0} remove={0} />
+        {:then stats}
+            <DiffStats add={stats.addedLines} remove={stats.removedLines} />
+        {/await}
         <div class="flex flex-1 flex-col border border-gray-300 dark:border-gray-700">
             <VList data={viewer.fileDetails} style="height: 100%;" getKey={(_, i) => i} bind:this={viewer.vlist} overscan={3}>
                 {#snippet children(value, index)}
                     {@const lines = viewer.diffText[index] !== undefined ? viewer.diffText[index] : null}
                     {@const image = viewer.images[index] !== undefined ? viewer.images[index] : null}
+                    {@const patch = viewer.diffs[index]}
 
                     <div id={`file-${index}`}>
                         <div
@@ -418,7 +425,7 @@
                         {#if !viewer.collapsed[index] && lines !== null && (!viewer.patchHeaderDiffOnly[index] || !globalOptions.omitPatchHeaderOnlyHunks)}
                             <div class="mb border-b border-gray-300 text-sm dark:border-gray-700">
                                 <ConciseDiffView
-                                    rawPatchContent={lines}
+                                    {patch}
                                     syntaxHighlighting={globalOptions.syntaxHighlighting}
                                     syntaxHighlightingTheme={globalOptions.getSyntaxHighlightingTheme()}
                                     omitPatchHeaderOnlyHunks={globalOptions.omitPatchHeaderOnlyHunks}

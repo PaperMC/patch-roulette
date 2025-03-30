@@ -1,4 +1,4 @@
-import { diffArrays, parsePatch } from "diff";
+import { diffArrays, type ParsedDiff, parsePatch } from "diff";
 import {
     codeToTokens,
     type BundledLanguage,
@@ -586,19 +586,15 @@ async function processLines(
 }
 
 export async function makeLines(
-    patchContent: string,
+    patchPromise: ParsedDiff | Promise<ParsedDiff>,
     syntaxHighlighting: boolean,
     syntaxHighlightingTheme: BundledTheme | undefined,
     omitPatchHeaderOnlyHunks: boolean,
 ): Promise<PatchLine[]> {
-    const diffs = parsePatch(patchContent);
-    if (diffs.length !== 1) {
-        throw Error("Only one patch is supported");
-    }
-
+    const patch = await patchPromise;
     const lines: PatchLine[] = [];
 
-    for (const hunk of diffs[0].hunks) {
+    for (const hunk of patch.hunks) {
         // Skip this hunk if it only contains header changes
         if (omitPatchHeaderOnlyHunks && !hasNonHeaderChanges(hunk.lines)) {
             continue;
@@ -613,8 +609,8 @@ export async function makeLines(
         });
 
         const hunkLines: PatchLine[] = [];
-        const oldFileName = diffs[0].oldFileName === "/dev/null" ? undefined : diffs[0].oldFileName;
-        const newFileName = diffs[0].newFileName === "/dev/null" ? undefined : diffs[0].newFileName;
+        const oldFileName = patch.oldFileName === "/dev/null" ? undefined : patch.oldFileName;
+        const newFileName = patch.newFileName === "/dev/null" ? undefined : patch.newFileName;
         await processLines(oldFileName, newFileName, hunk.lines, hunkLines, syntaxHighlighting, syntaxHighlightingTheme);
         lines.push(...hunkLines);
 
@@ -937,6 +933,14 @@ export class ConciseDiffViewPersistentState {
     }
 }
 
+export function parseSinglePatch(rawPatchContent: string): ParsedDiff {
+    const parsedPatches = parsePatch(rawPatchContent);
+    if (parsedPatches.length !== 1) {
+        throw Error("Only single-file patches are supported here");
+    }
+    return parsedPatches[0];
+}
+
 export class ConciseDiffViewState<K> {
     patchLines: Promise<PatchLine[]> = $state(new Promise<PatchLine[]>(() => []));
     loaded: boolean = false;
@@ -954,7 +958,7 @@ export class ConciseDiffViewState<K> {
         });
     }
 
-    update(rawPatchContent: string, syntaxHighlighting: boolean, syntaxHighlightingTheme: BundledTheme | undefined, omitPatchHeaderOnlyHunks: boolean) {
+    update(patch: Promise<ParsedDiff>, syntaxHighlighting: boolean, syntaxHighlightingTheme: BundledTheme | undefined, omitPatchHeaderOnlyHunks: boolean) {
         if (this.cache && this.cacheKey) {
             if (this.cache.has(this.cacheKey)) {
                 const state = this.cache.get(this.cacheKey);
@@ -967,7 +971,7 @@ export class ConciseDiffViewState<K> {
         }
 
         // TODO: Cache this promise, so that even if we get destroyed before it completes, we don't waste work (usually when scrolling fast)
-        const promise = makeLines(rawPatchContent, syntaxHighlighting, syntaxHighlightingTheme, omitPatchHeaderOnlyHunks);
+        const promise = makeLines(patch, syntaxHighlighting, syntaxHighlightingTheme, omitPatchHeaderOnlyHunks);
         promise.then(
             () => {
                 // Don't replace a potentially completed promise with a pending one, wait until the replacement is ready for smooth transitions
