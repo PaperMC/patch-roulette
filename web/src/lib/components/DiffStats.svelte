@@ -57,8 +57,8 @@
 </script>
 
 <div class="flex flex-row items-center gap-1">
-    <span class="text-sm text-green-600 dark:text-green-400">+{add}</span>
-    <span class="text-sm text-red-600 dark:text-red-400">-{remove}</span>
+    <span class="text-sm text-green-600 dark:text-green-400">+{add.toLocaleString()}</span>
+    <span class="text-sm text-red-600 dark:text-red-400">-{remove.toLocaleString()}</span>
     <Tooltip.Provider delayDuration={100}>
         <Tooltip.Root>
             <Tooltip.Trigger>
