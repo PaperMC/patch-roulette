@@ -1,10 +1,21 @@
-import type { FileStatus } from "./github.svelte";
+import {
+    fetchGithubCommitDiff,
+    fetchGithubComparison,
+    fetchGithubFile,
+    fetchGithubPRComparison,
+    type FileStatus,
+    getGithubToken,
+    type GithubDiff,
+} from "./github.svelte";
 import { parsePatch } from "diff";
 import { DEFAULT_THEME_DARK, DEFAULT_THEME_LIGHT, hasNonHeaderChanges } from "$lib/components/scripts/ConciseDiffView.svelte";
 import type { BundledTheme } from "shiki";
 import { browser } from "$app/environment";
 import { getEffectiveGlobalTheme } from "$lib/theme.svelte";
-import { watchLocalStorage } from "$lib/util";
+import { debounce, type FileTreeNodeData, isImageFile, makeFileTree, type MemoizedPromise, memoizePromise, watchLocalStorage } from "$lib/util";
+import { onDestroy } from "svelte";
+import type { TreeNode } from "$lib/components/scripts/Tree.svelte";
+import { VList } from "virtua/svelte";
 
 const optionsKey = "diff-viewer-global-options";
 
@@ -170,4 +181,203 @@ export function findHeaderChangeOnlyPatches(patchStrings: string[]) {
     }
 
     return result;
+}
+
+export type ImageDiffDetails = {
+    fileA: MemoizedPromise<string> | null;
+    fileB: MemoizedPromise<string> | null;
+    load: boolean;
+};
+
+export class MultiFileDiffViewerState {
+    searchQuery: string = $state("");
+    debouncedSearchQuery: string = $state("");
+    collapsed: boolean[] = $state([]);
+    checked: boolean[] = $state([]);
+    fileDetails: FileDetails[] = $state([]);
+    diffText: string[] = $state([]);
+    images: ImageDiffDetails[] = $state([]);
+    vlist: VList<FileDetails> | undefined = $state();
+
+    readonly fileTreeRoots: TreeNode<FileTreeNodeData>[] = $derived(makeFileTree(this.fileDetails));
+    readonly filteredFileDetails: FileDetails[] = $derived(this.debouncedSearchQuery ? this.fileDetails.filter((f) => this.filterFile(f)) : this.fileDetails);
+    readonly patchHeaderDiffOnly: boolean[] = $derived(findHeaderChangeOnlyPatches(this.diffText));
+
+    constructor() {
+        const updateDebouncedSearch = debounce((value: string) => (this.debouncedSearchQuery = value), 500);
+        $effect(() => updateDebouncedSearch(this.searchQuery));
+
+        // Auto-check all patch header diff only diffs
+        $effect(() => {
+            for (let i = 0; i < this.patchHeaderDiffOnly.length; i++) {
+                if (this.patchHeaderDiffOnly[i] && this.checked[i] === undefined) {
+                    this.checked[i] = true;
+                }
+            }
+        });
+
+        // Make sure to revoke object URLs when the component is destroyed
+        onDestroy(() => this.clearImages());
+    }
+
+    getIndex(details: FileDetails): number {
+        return this.fileDetails.findIndex((f) => f.fromFile === details.fromFile && f.toFile === details.toFile);
+    }
+
+    filterFile(file: FileDetails): boolean {
+        const queryLower = this.debouncedSearchQuery.toLowerCase();
+        return file.toFile.toLowerCase().includes(queryLower) || file.fromFile.toLowerCase().includes(queryLower);
+    }
+
+    clearSearch() {
+        this.searchQuery = "";
+        this.debouncedSearchQuery = "";
+    }
+
+    toggleCollapse(index: number) {
+        this.collapsed[index] = !(this.collapsed[index] || false);
+    }
+
+    expandAll() {
+        this.collapsed = [];
+    }
+
+    collapseAll() {
+        this.collapsed = this.fileDetails.map(() => true);
+    }
+
+    toggleChecked(index: number) {
+        this.checked[index] = !this.checked[index];
+        if (this.checked[index]) {
+            // Auto-collapse on check
+            this.collapsed[index] = true;
+        }
+    }
+
+    scrollToFile(index: number) {
+        if (this.vlist) {
+            if (!this.checked[index]) {
+                // Auto-expand on jump when not checked
+                this.collapsed[index] = false;
+            }
+            this.vlist.scrollToIndex(index, { align: "start" });
+        }
+    }
+
+    clearImages() {
+        for (let i = 0; i < this.images.length; i++) {
+            const image = this.images[i];
+            if (image !== null && image !== undefined) {
+                image.load = false;
+                const fileA = image.fileA;
+                if (fileA?.hasValue()) {
+                    (async () => {
+                        const a = await fileA.getValue();
+                        URL.revokeObjectURL(a);
+                    })();
+                }
+                const fileB = image.fileB;
+                if (fileB?.hasValue()) {
+                    (async () => {
+                        const b = await fileB.getValue();
+                        URL.revokeObjectURL(b);
+                    })();
+                }
+            }
+        }
+        this.images = [];
+    }
+
+    loadPatches(patches: FileDetails[], githubDetails?: GithubDiff) {
+        // Reset state
+        this.collapsed = [];
+        this.checked = [];
+        this.fileDetails = [];
+        this.diffText = [];
+        this.clearImages();
+        this.vlist?.scrollToIndex(0, { align: "start" });
+
+        // Load new state
+        for (let i = 0; i < patches.length; i++) {
+            const patch = patches[i];
+
+            if (githubDetails && isImageFile(patch.fromFile) && isImageFile(patch.toFile)) {
+                const githubDetailsCopy = githubDetails;
+
+                let fileA: MemoizedPromise<string> | null;
+                if (patch.status === "added") {
+                    fileA = null;
+                } else {
+                    fileA = memoizePromise(async () =>
+                        URL.createObjectURL(
+                            await fetchGithubFile(getGithubToken(), githubDetailsCopy.owner, githubDetailsCopy.repo, patch.fromFile, githubDetailsCopy.base),
+                        ),
+                    );
+                }
+
+                let fileB: MemoizedPromise<string> | null;
+                if (patch.status === "removed") {
+                    fileB = null;
+                } else {
+                    fileB = memoizePromise(async () =>
+                        URL.createObjectURL(
+                            await fetchGithubFile(getGithubToken(), githubDetailsCopy.owner, githubDetailsCopy.repo, patch.toFile, githubDetailsCopy.head),
+                        ),
+                    );
+                }
+
+                this.images[i] = { fileA, fileB, load: false };
+                continue;
+            }
+
+            this.diffText[i] = patch.content;
+        }
+
+        // Set this last since it's what the VList loads
+        this.fileDetails.push(...patches);
+    }
+
+    // convert commit or PR url to an API url
+    async loadFromGithubApi(url: string): Promise<boolean> {
+        const regex = /^https:\/\/github\.com\/([^/]+)\/([^/]+)\/(commit|pull|compare)\/([^/]+)\/?$/;
+        const match = url.match(regex);
+
+        if (!match) {
+            alert("Invalid GitHub URL. Use: https://github.com/owner/repo/(commit|pull|compare)/(id|ref_a...ref_b)");
+            return false;
+        }
+
+        const [, owner, repo, type, id] = match;
+        const token = getGithubToken();
+
+        try {
+            if (type === "commit") {
+                const { info, files } = await fetchGithubCommitDiff(token, owner, repo, id);
+                this.loadPatches(files, info);
+                return true;
+            } else if (type === "pull") {
+                const { info, files } = await fetchGithubPRComparison(token, owner, repo, id);
+                this.loadPatches(files, info);
+                return true;
+            } else if (type === "compare") {
+                const refs = id.split("...");
+                if (refs.length !== 2) {
+                    alert(`Invalid comparison URL. '${id}' does not match format 'ref_a...ref_b'`);
+                    return false;
+                }
+                const base = refs[0];
+                const head = refs[1];
+                const { info, files } = await fetchGithubComparison(token, owner, repo, base, head);
+                this.loadPatches(files, info);
+                return true;
+            }
+        } catch (error) {
+            console.error(error);
+            alert(`Failed to load diff from GitHub: ${error}`);
+            return false;
+        }
+
+        alert("Unsupported URL type " + url);
+        return false;
+    }
 }

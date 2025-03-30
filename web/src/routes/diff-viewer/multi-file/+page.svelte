@@ -1,155 +1,42 @@
 <script lang="ts">
     import ConciseDiffView from "$lib/components/ConciseDiffView.svelte";
-    import { debounce, type FileTreeNodeData, isImageFile, makeFileTree, memoizePromise, splitMultiFilePatch } from "$lib/util";
+    import { type FileTreeNodeData, splitMultiFilePatch } from "$lib/util";
     import { VList } from "virtua/svelte";
-    import {
-        fetchGithubCommitDiff,
-        fetchGithubComparison,
-        fetchGithubFile,
-        fetchGithubPRComparison,
-        getGithubToken,
-        getGithubUsername,
-        GITHUB_URL_PARAM,
-        type GithubDiff,
-        installGithubApp,
-        loginWithGithub,
-        logoutGithub,
-    } from "$lib/github.svelte";
-    import { onDestroy, onMount } from "svelte";
-    import { type FileDetails, findHeaderChangeOnlyPatches, getFileStatusProps, GlobalOptions } from "$lib/diff-viewer-multi-file.svelte";
+    import { getGithubUsername, GITHUB_URL_PARAM, installGithubApp, loginWithGithub, logoutGithub } from "$lib/github.svelte";
+    import { onMount } from "svelte";
+    import { type FileDetails, getFileStatusProps, GlobalOptions, MultiFileDiffViewerState } from "$lib/diff-viewer-multi-file.svelte";
     import Tree from "$lib/components/Tree.svelte";
     import Spinner from "$lib/components/Spinner.svelte";
     import type { TreeNode } from "$lib/components/scripts/Tree.svelte";
     import { page } from "$app/state";
     import { goto } from "$app/navigation";
     import ImageDiff from "$lib/components/ImageDiff.svelte";
-    import type { MemoizedPromise } from "$lib/util.js";
     import { Popover, Label, Dialog, Separator } from "bits-ui";
     import SimpleSwitch from "$lib/components/SimpleSwitch.svelte";
     import AddedOrRemovedImage from "$lib/components/AddedOrRemovedImage.svelte";
     import ShikiThemeSelector from "$lib/components/ShikiThemeSelector.svelte";
     import GlobalThemeRadio from "$lib/components/GlobalThemeRadio.svelte";
 
-    type ImageDiffDetails = {
-        fileA: MemoizedPromise<string> | null;
-        fileB: MemoizedPromise<string> | null;
-        load: boolean;
-    };
+    const globalOptions: GlobalOptions = GlobalOptions.load();
+    const viewer = new MultiFileDiffViewerState();
 
-    let data: {
-        values: FileDetails[];
-        lines: string[];
-        images: ImageDiffDetails[];
-    } = $state({ values: [], lines: [], images: [] });
-    let vlist: VList<FileDetails> | undefined = $state();
-    let collapsedState: boolean[] = $state([]);
-    let checkedState: boolean[] = $state([]);
-
-    let globalOptions: GlobalOptions = GlobalOptions.load();
-
-    let patchHeaderDiffOnly: boolean[] = $derived(findHeaderChangeOnlyPatches(data.lines));
-    $effect(() => {
-        for (let i = 0; i < patchHeaderDiffOnly.length; i++) {
-            if (patchHeaderDiffOnly[i] && checkedState[i] === undefined) {
-                checkedState[i] = true;
-            }
+    let sidebarCollapsed = $state(false);
+    let modalOpen = $state(false);
+    let githubUrl = $state("");
+    let dragActive = $state(false);
+    onMount(async () => {
+        const url = page.url.searchParams.get(GITHUB_URL_PARAM);
+        if (url !== null) {
+            githubUrl = url;
+            await handleGithubUrl();
+        } else {
+            modalOpen = true;
         }
     });
 
-    let searchQuery: string = $state("");
-    let debouncedSearchQuery: string = $state("");
-    const updateDebouncedSearch = debounce((value: string) => (debouncedSearchQuery = value), 500);
-    $effect(() => updateDebouncedSearch(searchQuery));
-
-    let sidebarCollapsed = $state(false);
-    let rootNodes = $derived(makeFileTree(data.values));
-    let filteredFiles: FileDetails[] = $derived(debouncedSearchQuery ? data.values.filter(filterFile) : data.values);
-
-    function filterFile(file: FileDetails): boolean {
-        const queryLower = debouncedSearchQuery.toLowerCase();
-        return file.toFile.toLowerCase().includes(queryLower) || file.fromFile.toLowerCase().includes(queryLower);
-    }
-
     function filterFileNode(file: TreeNode<FileTreeNodeData>): boolean {
-        return file.data.type === "file" && filterFile(file.data.data as FileDetails);
+        return file.data.type === "file" && viewer.filterFile(file.data.data as FileDetails);
     }
-
-    function clearImages() {
-        for (let i = 0; i < data.images.length; i++) {
-            const image = data.images[i];
-            if (image !== null && image !== undefined) {
-                image.load = false;
-                const fileA = image.fileA;
-                if (fileA?.hasValue()) {
-                    (async () => {
-                        const a = await fileA.getValue();
-                        URL.revokeObjectURL(a);
-                    })();
-                }
-                const fileB = image.fileB;
-                if (fileB?.hasValue()) {
-                    (async () => {
-                        const b = await fileB.getValue();
-                        URL.revokeObjectURL(b);
-                    })();
-                }
-            }
-        }
-        data.images = [];
-    }
-
-    onDestroy(() => clearImages());
-
-    function loadPatches(patches: FileDetails[]) {
-        // Reset state
-        collapsedState = [];
-        checkedState = [];
-        data.values = [];
-        data.lines = [];
-        clearImages();
-        vlist?.scrollToIndex(0, { align: "start" });
-
-        // Load new state
-        for (let i = 0; i < patches.length; i++) {
-            const patch = patches[i];
-
-            if (githubDetails && isImageFile(patch.fromFile) && isImageFile(patch.toFile)) {
-                const githubDetailsCopy = githubDetails;
-
-                let fileA: MemoizedPromise<string> | null;
-                if (patch.status === "added") {
-                    fileA = null;
-                } else {
-                    fileA = memoizePromise(async () =>
-                        URL.createObjectURL(
-                            await fetchGithubFile(getGithubToken(), githubDetailsCopy.owner, githubDetailsCopy.repo, patch.fromFile, githubDetailsCopy.base),
-                        ),
-                    );
-                }
-
-                let fileB: MemoizedPromise<string> | null;
-                if (patch.status === "removed") {
-                    fileB = null;
-                } else {
-                    fileB = memoizePromise(async () =>
-                        URL.createObjectURL(
-                            await fetchGithubFile(getGithubToken(), githubDetailsCopy.owner, githubDetailsCopy.repo, patch.toFile, githubDetailsCopy.head),
-                        ),
-                    );
-                }
-
-                data.images[i] = { fileA, fileB, load: false };
-                continue;
-            }
-
-            data.lines[i] = patch.content;
-        }
-
-        // Set this last since it's what the VList loads
-        data.values.push(...patches);
-    }
-
-    let modalOpen = $state(false);
 
     function loadFromFile(patchContent: string) {
         const files = splitMultiFilePatch(patchContent);
@@ -158,7 +45,7 @@
             modalOpen = true;
             return;
         }
-        loadPatches(files);
+        viewer.loadPatches(files);
     }
 
     async function handleFileUpload(event: Event) {
@@ -173,10 +60,7 @@
         }
         modalOpen = false;
         loadFromFile(await files[0].text());
-        githubDetails = null;
     }
-
-    let dragActive = $state(false);
 
     function handleDragOver(event: DragEvent) {
         dragActive = true;
@@ -202,21 +86,9 @@
         loadFromFile(await files[0].text());
     }
 
-    let githubUrl = $state("");
-    let githubDetails: GithubDiff | null = $state(null);
-    onMount(async () => {
-        const url = page.url.searchParams.get(GITHUB_URL_PARAM);
-        if (url !== null) {
-            githubUrl = url;
-            await handleGithubUrl();
-        } else {
-            modalOpen = true;
-        }
-    });
-
     async function handleGithubUrl() {
         modalOpen = false;
-        const success = await loadFromGithubApi(githubUrl);
+        const success = await viewer.loadFromGithubApi(githubUrl);
         if (success) {
             const newUrl = new URL(page.url);
             newUrl.searchParams.set(GITHUB_URL_PARAM, githubUrl);
@@ -226,97 +98,11 @@
         modalOpen = true;
     }
 
-    // convert commit or PR url to an API url
-    async function loadFromGithubApi(url: string): Promise<boolean> {
-        const regex = /^https:\/\/github\.com\/([^/]+)\/([^/]+)\/(commit|pull|compare)\/([^/]+)\/?$/;
-        const match = url.match(regex);
-
-        if (!match) {
-            alert("Invalid GitHub URL. Use: https://github.com/owner/repo/(commit|pull|compare)/(id|ref_a...ref_b)");
-            return false;
-        }
-
-        const [, owner, repo, type, id] = match;
-        const token = getGithubToken();
-
-        try {
-            if (type === "commit") {
-                const { info, files } = await fetchGithubCommitDiff(token, owner, repo, id);
-                githubDetails = info;
-                loadPatches(files);
-                return true;
-            } else if (type === "pull") {
-                const { info, files } = await fetchGithubPRComparison(token, owner, repo, id);
-                githubDetails = info;
-                loadPatches(files);
-                return true;
-            } else if (type === "compare") {
-                const refs = id.split("...");
-                if (refs.length !== 2) {
-                    alert(`Invalid comparison URL. '${id}' does not match format 'ref_a...ref_b'`);
-                    return false;
-                }
-                const base = refs[0];
-                const head = refs[1];
-                const { info, files } = await fetchGithubComparison(token, owner, repo, base, head);
-                githubDetails = info;
-                loadPatches(files);
-                return true;
-            }
-        } catch (error) {
-            console.error(error);
-            alert(`Failed to load diff from GitHub: ${error}`);
-            return false;
-        }
-
-        alert("Unsupported URL type " + url);
-        return false;
-    }
-
-    function toggleCollapse(index: number) {
-        collapsedState[index] = !(collapsedState[index] || false);
-    }
-
-    function expandAll() {
-        collapsedState = [];
-    }
-
-    function collapseAll() {
-        collapsedState = data.values.map(() => true);
-    }
-
     function scrollToFileClick(event: Event, index: number) {
         const element: HTMLElement = event.target as HTMLElement;
         // Don't scroll if we clicked the inner checkbox
         if (element.tagName.toLowerCase() !== "input") {
-            scrollToFile(index);
-        }
-    }
-
-    function scrollToFile(index: number) {
-        if (vlist) {
-            if (!checkedState[index]) {
-                // Auto-expand on jump when not checked
-                collapsedState[index] = false;
-            }
-            vlist.scrollToIndex(index, { align: "start" });
-        }
-    }
-
-    function getIndex(details: FileDetails): number {
-        return data.values.findIndex((f) => f.fromFile === details.fromFile && f.toFile === details.toFile);
-    }
-
-    function clearSearch() {
-        searchQuery = "";
-        debouncedSearchQuery = "";
-    }
-
-    function toggleChecked(index: number) {
-        checkedState[index] = !checkedState[index];
-        if (checkedState[index]) {
-            // Auto-collapse on check
-            collapsedState[index] = true;
+            viewer.scrollToFile(index);
         }
     }
 </script>
@@ -470,21 +256,21 @@
                 <input
                     type="text"
                     placeholder="Search files..."
-                    bind:value={searchQuery}
+                    bind:value={viewer.searchQuery}
                     class="w-full rounded-md border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none dark:border-gray-700"
                     autocomplete="off"
                 />
-                {#if debouncedSearchQuery}
-                    <button class="absolute top-1/2 right-4 -translate-y-1/2 text-gray-500 hover:text-gray-700" onclick={clearSearch}>✕</button>
+                {#if viewer.debouncedSearchQuery}
+                    <button class="absolute top-1/2 right-4 -translate-y-1/2 text-gray-500 hover:text-gray-700" onclick={() => viewer.clearSearch()}>✕</button>
                 {/if}
             </div>
             <div class="flex items-center lg:hidden">
                 {@render sidebarToggle()}
             </div>
         </div>
-        {#if filteredFiles.length !== data.values.length}
+        {#if viewer.filteredFileDetails.length !== viewer.fileDetails.length}
             <div class="ms-2 mb-2 text-sm text-gray-600">
-                Showing {filteredFiles.length} of {data.values.length} files
+                Showing {viewer.filteredFileDetails.length} of {viewer.fileDetails.length} files
             </div>
         {/if}
         <div class="flex h-full flex-col overflow-y-auto border-t border-gray-300 dark:border-gray-700">
@@ -492,8 +278,8 @@
                 {#snippet fileSnippet(value: FileDetails)}
                     <div
                         class="flex cursor-pointer items-center justify-between px-2 py-1 hover:bg-gray-100 dark:hover:bg-gray-800"
-                        onclick={(e) => scrollToFileClick(e, getIndex(value))}
-                        onkeydown={(e) => e.key === "Enter" && scrollToFile(getIndex(value))}
+                        onclick={(e) => scrollToFileClick(e, viewer.getIndex(value))}
+                        onkeydown={(e) => e.key === "Enter" && viewer.scrollToFile(viewer.getIndex(value))}
                         role="button"
                         tabindex="0"
                     >
@@ -507,12 +293,12 @@
                             class="ms-1 size-4 shrink-0 rounded-sm border border-gray-300 dark:border-gray-700"
                             autocomplete="off"
                             aria-label="File reviewed"
-                            onchange={() => toggleChecked(getIndex(value))}
-                            checked={checkedState[getIndex(value)]}
+                            onchange={() => viewer.toggleChecked(viewer.getIndex(value))}
+                            checked={viewer.checked[viewer.getIndex(value)]}
                         />
                     </div>
                 {/snippet}
-                <Tree roots={rootNodes} filter={filterFileNode}>
+                <Tree roots={viewer.fileTreeRoots} filter={filterFileNode}>
                     {#snippet nodeRenderer({ node, collapsed, toggleCollapse })}
                         {@const folderIcon = collapsed ? "octicon--file-directory-fill-16" : "octicon--file-directory-open-fill-16"}
                         {#if node.data.type === "file"}
@@ -551,23 +337,27 @@
                 {@render mainDialog()}
             </div>
             <div class="flex flex-row items-center gap-2">
-                <button type="button" class="rounded-md bg-blue-500 px-2 py-1 text-white hover:bg-blue-600" onclick={expandAll}>Expand All</button>
-                <button type="button" class="rounded-md bg-blue-500 px-2 py-1 text-white hover:bg-blue-600" onclick={collapseAll}>Collapse All</button>
+                <button type="button" class="rounded-md bg-blue-500 px-2 py-1 text-white hover:bg-blue-600" onclick={() => viewer.expandAll()}
+                    >Expand All</button
+                >
+                <button type="button" class="rounded-md bg-blue-500 px-2 py-1 text-white hover:bg-blue-600" onclick={() => viewer.collapseAll()}
+                    >Collapse All</button
+                >
                 {@render settingsPopover()}
             </div>
         </div>
         <div class="flex flex-1 flex-col border border-gray-300 dark:border-gray-700">
-            <VList data={data.values} style="height: 100%;" getKey={(_, i) => i} bind:this={vlist} overscan={3}>
+            <VList data={viewer.fileDetails} style="height: 100%;" getKey={(_, i) => i} bind:this={viewer.vlist} overscan={3}>
                 {#snippet children(value, index)}
-                    {@const lines = data.lines[index] !== undefined ? data.lines[index] : null}
-                    {@const image = data.images[index] !== undefined ? data.images[index] : null}
+                    {@const lines = viewer.diffText[index] !== undefined ? viewer.diffText[index] : null}
+                    {@const image = viewer.images[index] !== undefined ? viewer.images[index] : null}
 
                     <div id={`file-${index}`}>
                         <div
                             class="sticky top-0 flex cursor-pointer flex-row items-center justify-between gap-2 border-b border-gray-300 bg-white px-2 py-1 shadow-sm dark:border-gray-700 dark:bg-gray-950"
-                            onclick={() => toggleCollapse(index)}
+                            onclick={() => viewer.toggleCollapse(index)}
                             tabindex="0"
-                            onkeyup={(event) => event.key === "Enter" && toggleCollapse(index)}
+                            onkeyup={(event) => event.key === "Enter" && viewer.toggleCollapse(index)}
                             role="button"
                         >
                             {#if value.fromFile === value.toFile}
@@ -580,14 +370,14 @@
                                 </span>
                             {/if}
                             <div class="ms-0.5 flex items-center gap-2">
-                                {#if patchHeaderDiffOnly[index]}
+                                {#if viewer.patchHeaderDiffOnly[index]}
                                     <span class="rounded-sm bg-gray-300 px-1 text-gray-800">Patch-header-only diff</span>
                                 {/if}
-                                {#if !patchHeaderDiffOnly[index] || !globalOptions.omitPatchHeaderOnlyHunks || (image !== null && image !== undefined)}
+                                {#if !viewer.patchHeaderDiffOnly[index] || !globalOptions.omitPatchHeaderOnlyHunks || (image !== null && image !== undefined)}
                                     <span
                                         class="flex size-6 items-center justify-center rounded-md p-0.5 text-blue-500 hover:bg-gray-100 hover:shadow dark:hover:bg-gray-800"
                                     >
-                                        {#if collapsedState[index]}
+                                        {#if viewer.collapsed[index]}
                                             <span class="iconify size-4 shrink-0 text-blue-500 octicon--chevron-right-16"></span>
                                         {:else}
                                             <span class="iconify size-4 shrink-0 text-blue-500 octicon--chevron-down-16"></span>
@@ -596,7 +386,7 @@
                                 {/if}
                             </div>
                         </div>
-                        {#if !collapsedState[index] && image !== null}
+                        {#if !viewer.collapsed[index] && image !== null}
                             <div class="mb border-b border-gray-300 text-sm dark:border-gray-700">
                                 {#if image.load}
                                     {#if image.fileA !== null && image.fileB !== null}
@@ -625,7 +415,7 @@
                                 {/if}
                             </div>
                         {/if}
-                        {#if !collapsedState[index] && lines !== null && (!patchHeaderDiffOnly[index] || !globalOptions.omitPatchHeaderOnlyHunks)}
+                        {#if !viewer.collapsed[index] && lines !== null && (!viewer.patchHeaderDiffOnly[index] || !globalOptions.omitPatchHeaderOnlyHunks)}
                             <div class="mb border-b border-gray-300 text-sm dark:border-gray-700">
                                 <ConciseDiffView
                                     rawPatchContent={lines}
