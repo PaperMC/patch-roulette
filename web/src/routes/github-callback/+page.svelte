@@ -11,6 +11,7 @@
         githubUsername,
         logoutGithub,
     } from "$lib/github.svelte";
+    import Spinner from "$lib/components/Spinner.svelte";
 
     async function leave() {
         const authReferrer = localStorage.getItem("authReferrer");
@@ -53,6 +54,7 @@
     });
 </script>
 
-<div class="flex h-screen w-screen items-center justify-center">
-    <h1 class="text-3xl text-white">Processing GitHub login...</h1>
+<div class="flex h-screen w-screen flex-col items-center justify-center gap-2">
+    <h1 class="text-3xl">Processing GitHub login...</h1>
+    <Spinner />
 </div>

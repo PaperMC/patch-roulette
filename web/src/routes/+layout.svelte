@@ -7,6 +7,6 @@
     initThemeHooks();
 </script>
 
-<div class="min-h-screen bg-blue-500">
+<div class="min-h-screen dark:bg-gray-950">
     {@render children()}
 </div>
