@@ -34,10 +34,6 @@ buildscript {
   }
 }
 
-tasks.register<Copy>("copyFrontendForDev") {
-    from("web/build")
-    into("src/main/resources/public")
-}
 tasks.register<Copy>("copyFrontend") {
     from("web/build")
     into("build/resources/main/public")
