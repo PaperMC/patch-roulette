@@ -1,3 +1,6 @@
+// Let typescript know about the ...restProps pattern
+export type RestProps = Record<PropertyKey, unknown>;
+
 export type PatchStatus = "WIP" | "AVAILABLE" | "DONE";
 
 export type PatchDetails = {

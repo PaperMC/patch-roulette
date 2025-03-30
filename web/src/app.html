@@ -5,6 +5,11 @@
         <link rel="icon" href="%sveltekit.assets%/favicon.ico" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <title>Patch Roulette</title>
+        <script type="module">
+            // This script is in the head and does not import anything to ensure it runs before hydration and avoids FOUC with dark/auto mode
+            const initialTheme = localStorage.getItem("theme");
+            document.documentElement.setAttribute("data-theme", initialTheme || "auto");
+        </script>
         %sveltekit.head%
     </head>
     <body data-sveltekit-preload-data="hover">

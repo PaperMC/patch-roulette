@@ -50,7 +50,7 @@
 </script>
 
 {#await Promise.all([baseColors, patchLines])}
-    <div class="flex items-center justify-center bg-gray-300 p-4"><Spinner /></div>
+    <div class="flex items-center justify-center bg-gray-300 p-4 dark:bg-gray-700"><Spinner /></div>
 {:then [baseColors, lines]}
     <div style={baseColors} class="diff-content text-patch-line bg-[var(--editor-bg)] font-mono text-[var(--editor-fg)] selection:bg-[var(--select-bg)]">
         {#each lines as line, index (index)}
@@ -77,7 +77,7 @@
 
 <style>
     .diff-content {
-        /* TODO: find default tailwind vars for fallbacks */
+        /* TODO: find default tailwind vars for fallbacks, remove dark mode overrides */
         --editor-fg: var(--editor-fg-themed, var(--color-black));
         --select-bg: var(--select-bg-themed, var(--color-blue-300));
         --editor-bg: var(--editor-bg-themed, var(--color-white));
