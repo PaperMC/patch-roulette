@@ -8,7 +8,7 @@ import {
     type GithubDiff,
 } from "./github.svelte";
 import { parsePatch } from "diff";
-import { DEFAULT_THEME_DARK, DEFAULT_THEME_LIGHT, hasNonHeaderChanges } from "$lib/components/scripts/ConciseDiffView.svelte";
+import { ConciseDiffViewPersistentState, DEFAULT_THEME_DARK, DEFAULT_THEME_LIGHT, hasNonHeaderChanges } from "$lib/components/scripts/ConciseDiffView.svelte";
 import type { BundledTheme } from "shiki";
 import { browser } from "$app/environment";
 import { getEffectiveGlobalTheme } from "$lib/theme.svelte";
@@ -196,6 +196,7 @@ export class MultiFileDiffViewerState {
     checked: boolean[] = $state([]);
     fileDetails: FileDetails[] = $state([]);
     diffText: string[] = $state([]);
+    diffViewCache: Map<FileDetails, ConciseDiffViewPersistentState> = new Map();
     images: ImageDiffDetails[] = $state([]);
     vlist: VList<FileDetails> | undefined = $state();
 

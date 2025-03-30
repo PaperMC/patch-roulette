@@ -1,6 +1,12 @@
-<script lang="ts">
-    import { makeLines, innerPatchLineTypeProps, type PatchLine, patchLineTypeProps, getBaseColors } from "$lib/components/scripts/ConciseDiffView.svelte.js";
-    import { type BundledTheme, bundledThemes, type ThemeRegistration } from "shiki";
+<script lang="ts" generics="K">
+    import {
+        innerPatchLineTypeProps,
+        patchLineTypeProps,
+        getBaseColors,
+        ConciseDiffViewState,
+        ConciseDiffViewPersistentState,
+    } from "$lib/components/scripts/ConciseDiffView.svelte.js";
+    import { type BundledTheme } from "shiki";
     import Spinner from "$lib/components/Spinner.svelte";
 
     interface Props {
@@ -8,35 +14,21 @@
         syntaxHighlighting?: boolean;
         syntaxHighlightingTheme?: BundledTheme;
         omitPatchHeaderOnlyHunks?: boolean;
+
+        cache?: Map<K, ConciseDiffViewPersistentState>;
+        cacheKey?: K;
     }
 
-    let { rawPatchContent, syntaxHighlighting = true, syntaxHighlightingTheme, omitPatchHeaderOnlyHunks = true }: Props = $props();
+    let { rawPatchContent, syntaxHighlighting = true, syntaxHighlightingTheme, omitPatchHeaderOnlyHunks = true, cache, cacheKey }: Props = $props();
 
-    let patchLines: Promise<PatchLine[]> = $state(new Promise<PatchLine[]>(() => []));
+    const view = new ConciseDiffViewState(cache, cacheKey);
     $effect(() => {
-        const promise = makeLines(rawPatchContent, syntaxHighlighting, syntaxHighlightingTheme, omitPatchHeaderOnlyHunks);
-        promise.then(
-            () => {
-                // Don't replace a potentially completed promise with a pending one, wait until the replacement is ready for smooth transitions
-                patchLines = promise;
-            },
-            () => {
-                // Propagate errors
-                patchLines = promise;
-            },
-        );
-    });
-
-    let themeData: Promise<null | { default: ThemeRegistration }> = $derived.by(() => {
-        if (!syntaxHighlightingTheme) {
-            return (async () => null)();
-        }
-        return bundledThemes[syntaxHighlightingTheme]();
+        view.update(rawPatchContent, syntaxHighlighting, syntaxHighlightingTheme, omitPatchHeaderOnlyHunks);
     });
 
     let baseColors: Promise<string> = $state(new Promise<string>(() => []));
     $effect(() => {
-        const promise = getBaseColors(themeData, syntaxHighlighting);
+        const promise = getBaseColors(syntaxHighlightingTheme, syntaxHighlighting);
         // Same idea as above
         promise.then(
             () => {
@@ -49,7 +41,7 @@
     });
 </script>
 
-{#await Promise.all([baseColors, patchLines])}
+{#await Promise.all([baseColors, view.patchLines])}
     <div class="flex items-center justify-center bg-gray-300 p-4 dark:bg-gray-700"><Spinner /></div>
 {:then [baseColors, lines]}
     <div style={baseColors} class="diff-content text-patch-line bg-[var(--editor-bg)] font-mono text-[var(--editor-fg)] selection:bg-[var(--select-bg)]">

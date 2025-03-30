@@ -8,11 +8,13 @@ import {
     type TokensResult,
     type ThemedToken,
     type ThemeRegistration,
+    bundledThemes,
 } from "shiki";
 import { guessLanguageFromExtension } from "$lib/util";
 import type { IRawThemeSetting } from "shiki/textmate";
 import chroma from "chroma-js";
 import { getEffectiveGlobalTheme } from "$lib/theme.svelte";
+import { onDestroy } from "svelte";
 
 export const DEFAULT_THEME_LIGHT: BundledTheme = "github-light-default";
 export const DEFAULT_THEME_DARK: BundledTheme = "github-dark-default";
@@ -782,8 +784,8 @@ function makeTransparent(hex: string | undefined) {
     return `rgba(${rgb[0]}, ${rgb[1]}, ${rgb[2]}, 0.5)`;
 }
 
-export async function getBaseColors(themePromise: Promise<null | { default: ThemeRegistration }>, syntaxHighlighting: boolean): Promise<string> {
-    const theme = await themePromise;
+export async function getBaseColors(themeKey: BundledTheme | undefined, syntaxHighlighting: boolean): Promise<string> {
+    const theme = await getTheme(themeKey);
     if (!syntaxHighlighting || !theme) {
         let styles = "";
         if (getEffectiveGlobalTheme() === "dark") {
@@ -910,4 +912,76 @@ export async function getBaseColors(themePromise: Promise<null | { default: Them
         }
     });
     return styleString;
+}
+
+let cachedThemeKey: BundledTheme | undefined = $state(undefined);
+let cachedTheme: Promise<null | { default: ThemeRegistration }> | undefined = $state(undefined);
+
+async function getTheme(theme: BundledTheme | undefined): Promise<null | { default: ThemeRegistration }> {
+    if (!theme) {
+        return null;
+    }
+    if (cachedThemeKey === theme && cachedTheme) {
+        return cachedTheme;
+    }
+    cachedTheme = bundledThemes[theme]();
+    cachedThemeKey = theme;
+    return cachedTheme;
+}
+
+export class ConciseDiffViewPersistentState {
+    patchLines: Promise<PatchLine[]>;
+
+    constructor(patchLines: Promise<PatchLine[]>) {
+        this.patchLines = patchLines;
+    }
+}
+
+export class ConciseDiffViewState<K> {
+    patchLines: Promise<PatchLine[]> = $state(new Promise<PatchLine[]>(() => []));
+
+    private readonly cache: Map<K, ConciseDiffViewPersistentState> | undefined;
+    private readonly cacheKey: K | undefined;
+
+    constructor(cache: Map<K, ConciseDiffViewPersistentState> | undefined, cacheKey: K | undefined) {
+        this.cache = cache;
+        this.cacheKey = cacheKey;
+        onDestroy(() => {
+            if (this.cache && this.cacheKey) {
+                this.cache.set(this.cacheKey, this.persist());
+            }
+        });
+    }
+
+    update(rawPatchContent: string, syntaxHighlighting: boolean, syntaxHighlightingTheme: BundledTheme | undefined, omitPatchHeaderOnlyHunks: boolean) {
+        if (this.cache && this.cacheKey) {
+            if (this.cache.has(this.cacheKey)) {
+                const state = this.cache.get(this.cacheKey);
+                this.cache.delete(this.cacheKey);
+                if (state) {
+                    this.restore(state);
+                }
+            }
+        }
+
+        const promise = makeLines(rawPatchContent, syntaxHighlighting, syntaxHighlightingTheme, omitPatchHeaderOnlyHunks);
+        promise.then(
+            () => {
+                // Don't replace a potentially completed promise with a pending one, wait until the replacement is ready for smooth transitions
+                this.patchLines = promise;
+            },
+            () => {
+                // Propagate errors
+                this.patchLines = promise;
+            },
+        );
+    }
+
+    persist(): ConciseDiffViewPersistentState {
+        return new ConciseDiffViewPersistentState(this.patchLines);
+    }
+
+    restore(state: ConciseDiffViewPersistentState) {
+        this.patchLines = state.patchLines;
+    }
 }

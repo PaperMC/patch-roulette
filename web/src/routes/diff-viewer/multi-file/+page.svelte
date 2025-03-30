@@ -422,6 +422,8 @@
                                     syntaxHighlighting={globalOptions.syntaxHighlighting}
                                     syntaxHighlightingTheme={globalOptions.getSyntaxHighlightingTheme()}
                                     omitPatchHeaderOnlyHunks={globalOptions.omitPatchHeaderOnlyHunks}
+                                    cache={viewer.diffViewCache}
+                                    cacheKey={value}
                                 />
                             </div>
                         {/if}
