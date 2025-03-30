@@ -24,6 +24,12 @@ public class WebConfig implements WebMvcConfigurer {
                 return requestedResource;
             }
 
+            // try with html extension
+            requestedResource = location.createRelative(resourcePath + ".html");
+            if (requestedResource.exists() && requestedResource.isReadable()) {
+                return requestedResource;
+            }
+
             // It seems to be only a frontend-routing request (Single-Page-Application).
             return new ClassPathResource(DEFAULT_STARTING_PAGE);
         }
