@@ -939,6 +939,7 @@ export class ConciseDiffViewPersistentState {
 
 export class ConciseDiffViewState<K> {
     patchLines: Promise<PatchLine[]> = $state(new Promise<PatchLine[]>(() => []));
+    loaded: boolean = false;
 
     private readonly cache: Map<K, ConciseDiffViewPersistentState> | undefined;
     private readonly cacheKey: K | undefined;
@@ -947,7 +948,7 @@ export class ConciseDiffViewState<K> {
         this.cache = cache;
         this.cacheKey = cacheKey;
         onDestroy(() => {
-            if (this.cache && this.cacheKey) {
+            if (this.loaded && this.cache && this.cacheKey) {
                 this.cache.set(this.cacheKey, this.persist());
             }
         });
@@ -960,19 +961,23 @@ export class ConciseDiffViewState<K> {
                 this.cache.delete(this.cacheKey);
                 if (state) {
                     this.restore(state);
+                    return;
                 }
             }
         }
 
+        // TODO: Cache this promise, so that even if we get destroyed before it completes, we don't waste work (usually when scrolling fast)
         const promise = makeLines(rawPatchContent, syntaxHighlighting, syntaxHighlightingTheme, omitPatchHeaderOnlyHunks);
         promise.then(
             () => {
                 // Don't replace a potentially completed promise with a pending one, wait until the replacement is ready for smooth transitions
                 this.patchLines = promise;
+                this.loaded = true;
             },
             () => {
                 // Propagate errors
                 this.patchLines = promise;
+                this.loaded = true;
             },
         );
     }
@@ -983,5 +988,6 @@ export class ConciseDiffViewState<K> {
 
     restore(state: ConciseDiffViewPersistentState) {
         this.patchLines = state.patchLines;
+        this.loaded = true;
     }
 }
