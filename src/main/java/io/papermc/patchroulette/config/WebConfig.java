@@ -17,7 +17,7 @@ public class WebConfig implements WebMvcConfigurer {
     public static final String DEFAULT_STARTING_PAGE = "public/frontend.html";
     public static final String DEV_STARTING_PAGE = "web/build/frontend.html";
 
-    public static final boolean DEV = true;
+    public static final boolean DEV = false;
 
     static class FrontendResolver extends PathResourceResolver {
         @Override
