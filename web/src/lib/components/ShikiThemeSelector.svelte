@@ -2,15 +2,14 @@
     import { type BundledTheme, bundledThemes } from "shiki";
     import { Label, Select, useId } from "bits-ui";
     import { capitalizeFirstLetter, resizeObserver } from "$lib/util";
+    import type { RestProps } from "$lib/types";
 
-    let {
-        value = $bindable<BundledTheme>(),
-        mode,
-        ...restProps
-    }: {
+    interface Props extends RestProps {
         value: BundledTheme;
         mode: "light" | "dark";
-    } = $props();
+    }
+
+    let { value = $bindable<BundledTheme>(), mode, ...restProps }: Props = $props();
 
     let triggerLabelContainerW: number = $state(0);
     let triggerLabelW: number = $state(0);
