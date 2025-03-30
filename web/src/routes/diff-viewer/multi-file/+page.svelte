@@ -24,11 +24,11 @@
     import { goto } from "$app/navigation";
     import ImageDiff from "$lib/components/ImageDiff.svelte";
     import type { MemoizedPromise } from "$lib/util.js";
-    import { Popover, Label, Dialog, Separator, RadioGroup } from "bits-ui";
+    import { Popover, Label, Dialog, Separator } from "bits-ui";
     import SimpleSwitch from "$lib/components/SimpleSwitch.svelte";
     import AddedOrRemovedImage from "$lib/components/AddedOrRemovedImage.svelte";
     import ShikiThemeSelector from "$lib/components/ShikiThemeSelector.svelte";
-    import { getGlobalTheme, setGlobalTheme } from "$lib/theme.svelte";
+    import GlobalThemeRadio from "$lib/components/GlobalThemeRadio.svelte";
 
     type ImageDiffDetails = {
         fileA: MemoizedPromise<string> | null;
@@ -442,28 +442,7 @@
                 </div>
                 <div class="flex flex-col">
                     <span>Theme</span>
-                    {#snippet themeItem(id, label)}
-                        <Label.Root id="theme-{id}-label" for="theme-{id}" class="flex flex-row items-center gap-1 text-sm">
-                            <RadioGroup.Item
-                                class="flex size-4 items-center justify-center rounded-full border border-gray-300 hover:bg-gray-100 dark:border-gray-700 dark:hover:bg-gray-800"
-                                value={id}
-                                id="theme-{id}"
-                                aria-labelledby="theme-{id}-label"
-                            >
-                                {#snippet children({ checked })}
-                                    {#if checked}
-                                        <span class="size-2.5 rounded-full bg-blue-500"></span>
-                                    {/if}
-                                {/snippet}
-                            </RadioGroup.Item>
-                            {label}
-                        </Label.Root>
-                    {/snippet}
-                    <RadioGroup.Root class="flex flex-row items-center gap-2" bind:value={getGlobalTheme, setGlobalTheme}>
-                        {@render themeItem("light", "Light")}
-                        {@render themeItem("dark", "Dark")}
-                        {@render themeItem("auto", "Auto")}
-                    </RadioGroup.Root>
+                    <GlobalThemeRadio />
                 </div>
                 <Separator.Root class="my-2 h-[1px] w-full bg-gray-300 dark:bg-gray-700" />
                 <Label.Root for="syntax-highlight-toggle" id="syntax-highlight-label" class="mb-0.5">Syntax Highlighting</Label.Root>
