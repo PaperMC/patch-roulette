@@ -387,17 +387,9 @@ export class MultiFileDiffViewerState {
         this.fileDetails.push(...patches);
     }
 
-    // convert commit or PR url to an API url
-    async loadFromGithubApi(url: string): Promise<boolean> {
-        const regex = /^https:\/\/github\.com\/([^/]+)\/([^/]+)\/(commit|pull|compare)\/([^/]+)\/?$/;
-        const match = url.match(regex);
-
-        if (!match) {
-            alert("Invalid GitHub URL. Use: https://github.com/owner/repo/(commit|pull|compare)/(id|ref_a...ref_b)");
-            return false;
-        }
-
-        const [, owner, repo, type, id] = match;
+    // handle matched github url
+    async loadFromGithubApi(match: Array<string>): Promise<boolean> {
+        const [url, owner, repo, type, id] = match;
         const token = getGithubToken();
 
         try {
