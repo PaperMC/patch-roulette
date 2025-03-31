@@ -1,7 +1,7 @@
 <script lang="ts">
     import { Tooltip } from "bits-ui";
 
-    let { remove, add }: { remove: number; add: number } = $props();
+    let { remove = 0, add = 0, brief = false }: { remove?: number; add?: number; brief?: boolean } = $props();
 
     function getAddBarPercentage() {
         if (add === 0) {
@@ -56,24 +56,38 @@
     }
 </script>
 
-<div class="flex flex-row items-center gap-1">
+{#snippet counts()}
     <span class="text-sm text-green-600 dark:text-green-400">+{add.toLocaleString()}</span>
     <span class="text-sm text-red-600 dark:text-red-400">-{remove.toLocaleString()}</span>
-    <Tooltip.Provider delayDuration={100}>
-        <Tooltip.Root>
-            <Tooltip.Trigger>
-                <div class="relative h-3 w-12 bg-gray-300 dark:bg-gray-700">
-                    <div
-                        class="absolute top-0 left-0 h-3 border border-green-700 bg-green-600 dark:border-green-600 dark:bg-green-400"
-                        style={getAddBarStyle()}
-                    ></div>
-                    <div class="absolute top-0 h-3 border border-red-700 bg-red-600 dark:border-red-600 dark:bg-red-400" style={getRemoveBarStyle()}></div>
-                </div>
-            </Tooltip.Trigger>
-            <Tooltip.Content class="rounded-sm border border-gray-300 bg-white px-1 py-0.5 text-sm shadow-sm dark:border-gray-700 dark:bg-gray-950">
-                {@const [ratioAdd, ratioRemove] = getAddRemoveRatio()}
-                <span class="text-green-600 dark:text-green-400">+{ratioAdd}</span>:<span class="text-red-600 dark:text-red-400">-{ratioRemove}</span>
+{/snippet}
+
+{#snippet ratio()}
+    {@const [ratioAdd, ratioRemove] = getAddRemoveRatio()}
+    <span class="text-green-600 dark:text-green-400">+{ratioAdd}</span>:<span class="text-red-600 dark:text-red-400">-{ratioRemove}</span>
+{/snippet}
+
+<div class="flex flex-row items-center gap-1">
+    {#if !brief}
+        {@render counts()}
+    {/if}
+    <Tooltip.Root>
+        <Tooltip.Trigger>
+            <div class="relative h-3 w-12 bg-gray-300 dark:bg-gray-700">
+                <div
+                    class="absolute top-0 left-0 h-3 border border-green-700 bg-green-600 dark:border-green-600 dark:bg-green-400"
+                    style={getAddBarStyle()}
+                ></div>
+                <div class="absolute top-0 h-3 border border-red-700 bg-red-600 dark:border-red-600 dark:bg-red-400" style={getRemoveBarStyle()}></div>
+            </div>
+        </Tooltip.Trigger>
+        <Tooltip.Portal>
+            <Tooltip.Content class="z-50 rounded-sm border border-gray-300 bg-white px-1 py-0.5 text-sm shadow-sm dark:border-gray-700 dark:bg-gray-950">
+                {#if brief}
+                    {@render counts()} <span class="text-gray-700 dark:text-gray-300">({@render ratio()})</span>
+                {:else}
+                    {@render ratio()}
+                {/if}
             </Tooltip.Content>
-        </Tooltip.Root>
-    </Tooltip.Provider>
+        </Tooltip.Portal>
+    </Tooltip.Root>
 </div>

@@ -219,8 +219,11 @@ export class MultiFileDiffViewerState {
         const fileAddedLines: number[] = [];
         const fileRemovedLines: number[] = [];
 
-        for (let i = 0; i < this.diffs.length; i++) {
+        for (let i = 0; i < this.fileDetails.length; i++) {
             const diff = await this.diffs[i];
+            if (!diff) {
+                continue;
+            }
 
             for (let j = 0; j < diff.hunks.length; j++) {
                 const hunk = diff.hunks[j];

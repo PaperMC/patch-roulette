@@ -348,7 +348,7 @@
             </div>
         </div>
         {#await viewer.stats}
-            <DiffStats add={0} remove={0} />
+            <DiffStats />
         {:then stats}
             <DiffStats add={stats.addedLines} remove={stats.removedLines} />
         {/await}
@@ -361,12 +361,20 @@
 
                     <div id={`file-${index}`}>
                         <div
-                            class="sticky top-0 flex cursor-pointer flex-row items-center justify-between gap-2 border-b border-gray-300 bg-white px-2 py-1 shadow-sm dark:border-gray-700 dark:bg-gray-950"
+                            class="sticky top-0 flex cursor-pointer flex-row items-center gap-2 border-b border-gray-300 bg-white px-2 py-1 shadow-sm dark:border-gray-700 dark:bg-gray-950"
                             onclick={() => viewer.toggleCollapse(index)}
                             tabindex="0"
                             onkeyup={(event) => event.key === "Enter" && viewer.toggleCollapse(index)}
                             role="button"
                         >
+                            <!-- Only show stats for text diffs -->
+                            {#if viewer.diffs[index] !== undefined}
+                                {#await viewer.stats}
+                                    <DiffStats brief />
+                                {:then stats}
+                                    <DiffStats brief add={stats.fileAddedLines[index]} remove={stats.fileRemovedLines[index]} />
+                                {/await}
+                            {/if}
                             {#if value.fromFile === value.toFile}
                                 <span class="max-w-full overflow-hidden break-all">{value.toFile}</span>
                             {:else}
@@ -376,7 +384,7 @@
                                     {value.toFile}
                                 </span>
                             {/if}
-                            <div class="ms-0.5 flex items-center gap-2">
+                            <div class="ms-0.5 ml-auto flex items-center gap-2">
                                 {#if viewer.patchHeaderDiffOnly[index]}
                                     <span class="rounded-sm bg-gray-300 px-1 text-gray-800">Patch-header-only diff</span>
                                 {/if}
