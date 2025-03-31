@@ -89,7 +89,18 @@
 
     async function handleGithubUrl() {
         modalOpen = false;
-        const success = await viewer.loadFromGithubApi(githubUrl);
+
+        const regex = /^https:\/\/github\.com\/([^/]+)\/([^/]+)\/(commit|pull|compare)\/([^/]+)/;
+        const match = githubUrl.match(regex);
+
+        if (!match) {
+            alert("Invalid GitHub URL. Use: https://github.com/owner/repo/(commit|pull|compare)/(id|ref_a...ref_b)");
+            modalOpen = true;
+            return;
+        }
+
+        githubUrl = match[0];
+        const success = await viewer.loadFromGithubApi(match);
         if (success) {
             const newUrl = new URL(page.url);
             newUrl.searchParams.set(GITHUB_URL_PARAM, githubUrl);
