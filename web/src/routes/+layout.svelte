@@ -9,7 +9,7 @@
 </script>
 
 <Tooltip.Provider delayDuration={100}>
-    <div class="min-h-screen dark:bg-gray-950">
+    <div class="min-h-screen bg-neutral">
         {@render children()}
     </div>
 </Tooltip.Provider>

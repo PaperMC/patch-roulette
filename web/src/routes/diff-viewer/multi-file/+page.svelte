@@ -11,12 +11,12 @@
     import { page } from "$app/state";
     import { goto } from "$app/navigation";
     import ImageDiff from "$lib/components/ImageDiff.svelte";
-    import { Popover, Label, Dialog, Separator } from "bits-ui";
+    import { Label, Dialog, Separator } from "bits-ui";
     import SimpleSwitch from "$lib/components/SimpleSwitch.svelte";
     import AddedOrRemovedImage from "$lib/components/AddedOrRemovedImage.svelte";
     import ShikiThemeSelector from "$lib/components/ShikiThemeSelector.svelte";
-    import GlobalThemeRadio from "$lib/components/GlobalThemeRadio.svelte";
     import DiffStats from "$lib/components/DiffStats.svelte";
+    import SettingsPopover, { globalThemeSetting, settingsSeparator } from "$lib/components/SettingsPopover.svelte";
 
     const globalOptions: GlobalOptions = GlobalOptions.load();
     const viewer = new MultiFileDiffViewerState();
@@ -223,38 +223,21 @@
 {/snippet}
 
 {#snippet settingsPopover()}
-    <Popover.Root>
-        <Popover.Trigger class="size-8 rounded-md p-1.5 text-blue-500 hover:bg-gray-100 hover:shadow dark:hover:bg-gray-800">
-            <span class="iconify octicon--gear-16" aria-hidden="true"></span>
-        </Popover.Trigger>
-        <Popover.Portal>
-            <Popover.Content
-                aria-label="Options"
-                class="mx-2 flex flex-col rounded-md border border-gray-300 bg-white p-3 shadow-md dark:border-gray-700 dark:bg-gray-950"
-            >
-                <div class="mb-4 flex flex-row justify-between">
-                    <span class="iconify text-blue-500 octicon--gear-16" aria-hidden="true"></span>
-                    <Popover.Close class="size-4">
-                        <span class="iconify text-blue-500 octicon--x-16"></span>
-                    </Popover.Close>
-                </div>
-                <div class="flex flex-col">
-                    <span>Theme</span>
-                    <GlobalThemeRadio />
-                </div>
-                <Separator.Root class="my-2 h-[1px] w-full bg-gray-300 dark:bg-gray-700" />
-                <Label.Root for="syntax-highlight-toggle" id="syntax-highlight-label" class="mb-0.5">Syntax Highlighting</Label.Root>
-                <SimpleSwitch id="syntax-highlight-toggle" aria-labelledby="syntax-highlight-label" bind:checked={globalOptions.syntaxHighlighting} />
-                <ShikiThemeSelector class="flex flex-col gap-0.5" bind:value={globalOptions.syntaxHighlightingThemeLight} mode="light" />
-                <ShikiThemeSelector class="flex flex-col gap-0.5" bind:value={globalOptions.syntaxHighlightingThemeDark} mode="dark" />
-                <Separator.Root class="my-2 h-[1px] w-full bg-gray-300 dark:bg-gray-700" />
-                <Label.Root id="omit-hunks-label" class="max-w-64 break-words" for="omit-hunks">
-                    Omit hunks containing only second-level patch header line changes
-                </Label.Root>
-                <SimpleSwitch id="omit-hunks" aria-labelledby="omit-hunks-label" bind:checked={globalOptions.omitPatchHeaderOnlyHunks} />
-            </Popover.Content>
-        </Popover.Portal>
-    </Popover.Root>
+    <SettingsPopover>
+        {#snippet content()}
+            {@render globalThemeSetting()}
+            {@render settingsSeparator()}
+            <Label.Root for="syntax-highlight-toggle" id="syntax-highlight-label" class="mb-0.5">Syntax Highlighting</Label.Root>
+            <SimpleSwitch id="syntax-highlight-toggle" aria-labelledby="syntax-highlight-label" bind:checked={globalOptions.syntaxHighlighting} />
+            <ShikiThemeSelector class="flex flex-col gap-0.5" bind:value={globalOptions.syntaxHighlightingThemeLight} mode="light" />
+            <ShikiThemeSelector class="flex flex-col gap-0.5" bind:value={globalOptions.syntaxHighlightingThemeDark} mode="dark" />
+            {@render settingsSeparator()}
+            <Label.Root id="omit-hunks-label" class="max-w-64 break-words" for="omit-hunks">
+                Omit hunks containing only second-level patch header line changes
+            </Label.Root>
+            <SimpleSwitch id="omit-hunks" aria-labelledby="omit-hunks-label" bind:checked={globalOptions.omitPatchHeaderOnlyHunks} />
+        {/snippet}
+    </SettingsPopover>
 {/snippet}
 
 <div class="relative flex min-h-screen flex-row justify-center">

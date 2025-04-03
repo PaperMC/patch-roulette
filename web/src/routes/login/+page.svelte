@@ -15,6 +15,6 @@
     }
 </script>
 
-<div id="login" class="bg-blue-500">
+<div id="login">
     <Login {onLogin}></Login>
 </div>

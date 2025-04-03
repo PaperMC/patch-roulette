@@ -26,9 +26,9 @@
 
     const view = new ConciseDiffViewState(cache, cacheKey);
     const parsedPatch = $derived.by(async () => {
-        if (rawPatchContent) {
+        if (rawPatchContent !== undefined) {
             return parseSinglePatch(rawPatchContent);
-        } else if (patch) {
+        } else if (patch !== undefined) {
             return patch;
         }
         throw Error("Either rawPatchContent or patch must be provided");

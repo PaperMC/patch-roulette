@@ -1,7 +1,9 @@
 @import "tailwindcss";
+
 @plugin "@iconify/tailwind4" {
     prefixes: octicon;
 }
+
 @custom-variant dark {
     /* Enable dark mode when data-theme attribute = dark */
     &:where([data-theme="dark"], [data-theme="dark"] *) {
@@ -17,6 +19,38 @@
 * {
     /* Set color-scheme to dark for all elements when the dark variant is active (lets browser handle defaults like white text and dark scrollbars) */
     @apply dark:[color-scheme:dark];
+}
+
+@theme {
+    /* Text colors */
+    --color-em-high-light: rgba(0, 0, 0, 0.87);
+    --color-em-high-dark: rgba(255, 255, 255, 0.87);
+    --color-em-high: var(--color-em-high-light);
+
+    --color-em-med-light: rgba(0, 0, 0, 0.6);
+    --color-em-med-dark: rgba(255, 255, 255, 0.6);
+    --color-em-med: var(--color-em-med-light);
+
+    --color-em-disabled-light: rgba(0, 0, 0, 0.38);
+    --color-em-disabled-dark: rgba(255, 255, 255, 0.38);
+    --color-em-disabled: var(--color-em-disabled-light);
+
+    /* Bg colors */
+    --color-neutral-light: var(--color-white);
+    --color-neutral-dark: var(--color-neutral-900);
+    --color-neutral: var(--color-neutral-light);
+}
+
+@layer base {
+    @variant dark {
+        --color-neutral: var(--color-neutral-dark);
+        --color-em-high: var(--color-em-high-dark);
+        --color-em-med: var(--color-em-med-dark);
+        --color-em-disabled: var(--color-em-disabled-dark);
+    }
+    html {
+        color: var(--color-em-high);
+    }
 }
 
 .png-bg {

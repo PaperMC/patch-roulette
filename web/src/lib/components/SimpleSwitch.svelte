@@ -26,7 +26,7 @@
 
 <Switch.Root bind:checked bind:ref {...mergedProps}>
     <Switch.Thumb
-        class="block translate-0 transform rounded-full bg-white transition-transform duration-200 ease-in dark:bg-gray-950"
+        class="block translate-0 transform rounded-full bg-neutral transition-transform duration-200 ease-in"
         style="height: {0.25 * size}rem; width: {0.25 * size}rem; --tw-translate-x: {translate};"
         aria-hidden="true"
     />

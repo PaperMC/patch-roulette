@@ -6,10 +6,12 @@
     import type { PatchDetails } from "$lib/types";
     import { Duration, DateTime } from "luxon";
 
-    let { data = { value: [] }, gridClass = "ag-theme-quartz" } = $props<{
-        data: { value: PatchDetails[] };
+    interface Props {
+        data: PatchDetails[];
         gridClass?: string;
-    }>();
+    }
+
+    let { data = [], gridClass = "ag-theme-quartz" }: Props = $props();
 
     const gridOptions: GridOptions<PatchDetails> = {
         columnDefs: [
@@ -63,7 +65,7 @@
 </script>
 
 <div class="flex w-full flex-1">
-    <AgGrid {gridOptions} rowData={data.value} {modules} {gridClass} />
+    <AgGrid {gridOptions} rowData={data} {modules} {gridClass} />
 </div>
 
 <style>

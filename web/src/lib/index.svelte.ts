@@ -2,9 +2,6 @@ import { fetchApi } from "./api";
 import type { PatchDetails, Stats } from "./types";
 
 export const token: { value: string | null } = $state({ value: null });
-export const patches: { value: PatchDetails[] } = $state({ value: [] });
-export const stats: { value: Stats | null } = $state({ value: null });
-export const refreshing: { value: boolean } = $state({ value: false });
 
 export function getUsername() {
     if (token.value == null) {
@@ -13,40 +10,69 @@ export function getUsername() {
     return atob(token.value).split(":")[0];
 }
 
-export async function onVersionSelect(mcVersion: string) {
-    try {
-        refreshing.value = true;
-        await onVersionSelect_(mcVersion);
-    } finally {
-        refreshing.value = false;
+export class PatchRouletteState {
+    patches: PatchDetails[] = $state([]);
+    stats: Stats | null = $state(null);
+    refreshing: boolean = $state(false);
+    autoRefresh: boolean = $state(false);
+    selectedVersion: string = $state("");
+
+    private refreshTask: ReturnType<typeof setInterval> | null = null;
+
+    constructor() {
+        const refreshInterval = 1;
+
+        $effect(() => {
+            if (this.autoRefresh && this.selectedVersion) {
+                this.refreshTask = setInterval(async () => {
+                    await this.onVersionSelect(this.selectedVersion);
+                }, refreshInterval * 60000); // interval is in minutes
+            }
+
+            return () => {
+                if (this.refreshTask) {
+                    clearInterval(this.refreshTask);
+                    this.refreshTask = null;
+                }
+            };
+        });
     }
-}
 
-async function onVersionSelect_(mcVersion: string) {
-    if (!mcVersion) {
-        alert("Please enter a Minecraft version.");
-        return;
+    async onVersionSelect(mcVersion: string) {
+        try {
+            this.refreshing = true;
+            await this.onVersionSelect_(mcVersion);
+        } finally {
+            this.refreshing = false;
+        }
     }
 
-    const patchResponse = await fetchApi(`/get-all-patches?minecraftVersion=${mcVersion}`, {
-        method: "GET",
-        token: localStorage.getItem("token")!,
-    });
+    async onVersionSelect_(mcVersion: string) {
+        if (!mcVersion) {
+            alert("Please enter a Minecraft version.");
+            return;
+        }
 
-    if (patchResponse.ok) {
-        patches.value = await patchResponse.json();
-    } else {
-        alert("Failed to fetch patches. Please try again.");
-    }
+        const patchResponse = await fetchApi(`/get-all-patches?minecraftVersion=${mcVersion}`, {
+            method: "GET",
+            token: localStorage.getItem("token")!,
+        });
 
-    const statsResponse = await fetchApi(`/stats?minecraftVersion=${mcVersion}`, {
-        method: "GET",
-        token: localStorage.getItem("token")!,
-    });
+        if (patchResponse.ok) {
+            this.patches = await patchResponse.json();
+        } else {
+            alert("Failed to fetch patches. Please try again.");
+        }
 
-    if (statsResponse.ok) {
-        stats.value = await statsResponse.json();
-    } else {
-        alert("Failed to fetch stats. Please try again.");
+        const statsResponse = await fetchApi(`/stats?minecraftVersion=${mcVersion}`, {
+            method: "GET",
+            token: localStorage.getItem("token")!,
+        });
+
+        if (statsResponse.ok) {
+            this.stats = await statsResponse.json();
+        } else {
+            alert("Failed to fetch stats. Please try again.");
+        }
     }
 }
