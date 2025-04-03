@@ -5,6 +5,7 @@
     import { ClientSideRowModelModule } from "@ag-grid-community/client-side-row-model";
     import { Duration } from "luxon";
     import { getAgTheme } from "$lib/index.svelte";
+    import Spinner from "$lib/components/Spinner.svelte";
 
     interface Props {
         data: Stats | null;
@@ -73,8 +74,9 @@
 
 <div class="flex w-full flex-1 flex-col">
     {#if !data?.total}
-        <div class="flex h-full items-center justify-center">
-            <p class="text-gray-500">Loading statistics...</p>
+        <div class="flex h-full flex-col items-center justify-center">
+            <span class="mb-2">Loading statistics...</span>
+            <Spinner />
         </div>
     {:else}
         <div class="mb-4">
