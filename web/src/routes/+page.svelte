@@ -9,6 +9,7 @@
     import { Label } from "bits-ui";
     import { capitalizeFirstLetter } from "$lib/util";
     import SettingsPopover, { globalThemeSetting, settingsSeparator } from "$lib/components/SettingsPopover.svelte";
+    import Spinner from "$lib/components/Spinner.svelte";
 
     let instance = new PatchRouletteState();
 
@@ -71,11 +72,11 @@
 
 {#snippet refreshButton()}
     <button
-        class="focus:shadow-outline me-2 rounded bg-blue-500 px-2 py-1 text-white hover:bg-blue-700 focus:outline-none"
+        class="focus:shadow-outline me-2 flex items-center justify-center gap-2 rounded bg-blue-500 px-2 py-1 text-white hover:bg-blue-700 focus:outline-none"
         onclick={() => instance.onVersionSelect(instance.selectedVersion)}
     >
         {#if instance.refreshing}
-            Refreshing...
+            Refreshing...<Spinner size={4} class="border-white" />
         {:else}
             Refresh
         {/if}
