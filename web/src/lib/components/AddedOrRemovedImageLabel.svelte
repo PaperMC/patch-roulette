@@ -12,7 +12,7 @@
     let iconClasses = $derived(mode === "add" ? "octicon--file-added-16 text-green-600" : "octicon--file-removed-16 text-red-600");
 </script>
 
-<div class="flex flex-col items-center justify-center rounded-sm bg-white p-2 shadow-sm dark:bg-gray-950">
+<div class="flex flex-col items-center justify-center rounded-sm bg-neutral p-2 shadow-sm">
     <span class="iconify size-4 {iconClasses} mb-1"></span>
     {#await dims then { width, height }}
         <span class="text-xs"><span class="font-semibold">W:</span> {width}px</span>

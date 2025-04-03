@@ -140,9 +140,7 @@
         </Dialog.Trigger>
         <Dialog.Portal>
             <Dialog.Overlay class="fixed inset-0 z-50 bg-black/50 dark:bg-white/20" />
-            <Dialog.Content
-                class="fixed top-1/2 left-1/2 z-50 w-full max-w-fit -translate-x-1/2 -translate-y-1/2 rounded-md bg-white p-4 shadow-md dark:bg-gray-950"
-            >
+            <Dialog.Content class="fixed top-1/2 left-1/2 z-50 w-full max-w-fit -translate-x-1/2 -translate-y-1/2 rounded-md bg-neutral p-4 shadow-md">
                 <!-- svelte-ignore a11y_no_static_element_interactions -->
                 <div
                     class="file-drop-target flex flex-col"
@@ -164,13 +162,13 @@
                     <label for="githubUrl">
                         <span>Load from GitHub URL</span>
                         <br />
-                        <span class="text-sm text-gray-600">Supports commit, PR, and comparison URLs</span>
+                        <span class="text-sm text-em-med">Supports commit, PR, and comparison URLs</span>
                     </label>
                     <div class="mb-4 flex flex-row items-center gap-2">
                         <input
                             id="githubUrl"
                             type="text"
-                            class="grow rounded-md border border-gray-300 px-2 py-1 dark:border-gray-700"
+                            class="grow rounded-md border px-2 py-1"
                             bind:value={githubUrl}
                             onkeyup={(event) => {
                                 if (event.key === "Enter") {
@@ -242,7 +240,7 @@
 
 <div class="relative flex min-h-screen flex-row justify-center">
     <div
-        class="absolute top-0 left-0 z-10 h-full w-full flex-col border-e border-gray-300 bg-white md:w-[350px] md:shadow-md lg:static lg:h-auto lg:shadow-none dark:border-gray-700 dark:bg-gray-950"
+        class="absolute top-0 left-0 z-10 h-full w-full flex-col border-e md:w-[350px] md:shadow-md lg:static lg:h-auto lg:shadow-none"
         class:flex={!sidebarCollapsed}
         class:hidden={sidebarCollapsed}
     >
@@ -252,7 +250,7 @@
                     type="text"
                     placeholder="Search files..."
                     bind:value={viewer.searchQuery}
-                    class="w-full rounded-md border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none dark:border-gray-700"
+                    class="w-full rounded-md border px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none"
                     autocomplete="off"
                 />
                 {#if viewer.debouncedSearchQuery}
@@ -268,7 +266,7 @@
                 Showing {viewer.filteredFileDetails.length} of {viewer.fileDetails.length} files
             </div>
         {/if}
-        <div class="flex h-full flex-col overflow-y-auto border-t border-gray-300 dark:border-gray-700">
+        <div class="flex h-full flex-col overflow-y-auto border-t">
             <div class="h-100">
                 {#snippet fileSnippet(value: FileDetails)}
                     <div
@@ -285,7 +283,7 @@
                         <span class="grow overflow-hidden break-all">{value.toFile.substring(value.toFile.lastIndexOf("/") + 1)}</span>
                         <input
                             type="checkbox"
-                            class="ms-1 size-4 shrink-0 rounded-sm border border-gray-300 dark:border-gray-700"
+                            class="ms-1 size-4 shrink-0 rounded-sm border"
                             autocomplete="off"
                             aria-label="File reviewed"
                             onchange={() => viewer.toggleChecked(viewer.getIndex(value))}
@@ -325,7 +323,7 @@
             </div>
         </div>
     </div>
-    <div class="flex grow flex-col bg-white p-3 dark:bg-gray-950">
+    <div class="flex grow flex-col p-3">
         <div class="mb-2 flex justify-between gap-2">
             <div class="flex flex-row items-center gap-2">
                 {@render sidebarToggle()}
@@ -346,7 +344,7 @@
         {:then stats}
             <DiffStats add={stats.addedLines} remove={stats.removedLines} />
         {/await}
-        <div class="flex flex-1 flex-col border border-gray-300 dark:border-gray-700">
+        <div class="flex flex-1 flex-col border">
             <VList data={viewer.fileDetails} style="height: 100%;" getKey={(_, i) => i} bind:this={viewer.vlist} overscan={3}>
                 {#snippet children(value, index)}
                     {@const lines = viewer.diffText[index] !== undefined ? viewer.diffText[index] : null}
@@ -355,7 +353,7 @@
 
                     <div id={`file-${index}`}>
                         <div
-                            class="sticky top-0 flex cursor-pointer flex-row items-center gap-2 border-b border-gray-300 bg-white px-2 py-1 shadow-sm dark:border-gray-700 dark:bg-gray-950"
+                            class="sticky top-0 flex cursor-pointer flex-row items-center gap-2 border-b bg-neutral px-2 py-1 shadow-sm"
                             onclick={() => viewer.toggleCollapse(index)}
                             tabindex="0"
                             onkeyup={(event) => event.key === "Enter" && viewer.toggleCollapse(index)}
@@ -396,7 +394,7 @@
                             </div>
                         </div>
                         {#if !viewer.collapsed[index] && image !== null}
-                            <div class="mb border-b border-gray-300 text-sm dark:border-gray-700">
+                            <div class="mb border-b text-sm">
                                 {#if image.load}
                                     {#if image.fileA !== null && image.fileB !== null}
                                         {#await Promise.all([image.fileA.getValue(), image.fileB.getValue()])}
@@ -425,7 +423,7 @@
                             </div>
                         {/if}
                         {#if !viewer.collapsed[index] && lines !== null && (!viewer.patchHeaderDiffOnly[index] || !globalOptions.omitPatchHeaderOnlyHunks)}
-                            <div class="mb border-b border-gray-300 text-sm dark:border-gray-700">
+                            <div class="mb border-b text-sm">
                                 <ConciseDiffView
                                     {patch}
                                     syntaxHighlighting={globalOptions.syntaxHighlighting}

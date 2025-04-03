@@ -112,7 +112,7 @@
             <span class="iconify {iconClass} me-1 size-4" aria-hidden="true"></span>{forMode}
         </button>
     {/snippet}
-    <div class="mb-4 flex flex-row gap-2 rounded-lg bg-white p-2 shadow-sm dark:bg-gray-950">
+    <div class="mb-4 flex flex-row gap-2 rounded-lg bg-neutral p-2 shadow-sm">
         {@render modeButton("slide", "octicon--image-16")}
         {@render modeButton("side-by-side", "octicon--columns-16")}
         {@render modeButton("fade", "octicon--image-16")}
@@ -148,7 +148,7 @@
             <div class="absolute top-1/2 h-full w-0.5 -translate-x-1/2 -translate-y-1/2 bg-gray-600" style="left: calc({percentDragged}%);"></div>
             <div
                 use:dragSlider
-                class="absolute top-1/2 flex -translate-x-1/2 -translate-y-1/2 cursor-col-resize items-center justify-center rounded-sm bg-white px-0.5 py-1 shadow-sm select-none dark:bg-gray-950"
+                class="absolute top-1/2 flex -translate-x-1/2 -translate-y-1/2 cursor-col-resize items-center justify-center rounded-sm bg-neutral px-0.5 py-1 shadow-sm select-none"
                 style="left: calc({percentDragged}%);"
             >
                 <span class="iconify size-4 octicon--grabber-16"></span>
@@ -177,10 +177,7 @@
     <div class="mt-4 flex w-full max-w-[280px] items-center">
         <Slider.Root type="single" bind:value={fadePercent} class="relative flex w-full touch-none items-center select-none">
             <span class="relative h-0.5 w-full grow cursor-pointer overflow-hidden rounded-full bg-blue-500"> </span>
-            <Slider.Thumb
-                index={0}
-                class="block size-4 cursor-pointer rounded-full border-gray-300 bg-white shadow-sm transition-colors hover:border active:scale-[0.98]"
-            />
+            <Slider.Thumb index={0} class="block size-4 cursor-pointer rounded-full bg-neutral shadow-sm transition-colors hover:border active:scale-[0.98]" />
         </Slider.Root>
     </div>
 {/snippet}

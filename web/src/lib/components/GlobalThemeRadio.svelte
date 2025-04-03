@@ -9,7 +9,7 @@
     {@const itemId = useId()}
     <Label.Root id={labelId} for={itemId} class="flex flex-row items-center gap-1 text-sm">
         <RadioGroup.Item
-            class="flex size-4 items-center justify-center rounded-full border border-gray-300 hover:bg-gray-100 dark:border-gray-700 dark:hover:bg-gray-800"
+            class="flex size-4 items-center justify-center rounded-full border hover:bg-gray-100 dark:hover:bg-gray-800"
             value={theme}
             id={itemId}
             aria-labelledby={labelId}

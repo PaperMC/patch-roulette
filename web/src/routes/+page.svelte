@@ -69,6 +69,37 @@
     </SettingsPopover>
 {/snippet}
 
+{#snippet refreshButton()}
+    <button
+        class="focus:shadow-outline me-2 rounded bg-blue-500 px-2 py-1 text-white hover:bg-blue-700 focus:outline-none"
+        onclick={() => instance.onVersionSelect(instance.selectedVersion)}
+    >
+        {#if instance.refreshing}
+            Refreshing...
+        {:else}
+            Refresh
+        {/if}
+    </button>
+{/snippet}
+
+{#snippet viewSelector()}
+    <div class="flex gap-2">
+        {#each views as view (view)}
+            <button
+                class="flex items-center justify-center rounded-sm px-2 py-1 text-blue-500 hover:bg-gray-100 hover:shadow dark:hover:bg-gray-700"
+                class:bg-gray-200={currentView === view}
+                class:dark:bg-gray-800={currentView === view}
+                class:hover:bg-gray-200={currentView === view}
+                class:dark:hover:bg-gray-800={currentView === view}
+                class:shadow={currentView === view}
+                onclick={() => (currentView = view)}
+            >
+                {capitalizeFirstLetter(view)}
+            </button>
+        {/each}
+    </div>
+{/snippet}
+
 <div class="flex min-h-screen flex-row justify-center px-2">
     <div class="flex min-h-[500px] max-w-7xl grow flex-col p-3 md:p-6">
         <div class="mb-2 flex flex-row items-start justify-between">
@@ -103,7 +134,7 @@
                     id="mcVersion"
                     bind:value={instance.selectedVersion}
                     onchange={handleVersionSelect}
-                    class="rounded border border-gray-300 px-2 py-1 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                    class="rounded border px-2 py-1 focus:ring-2 focus:ring-blue-500 focus:outline-none"
                 >
                     <option value="">Select a version...</option>
                     {#each minecraftVersions as version (version)}
@@ -112,29 +143,8 @@
                 </select>
             </div>
             <div class="me-2 flex flex-row items-center">
-                <button
-                    class="focus:shadow-outline me-2 rounded bg-blue-500 px-2 py-1 text-white hover:bg-blue-700 focus:outline-none"
-                    onclick={() => instance.onVersionSelect(instance.selectedVersion)}
-                >
-                    {#if instance.refreshing}
-                        Refreshing...
-                    {:else}
-                        Refresh
-                    {/if}
-                </button>
-                <div class="flex rounded bg-blue-300 text-white">
-                    {#each views as view, index (view)}
-                        <button
-                            class="px-2 py-1 text-white hover:bg-blue-700 focus:outline-none"
-                            class:bg-blue-500={currentView === view}
-                            class:rounded-l={index === 0}
-                            class:rounded-r={index === views.length - 1}
-                            onclick={() => (currentView = view)}
-                        >
-                            {capitalizeFirstLetter(view)}
-                        </button>
-                    {/each}
-                </div>
+                {@render refreshButton()}
+                {@render viewSelector()}
             </div>
         </div>
 

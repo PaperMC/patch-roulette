@@ -788,8 +788,6 @@ export async function getBaseColors(themeKey: BundledTheme | undefined, syntaxHi
             // Make sure tailwind emits these props
             // "text-green-600 text-red-600 text-green-700 text-red-700 text-green-800 text-red-800 text-blue-800"
             styles += `
-              --editor-bg-themed: var(--color-gray-950);
-              --editor-fg-themed: var(--color-white);
               --hunk-header-bg-themed: var(--color-gray-800);
               --select-bg-themed: var(--color-blue-800);
 

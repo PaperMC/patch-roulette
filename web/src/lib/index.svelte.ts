@@ -1,5 +1,7 @@
 import { fetchApi } from "./api";
 import type { PatchDetails, Stats } from "./types";
+import { colorSchemeDark, colorSchemeLight, themeQuartz } from "@ag-grid-community/theming";
+import { getEffectiveGlobalTheme } from "$lib/theme.svelte";
 
 export const token: { value: string | null } = $state({ value: null });
 
@@ -8,6 +10,17 @@ export function getUsername() {
         throw new Error("No token present.");
     }
     return atob(token.value).split(":")[0];
+}
+
+const agTheme = $derived.by(() => {
+    if (getEffectiveGlobalTheme() === "dark") {
+        return themeQuartz.withPart(colorSchemeDark);
+    }
+    return themeQuartz.withPart(colorSchemeLight);
+});
+
+export function getAgTheme() {
+    return agTheme;
 }
 
 export class PatchRouletteState {

@@ -1,10 +1,10 @@
 <script lang="ts">
     import { AgGrid } from "ag-grid-svelte5-extended";
     import { ClientSideRowModelModule } from "@ag-grid-community/client-side-row-model";
-    import { themeQuartz } from "@ag-grid-community/theming";
     import { type GridOptions } from "@ag-grid-community/core";
     import type { PatchDetails } from "$lib/types";
     import { Duration, DateTime } from "luxon";
+    import { getAgTheme } from "$lib/index.svelte";
 
     interface Props {
         data: PatchDetails[];
@@ -13,7 +13,7 @@
 
     let { data = [], gridClass = "ag-theme-quartz" }: Props = $props();
 
-    const gridOptions: GridOptions<PatchDetails> = {
+    const gridOptions: GridOptions<PatchDetails> = $derived({
         columnDefs: [
             {
                 field: "path",
@@ -57,9 +57,9 @@
             },
         ],
         getRowId: (params) => params.data.path,
-        theme: themeQuartz,
+        theme: getAgTheme(),
         loadThemeGoogleFonts: false,
-    };
+    });
 
     const modules = [ClientSideRowModelModule];
 </script>

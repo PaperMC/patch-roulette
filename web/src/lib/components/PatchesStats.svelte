@@ -2,9 +2,9 @@
     import type { Stats, UserStats } from "$lib/types";
     import { AgGrid } from "ag-grid-svelte5-extended";
     import type { GridOptions } from "@ag-grid-community/core";
-    import { themeQuartz } from "@ag-grid-community/theming";
     import { ClientSideRowModelModule } from "@ag-grid-community/client-side-row-model";
     import { Duration } from "luxon";
+    import { getAgTheme } from "$lib/index.svelte";
 
     interface Props {
         data: Stats | null;
@@ -30,18 +30,18 @@
             let classes: string = "";
 
             if (index === 0) {
-                classes = "bg-[#EFBF04]! font-semibold";
+                classes = "bg-[#EFBF04]/80! font-semibold";
             } else if (index === 1) {
-                classes = "bg-[#C0C0C0]! font-semibold";
+                classes = "bg-[#C0C0C0]/80! font-semibold";
             } else if (index === 2) {
-                classes = "bg-[#CE8946]! font-semibold";
+                classes = "bg-[#CE8946]/80! font-semibold";
             }
 
             return { ...user, rowClasses: classes };
         });
     });
 
-    const gridOptions: GridOptions<StyledUserStats> = {
+    const gridOptions: GridOptions<StyledUserStats> = $derived({
         columnDefs: [
             { field: "user", flex: 2, sortable: false },
             { field: "wip", flex: 1, sortable: true },
@@ -65,9 +65,9 @@
         getRowClass: (params) => {
             return params.data!.rowClasses;
         },
-        theme: themeQuartz,
+        theme: getAgTheme(),
         loadThemeGoogleFonts: false,
-    };
+    });
     const modules = [ClientSideRowModelModule];
 </script>
 
@@ -109,8 +109,8 @@
                     Time Spent: {Duration.fromISO(data.timeSpent).toHuman()}
                 </span>
             </div>
-            <div class="h-4 w-full overflow-hidden rounded-full bg-gray-200 shadow">
-                <div class="flex h-full w-full">
+            <div class="h-4 w-full overflow-hidden rounded-full shadow">
+                <div class="flex h-full w-full bg-gray-200 dark:dark:bg-white/20">
                     <div class="h-full bg-green-500 dark:bg-green-800" style="width: {getProgressPercentage(data.done, data.total)}%"></div>
                     <div class="h-full bg-orange-500 dark:bg-orange-800" style="width: {getProgressPercentage(data.wip, data.total)}%"></div>
                     <div class="h-full bg-yellow-500 dark:bg-yellow-800" style="width: {getProgressPercentage(data.available, data.total)}%"></div>

@@ -16,10 +16,6 @@
         }
     }
 }
-* {
-    /* Set color-scheme to dark for all elements when the dark variant is active (lets browser handle defaults like white text and dark scrollbars) */
-    @apply dark:[color-scheme:dark];
-}
 
 @theme {
     /* Text colors */
@@ -39,17 +35,30 @@
     --color-neutral-light: var(--color-white);
     --color-neutral-dark: var(--color-neutral-900);
     --color-neutral: var(--color-neutral-light);
+
+    /* Border colors */
+    --color-edge-light: rgba(0, 0, 0, 0.2);
+    --color-edge-dark: rgba(255, 255, 255, 0.2);
+    --color-edge: var(--color-edge-light);
 }
 
 @layer base {
     @variant dark {
-        --color-neutral: var(--color-neutral-dark);
         --color-em-high: var(--color-em-high-dark);
         --color-em-med: var(--color-em-med-dark);
         --color-em-disabled: var(--color-em-disabled-dark);
+
+        --color-neutral: var(--color-neutral-dark);
+
+        --color-edge: var(--color-edge-dark);
     }
     html {
         color: var(--color-em-high);
+
+        @apply dark:[color-scheme:dark];
+    }
+    * {
+        border-color: var(--color-edge);
     }
 }
 

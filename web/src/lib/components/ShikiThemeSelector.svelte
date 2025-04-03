@@ -24,7 +24,7 @@
         <Select.Trigger
             aria-labelledby={labelId}
             id={triggerId}
-            class="flex w-44 cursor-pointer items-center gap-1 rounded-lg border border-gray-300 px-2 py-1 text-sm  select-none hover:bg-gray-100 dark:border-gray-700 dark:hover:bg-gray-800"
+            class="flex w-44 cursor-pointer items-center gap-1 rounded-lg border px-2 py-1 text-sm  select-none hover:bg-gray-100 dark:hover:bg-gray-800"
         >
             <span aria-hidden="true" class="iconify shrink-0 text-base text-blue-500 octicon--single-select-16"></span>
             <div bind:clientWidth={triggerLabelContainerW} class="flex grow overflow-hidden" class:reveal-right={scrollDistance !== 0}>
@@ -39,7 +39,7 @@
             </div>
         </Select.Trigger>
         <Select.Portal>
-            <Select.Content class="max-h-64 overflow-y-auto rounded-lg border border-gray-300 bg-white shadow-md dark:border-gray-700 dark:bg-gray-950">
+            <Select.Content class="max-h-64 overflow-y-auto rounded-lg border bg-neutral shadow-md">
                 {#each Object.keys(bundledThemes) as theme (theme)}
                     <Select.Item value={theme} class="data-highlighted:bg-blue-400 data-highlighted:text-white">
                         {#snippet children({ selected })}
@@ -56,7 +56,7 @@
 
 <style>
     .reveal-right {
-        mask-image: linear-gradient(to right, var(--color-gray-950) 0%, var(--color-gray-950) 90%, transparent 100%);
+        mask-image: linear-gradient(to right, var(--color-neutral) 0%, var(--color-neutral) 90%, transparent 100%);
     }
     .reveal-right:hover {
         mask-image: initial;

@@ -80,10 +80,10 @@
 
 <style>
     .diff-content {
-        /* TODO: find default tailwind vars for fallbacks, remove dark mode overrides */
-        --editor-fg: var(--editor-fg-themed, var(--color-black));
+        --editor-fg: var(--editor-fg-themed, var(--color-em-high));
+        /* TODO: better fallback, remove dark mode override */
         --select-bg: var(--select-bg-themed, var(--color-blue-300));
-        --editor-bg: var(--editor-bg-themed, var(--color-white));
+        --editor-bg: var(--editor-bg-themed, var(--color-neutral));
 
         --inserted-text-bg: var(--inserted-text-bg-themed, initial);
         --removed-text-bg: var(--removed-text-bg-themed, initial);

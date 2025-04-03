@@ -31,21 +31,11 @@
         <h1 class="mb-6 w-full text-center text-2xl font-bold">Patch Roulette</h1>
         <div class="mb-4">
             <label for="username" class="mb-2 block text-sm font-bold">Username</label>
-            <input
-                type="text"
-                id="username"
-                name="username"
-                class="w-full rounded border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none"
-            />
+            <input type="text" id="username" name="username" class="w-full rounded border px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none" />
         </div>
         <div class="mb-6">
             <label for="password" class="mb-2 block text-sm font-bold">Password</label>
-            <input
-                type="password"
-                id="password"
-                name="password"
-                class="w-full rounded border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none"
-            />
+            <input type="password" id="password" name="password" class="w-full rounded border px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none" />
         </div>
         <button type="submit" class="focus:shadow-outline w-full rounded bg-blue-500 px-4 py-2 font-bold text-white hover:bg-blue-700 focus:outline-none">
             Login

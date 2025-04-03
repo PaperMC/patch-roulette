@@ -81,7 +81,7 @@
             </div>
         </Tooltip.Trigger>
         <Tooltip.Portal>
-            <Tooltip.Content class="z-50 rounded-sm border border-gray-300 bg-white px-1 py-0.5 text-sm shadow-sm dark:border-gray-700 dark:bg-gray-950">
+            <Tooltip.Content class="z-50 rounded-sm border bg-neutral px-1 py-0.5 text-sm shadow-sm">
                 {#if brief}
                     {@render counts()} <span class="text-gray-700 dark:text-gray-300">({@render ratio()})</span>
                 {:else}
