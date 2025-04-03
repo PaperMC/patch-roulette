@@ -1,4 +1,4 @@
-FROM eclipse-temurin:21-jre-alpine
+FROM eclipse-temurin:21.0.6_7-jre-alpine
 
 RUN apk add --no-cache dumb-init
 
