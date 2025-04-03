@@ -240,7 +240,7 @@
 
 <div class="relative flex min-h-screen flex-row justify-center">
     <div
-        class="absolute top-0 left-0 z-10 h-full w-full flex-col border-e md:w-[350px] md:shadow-md lg:static lg:h-auto lg:shadow-none"
+        class="absolute top-0 left-0 z-10 h-full w-full flex-col border-e bg-neutral md:w-[350px] md:shadow-md lg:static lg:h-auto lg:shadow-none"
         class:flex={!sidebarCollapsed}
         class:hidden={sidebarCollapsed}
     >
