@@ -923,11 +923,30 @@ async function getTheme(theme: BundledTheme | undefined): Promise<null | { defau
     return cachedTheme;
 }
 
-export class ConciseDiffViewPersistentState {
+export class ConciseDiffViewCachedState {
     patchLines: Promise<PatchLine[]>;
+    syntaxHighlighting: boolean;
+    syntaxHighlightingTheme: BundledTheme | undefined;
+    omitPatchHeaderOnlyHunks: boolean;
 
-    constructor(patchLines: Promise<PatchLine[]>) {
+    constructor(
+        patchLines: Promise<PatchLine[]>,
+        syntaxHighlighting: boolean,
+        syntaxHighlightingTheme: BundledTheme | undefined,
+        omitPatchHeaderOnlyHunks: boolean,
+    ) {
         this.patchLines = patchLines;
+        this.syntaxHighlighting = syntaxHighlighting;
+        this.syntaxHighlightingTheme = syntaxHighlightingTheme;
+        this.omitPatchHeaderOnlyHunks = omitPatchHeaderOnlyHunks;
+    }
+
+    compatible(syntaxHighlighting: boolean, syntaxHighlightingTheme: BundledTheme | undefined, omitPatchHeaderOnlyHunks: boolean) {
+        return (
+            this.syntaxHighlighting === syntaxHighlighting &&
+            this.syntaxHighlightingTheme === syntaxHighlightingTheme &&
+            this.omitPatchHeaderOnlyHunks === omitPatchHeaderOnlyHunks
+        );
     }
 }
 
@@ -941,17 +960,17 @@ export function parseSinglePatch(rawPatchContent: string): ParsedDiff {
 
 export class ConciseDiffViewState<K> {
     patchLines: Promise<PatchLine[]> = $state(new Promise<PatchLine[]>(() => []));
-    loaded: boolean = false;
+    cachedState: ConciseDiffViewCachedState | undefined = undefined;
 
-    private readonly cache: Map<K, ConciseDiffViewPersistentState> | undefined;
+    private readonly cache: Map<K, ConciseDiffViewCachedState> | undefined;
     private readonly cacheKey: K | undefined;
 
-    constructor(cache: Map<K, ConciseDiffViewPersistentState> | undefined, cacheKey: K | undefined) {
+    constructor(cache: Map<K, ConciseDiffViewCachedState> | undefined, cacheKey: K | undefined) {
         this.cache = cache;
         this.cacheKey = cacheKey;
         onDestroy(() => {
-            if (this.loaded && this.cache && this.cacheKey) {
-                this.cache.set(this.cacheKey, this.persist());
+            if (this.cache && this.cacheKey && this.cachedState) {
+                this.cache.set(this.cacheKey, this.cachedState);
             }
         });
     }
@@ -963,7 +982,9 @@ export class ConciseDiffViewState<K> {
                 this.cache.delete(this.cacheKey);
                 if (state) {
                     this.restore(state);
-                    return;
+                    if (state.compatible(syntaxHighlighting, syntaxHighlightingTheme, omitPatchHeaderOnlyHunks)) {
+                        return;
+                    }
                 }
             }
         }
@@ -974,22 +995,17 @@ export class ConciseDiffViewState<K> {
             () => {
                 // Don't replace a potentially completed promise with a pending one, wait until the replacement is ready for smooth transitions
                 this.patchLines = promise;
-                this.loaded = true;
+                this.cachedState = new ConciseDiffViewCachedState(promise, syntaxHighlighting, syntaxHighlightingTheme, omitPatchHeaderOnlyHunks);
             },
             () => {
                 // Propagate errors
                 this.patchLines = promise;
-                this.loaded = true;
             },
         );
     }
 
-    persist(): ConciseDiffViewPersistentState {
-        return new ConciseDiffViewPersistentState(this.patchLines);
-    }
-
-    restore(state: ConciseDiffViewPersistentState) {
+    restore(state: ConciseDiffViewCachedState) {
         this.patchLines = state.patchLines;
-        this.loaded = true;
+        this.cachedState = state;
     }
 }

@@ -4,7 +4,7 @@
         patchLineTypeProps,
         getBaseColors,
         ConciseDiffViewState,
-        ConciseDiffViewPersistentState,
+        ConciseDiffViewCachedState,
         parseSinglePatch,
     } from "$lib/components/scripts/ConciseDiffView.svelte.js";
     import { type BundledTheme } from "shiki";
@@ -18,7 +18,7 @@
         syntaxHighlightingTheme?: BundledTheme;
         omitPatchHeaderOnlyHunks?: boolean;
 
-        cache?: Map<K, ConciseDiffViewPersistentState>;
+        cache?: Map<K, ConciseDiffViewCachedState>;
         cacheKey?: K;
     }
 

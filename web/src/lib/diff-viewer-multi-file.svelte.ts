@@ -9,7 +9,7 @@ import {
 } from "./github.svelte";
 import { type ParsedDiff, parsePatch } from "diff";
 import {
-    ConciseDiffViewPersistentState,
+    ConciseDiffViewCachedState,
     DEFAULT_THEME_DARK,
     DEFAULT_THEME_LIGHT,
     hasNonHeaderChanges,
@@ -210,7 +210,7 @@ export class MultiFileDiffViewerState {
     fileDetails: FileDetails[] = $state([]);
     diffText: string[] = $state([]);
     diffs: Promise<ParsedDiff>[] = $state([]);
-    diffViewCache: Map<FileDetails, ConciseDiffViewPersistentState> = new Map();
+    diffViewCache: Map<FileDetails, ConciseDiffViewCachedState> = new Map();
     images: ImageDiffDetails[] = $state([]);
     vlist: VList<FileDetails> | undefined = $state();
     stats: Promise<ViewerStatistics> = $derived.by(async () => {
