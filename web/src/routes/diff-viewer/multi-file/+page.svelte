@@ -4,7 +4,7 @@
     import { VList } from "virtua/svelte";
     import { getGithubUsername, GITHUB_URL_PARAM, installGithubApp, loginWithGithub, logoutGithub } from "$lib/github.svelte";
     import { onMount } from "svelte";
-    import { type FileDetails, getFileStatusProps, GlobalOptions, MultiFileDiffViewerState } from "$lib/diff-viewer-multi-file.svelte";
+    import { type FileDetails, getFileStatusProps, GlobalOptions, MultiFileDiffViewerState, requireEitherImage } from "$lib/diff-viewer-multi-file.svelte";
     import Tree from "$lib/components/Tree.svelte";
     import Spinner from "$lib/components/Spinner.svelte";
     import type { TreeNode } from "$lib/components/scripts/Tree.svelte";
@@ -256,12 +256,13 @@
                         class="w-full rounded-md border px-10 py-2 overflow-ellipsis focus:ring-2 focus:ring-blue-500 focus:outline-none"
                         autocomplete="off"
                     />
-                    <span class="absolute top-1/2 left-3 iconify size-4 -translate-y-1/2 octicon--filter-16"></span>
+                    <span aria-hidden="true" class="absolute top-1/2 left-3 iconify size-4 -translate-y-1/2 octicon--filter-16"></span>
                 </div>
                 {#if viewer.debouncedSearchQuery}
                     <button
                         class="absolute top-1/2 right-3 iconify size-4 -translate-y-1/2 text-gray-500 octicon--x-16 hover:text-gray-700"
                         onclick={() => viewer.clearSearch()}
+                        aria-label="clear filter"
                     ></button>
                 {/if}
             </div>
@@ -411,7 +412,7 @@
                                             <ImageDiff fileA={images[0]} fileB={images[1]} />
                                         {/await}
                                     {:else}
-                                        {#await (image.fileA || image.fileB).getValue()}
+                                        {#await requireEitherImage(image).getValue()}
                                             <div class="flex items-center justify-center bg-gray-300 p-4 dark:bg-gray-700"><Spinner /></div>
                                         {:then file}
                                             <AddedOrRemovedImage {file} mode={image.fileA === null ? "add" : "remove"} />

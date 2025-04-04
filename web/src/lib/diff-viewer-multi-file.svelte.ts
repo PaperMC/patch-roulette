@@ -200,6 +200,12 @@ export type ImageDiffDetails = {
     load: boolean;
 };
 
+export function requireEitherImage(details: ImageDiffDetails) {
+    if (details.fileA) return details.fileA;
+    if (details.fileB) return details.fileB;
+    throw new Error("Neither image is available");
+}
+
 export type ViewerStatistics = {
     addedLines: number;
     removedLines: number;
