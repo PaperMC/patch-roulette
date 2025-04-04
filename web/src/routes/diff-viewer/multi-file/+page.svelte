@@ -17,6 +17,7 @@
     import ShikiThemeSelector from "$lib/components/ShikiThemeSelector.svelte";
     import DiffStats from "$lib/components/DiffStats.svelte";
     import SettingsPopover, { globalThemeSetting, settingsSeparator } from "$lib/components/SettingsPopover.svelte";
+    import DiffSearch from "$lib/components/DiffSearch.svelte";
 
     const globalOptions: GlobalOptions = GlobalOptions.load();
     const viewer = new MultiFileDiffViewerState();
@@ -248,19 +249,17 @@
     >
         <div class="m-2 flex flex-row items-center gap-2">
             <div class="relative grow">
-                <div class="relative contents">
-                    <input
-                        type="text"
-                        placeholder="Filter file tree..."
-                        bind:value={viewer.searchQuery}
-                        class="w-full rounded-md border px-10 py-2 overflow-ellipsis focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                        autocomplete="off"
-                    />
-                    <span aria-hidden="true" class="absolute top-1/2 left-3 iconify size-4 -translate-y-1/2 octicon--filter-16"></span>
-                </div>
-                {#if viewer.debouncedSearchQuery}
+                <input
+                    type="text"
+                    placeholder="Filter file tree..."
+                    bind:value={viewer.fileTreeFilter}
+                    class="w-full rounded-md border px-8 py-1 overflow-ellipsis focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                    autocomplete="off"
+                />
+                <span aria-hidden="true" class="absolute top-1/2 left-2 iconify size-4 -translate-y-1/2 octicon--filter-16"></span>
+                {#if viewer.debouncedFileTreeFilter}
                     <button
-                        class="absolute top-1/2 right-3 iconify size-4 -translate-y-1/2 text-gray-500 octicon--x-16 hover:text-gray-700"
+                        class="absolute top-1/2 right-2 iconify size-4 -translate-y-1/2 text-gray-500 octicon--x-16 hover:text-gray-700"
                         onclick={() => viewer.clearSearch()}
                         aria-label="clear filter"
                     ></button>
@@ -348,11 +347,14 @@
                 {@render settingsPopover()}
             </div>
         </div>
-        {#await viewer.stats}
-            <DiffStats />
-        {:then stats}
-            <DiffStats add={stats.addedLines} remove={stats.removedLines} />
-        {/await}
+        <div class="flex flex-row items-center gap-2">
+            {#await viewer.stats}
+                <DiffStats />
+            {:then stats}
+                <DiffStats add={stats.addedLines} remove={stats.removedLines} />
+            {/await}
+            <DiffSearch {viewer} />
+        </div>
         <div class="flex flex-1 flex-col border">
             <VList data={viewer.fileDetails} style="height: 100%;" getKey={(_, i) => i} bind:this={viewer.vlist} overscan={3}>
                 {#snippet children(value, index)}
@@ -439,6 +441,7 @@
                                     syntaxHighlightingTheme={globalOptions.getSyntaxHighlightingTheme()}
                                     omitPatchHeaderOnlyHunks={globalOptions.omitPatchHeaderOnlyHunks}
                                     wordDiffs={globalOptions.wordDiffs}
+                                    searchQuery={viewer.debouncedSearchQuery}
                                     cache={viewer.diffViewCache}
                                     cacheKey={value}
                                 />

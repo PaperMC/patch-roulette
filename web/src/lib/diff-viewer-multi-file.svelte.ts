@@ -214,6 +214,8 @@ export type ViewerStatistics = {
 };
 
 export class MultiFileDiffViewerState {
+    fileTreeFilter: string = $state("");
+    debouncedFileTreeFilter: string = $state("");
     searchQuery: string = $state("");
     debouncedSearchQuery: string = $state("");
     collapsed: boolean[] = $state([]);
@@ -257,12 +259,17 @@ export class MultiFileDiffViewerState {
     });
 
     readonly fileTreeRoots: TreeNode<FileTreeNodeData>[] = $derived(makeFileTree(this.fileDetails));
-    readonly filteredFileDetails: FileDetails[] = $derived(this.debouncedSearchQuery ? this.fileDetails.filter((f) => this.filterFile(f)) : this.fileDetails);
+    readonly filteredFileDetails: FileDetails[] = $derived(
+        this.debouncedFileTreeFilter ? this.fileDetails.filter((f) => this.filterFile(f)) : this.fileDetails,
+    );
     readonly patchHeaderDiffOnly: boolean[] = $derived(findHeaderChangeOnlyPatches(this.diffText));
 
     constructor() {
-        const updateDebouncedSearch = debounce((value: string) => (this.debouncedSearchQuery = value), 500);
-        $effect(() => updateDebouncedSearch(this.searchQuery));
+        const updateDebouncedFileTreeFilter = debounce((value: string) => (this.debouncedFileTreeFilter = value), 500);
+        $effect(() => updateDebouncedFileTreeFilter(this.fileTreeFilter));
+
+        const updateDebouncedSearchQuery = debounce((value: string) => (this.debouncedSearchQuery = value), 500);
+        $effect(() => updateDebouncedSearchQuery(this.searchQuery));
 
         // Auto-check all patch header diff only diffs
         $effect(() => {
@@ -282,13 +289,13 @@ export class MultiFileDiffViewerState {
     }
 
     filterFile(file: FileDetails): boolean {
-        const queryLower = this.debouncedSearchQuery.toLowerCase();
+        const queryLower = this.debouncedFileTreeFilter.toLowerCase();
         return file.toFile.toLowerCase().includes(queryLower) || file.fromFile.toLowerCase().includes(queryLower);
     }
 
     clearSearch() {
-        this.searchQuery = "";
-        this.debouncedSearchQuery = "";
+        this.fileTreeFilter = "";
+        this.debouncedFileTreeFilter = "";
     }
 
     toggleCollapse(index: number) {
