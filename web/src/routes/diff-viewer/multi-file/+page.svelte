@@ -312,12 +312,12 @@
                                 role="button"
                                 tabindex="0"
                             >
-                                <span class="me-1 iconify size-4 text-blue-500 {folderIcon}"></span>
+                                <span class="me-1 iconify size-4 shrink-0 text-blue-500 {folderIcon}"></span>
                                 <span class="grow overflow-hidden break-all">{node.data.data}</span>
                                 {#if collapsed}
-                                    <span class="iconify size-4 text-blue-500 octicon--chevron-right-16"></span>
+                                    <span class="iconify size-4 shrink-0 text-blue-500 octicon--chevron-right-16"></span>
                                 {:else}
-                                    <span class="iconify size-4 text-blue-500 octicon--chevron-down-16"></span>
+                                    <span class="iconify size-4 shrink-0 text-blue-500 octicon--chevron-down-16"></span>
                                 {/if}
                             </div>
                         {/if}
