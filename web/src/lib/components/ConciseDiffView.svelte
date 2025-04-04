@@ -82,17 +82,17 @@
                     </td>
                     <td class="w-full pl-[1rem] {lineType.classes}">
                         <span class="prefix inline leading-[0.875rem]" style={innerLineType.style} data-prefix={lineType.prefix}>
-                            {#each line.content as segment, index (index)}
-                                {@const iconClass = segment.iconClass}
-                                {#if iconClass}
-                                    <span
-                                        class="ms-0.5 iconify inline-block size-4 align-middle {segment.classes ?? ''} {iconClass}"
-                                        aria-label={segment.caption}
-                                    ></span>
-                                {:else if segment.html}
-                                    {@html segment.html}
-                                {:else}<span class="inline {segment.classes ?? ''}" style={segment.style ?? ""}>{segment.text}</span>{/if}
-                            {/each}
+                            {#if line.lineBreak}<br />{:else}
+                                {#each line.content as segment, index (index)}
+                                    {@const iconClass = segment.iconClass}
+                                    {#if iconClass}
+                                        <span
+                                            class="ms-0.5 iconify inline-block size-4 align-middle {segment.classes ?? ''} {iconClass}"
+                                            aria-label={segment.caption}
+                                        ></span>
+                                    {:else}<span class="inline {segment.classes ?? ''}" style={segment.style ?? ""}>{segment.text}</span>{/if}
+                                {/each}
+                            {/if}
                         </span>
                     </td>
                 </tr>

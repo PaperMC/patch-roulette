@@ -21,7 +21,6 @@ export const DEFAULT_THEME_DARK: BundledTheme = "github-dark-default";
 
 export type LineSegment = {
     text?: string | null;
-    html?: string | null;
     iconClass?: string | null;
     caption?: string | null;
     classes?: string;
@@ -103,6 +102,7 @@ export const innerPatchLineTypeProps: Record<InnerPatchLineType, InnerPatchLineT
 export type PatchLine = {
     type: PatchLineType;
     content: LineSegment[];
+    lineBreak?: boolean;
     innerPatchLineType: InnerPatchLineType;
     oldLineNo?: number;
     newLineNo?: number;
@@ -524,7 +524,8 @@ class LineProcessor {
     private postprocess() {
         for (const line of this.output) {
             if (line.content.length === 0 || (line.content.length === 1 && line.content[0].text === "")) {
-                line.content = [{ html: "<br>" }];
+                line.lineBreak = true;
+                line.content = [];
                 continue;
             }
             const lastSegment = line.content[line.content.length - 1];
