@@ -39,7 +39,7 @@
             </div>
         </Select.Trigger>
         <Select.Portal>
-            <Select.Content class="max-h-64 overflow-y-auto rounded-lg border bg-neutral shadow-md">
+            <Select.Content class="z-100 max-h-64 overflow-y-auto rounded-lg border bg-neutral shadow-md">
                 {#each Object.keys(bundledThemes) as theme (theme)}
                     <Select.Item value={theme} class="data-highlighted:bg-blue-400 data-highlighted:text-white">
                         {#snippet children({ selected })}

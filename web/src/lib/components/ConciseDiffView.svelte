@@ -1,11 +1,13 @@
 <script lang="ts" generics="K">
     import {
-        innerPatchLineTypeProps,
-        patchLineTypeProps,
-        getBaseColors,
-        ConciseDiffViewState,
         ConciseDiffViewCachedState,
+        ConciseDiffViewState,
+        getBaseColors,
+        innerPatchLineTypeProps,
         parseSinglePatch,
+        type PatchLine,
+        PatchLineType,
+        patchLineTypeProps,
     } from "$lib/components/scripts/ConciseDiffView.svelte.js";
     import { type BundledTheme } from "shiki";
     import Spinner from "$lib/components/Spinner.svelte";
@@ -50,32 +52,53 @@
             },
         );
     });
+
+    function getDisplayLineNo(line: PatchLine, num: number | undefined) {
+        if (line.type == PatchLineType.HEADER) {
+            return "...";
+        } else {
+            return num ?? " ";
+        }
+    }
 </script>
 
 {#await Promise.all([baseColors, view.patchLines])}
     <div class="flex items-center justify-center bg-gray-300 p-4 dark:bg-gray-700"><Spinner /></div>
 {:then [baseColors, lines]}
-    <div style={baseColors} class="diff-content text-patch-line bg-[var(--editor-bg)] font-mono text-[var(--editor-fg)] selection:bg-[var(--select-bg)]">
-        {#each lines as line, index (index)}
-            {@const lineType = patchLineTypeProps[line.type]}
-            {@const innerLineType = innerPatchLineTypeProps[line.innerPatchLineType]}
-            <div class="flex h-auto w-full flex-row py-1 ps-0.5 {lineType.classes}">
-                {#if lineType.prefix}
-                    <span class="inline-block shrink-0">{lineType.prefix}</span>
-                {/if}
-                <div class="flex grow items-center">
-                    <span class="inline" style={innerLineType.style}>
-                        {#each line.content as segment, index (index)}
-                            {@const iconClass = segment.iconClass}
-                            {#if iconClass}
-                                <span class="ms-0.5 iconify inline-block size-4 {segment.classes || ''} {iconClass}" aria-label={segment.caption}></span>
-                            {:else}<span class="inline {segment.classes || ''}" style={segment.style || ""}>{segment.text}</span>{/if}
-                        {/each}
-                    </span>
-                </div>
-            </div>
-        {/each}
-    </div>
+    <table
+        style={baseColors}
+        class="diff-content text-patch-line w-full bg-[var(--editor-bg)] font-mono text-xs leading-[1.25rem] text-[var(--editor-fg)] selection:bg-[var(--select-bg)]"
+    >
+        <tbody>
+            {#each lines as line, index (index)}
+                {@const lineType = patchLineTypeProps[line.type]}
+                {@const innerLineType = innerPatchLineTypeProps[line.innerPatchLineType]}
+                <tr class="h-[1px]">
+                    <td class="line-number h-[inherit] bg-[var(--hunk-header-bg)] select-none">
+                        <div class="h-full px-2 {lineType.lineNoClasses}">{getDisplayLineNo(line, line.oldLineNo)}</div>
+                    </td>
+                    <td class="line-number h-[inherit] bg-[var(--hunk-header-bg)] select-none">
+                        <div class="h-full px-2 {lineType.lineNoClasses}">{getDisplayLineNo(line, line.newLineNo)}</div>
+                    </td>
+                    <td class="w-full pl-[1rem] {lineType.classes}">
+                        <span class="prefix inline leading-[0.875rem]" style={innerLineType.style} data-prefix={lineType.prefix}>
+                            {#each line.content as segment, index (index)}
+                                {@const iconClass = segment.iconClass}
+                                {#if iconClass}
+                                    <span
+                                        class="ms-0.5 iconify inline-block size-4 align-middle {segment.classes ?? ''} {iconClass}"
+                                        aria-label={segment.caption}
+                                    ></span>
+                                {:else if segment.html}
+                                    {@html segment.html}
+                                {:else}<span class="inline {segment.classes ?? ''}" style={segment.style ?? ""}>{segment.text}</span>{/if}
+                            {/each}
+                        </span>
+                    </td>
+                </tr>
+            {/each}
+        </tbody>
+    </table>
 {/await}
 
 <style>
@@ -102,5 +125,25 @@
         word-break: break-all;
         overflow-wrap: anywhere;
         white-space: pre-wrap;
+    }
+
+    .line-number {
+        text-align: end;
+        vertical-align: top;
+        text-wrap: nowrap;
+        width: 1%;
+    }
+    .line-number::after {
+        content: attr(data-line-number);
+    }
+
+    .prefix {
+        position: relative;
+    }
+    .prefix::before {
+        content: attr(data-prefix);
+        position: absolute;
+        left: -0.75rem;
+        top: 0;
     }
 </style>

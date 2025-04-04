@@ -168,7 +168,7 @@
                         <input
                             id="githubUrl"
                             type="text"
-                            class="grow rounded-md border px-2 py-1"
+                            class="grow rounded-md border px-2 py-1 overflow-ellipsis"
                             bind:value={githubUrl}
                             onkeyup={(event) => {
                                 if (event.key === "Enter") {
@@ -246,15 +246,21 @@
     >
         <div class="m-2 flex flex-row items-center gap-2">
             <div class="relative grow">
-                <input
-                    type="text"
-                    placeholder="Search files..."
-                    bind:value={viewer.searchQuery}
-                    class="w-full rounded-md border px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                    autocomplete="off"
-                />
+                <div class="relative contents">
+                    <input
+                        type="text"
+                        placeholder="Filter file tree..."
+                        bind:value={viewer.searchQuery}
+                        class="w-full rounded-md border px-10 py-2 overflow-ellipsis focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                        autocomplete="off"
+                    />
+                    <span class="absolute top-1/2 left-3 iconify size-4 -translate-y-1/2 octicon--filter-16"></span>
+                </div>
                 {#if viewer.debouncedSearchQuery}
-                    <button class="absolute top-1/2 right-4 -translate-y-1/2 text-gray-500 hover:text-gray-700" onclick={() => viewer.clearSearch()}>✕</button>
+                    <button
+                        class="absolute top-1/2 right-3 iconify size-4 -translate-y-1/2 text-gray-500 octicon--x-16 hover:text-gray-700"
+                        onclick={() => viewer.clearSearch()}
+                    ></button>
                 {/if}
             </div>
             <div class="flex items-center lg:hidden">
@@ -270,14 +276,14 @@
             <div class="h-100">
                 {#snippet fileSnippet(value: FileDetails)}
                     <div
-                        class="flex cursor-pointer items-center justify-between px-2 py-1 hover:bg-gray-100 dark:hover:bg-gray-800"
+                        class="flex cursor-pointer items-center justify-between px-2 py-1 text-sm hover:bg-gray-100 dark:hover:bg-gray-800"
                         onclick={(e) => scrollToFileClick(e, viewer.getIndex(value))}
                         onkeydown={(e) => e.key === "Enter" && viewer.scrollToFile(viewer.getIndex(value))}
                         role="button"
                         tabindex="0"
                     >
                         <span
-                            class="{getFileStatusProps(value.status).iconClasses} me-1 flex shrink-0 items-center justify-center"
+                            class="{getFileStatusProps(value.status).iconClasses} me-1 flex size-4 shrink-0 items-center justify-center"
                             aria-label={getFileStatusProps(value.status).title}
                         ></span>
                         <span class="grow overflow-hidden break-all">{value.toFile.substring(value.toFile.lastIndexOf("/") + 1)}</span>
@@ -298,18 +304,18 @@
                             {@render fileSnippet(node.data.data as FileDetails)}
                         {:else}
                             <div
-                                class="flex cursor-pointer items-center justify-between px-2 py-1 hover:bg-gray-100 dark:hover:bg-gray-800"
+                                class="flex cursor-pointer items-center justify-between px-2 py-1 text-sm hover:bg-gray-100 dark:hover:bg-gray-800"
                                 onclick={toggleCollapse}
                                 onkeydown={(e) => e.key === "Enter" && toggleCollapse()}
                                 role="button"
                                 tabindex="0"
                             >
-                                <span class="me-1 iconify shrink-0 text-blue-500 {folderIcon}"></span>
+                                <span class="me-1 iconify size-4 text-blue-500 {folderIcon}"></span>
                                 <span class="grow overflow-hidden break-all">{node.data.data}</span>
                                 {#if collapsed}
-                                    <span class="iconify shrink-0 text-blue-500 octicon--chevron-right-16"></span>
+                                    <span class="iconify size-4 text-blue-500 octicon--chevron-right-16"></span>
                                 {:else}
-                                    <span class="iconify shrink-0 text-blue-500 octicon--chevron-down-16"></span>
+                                    <span class="iconify size-4 text-blue-500 octicon--chevron-down-16"></span>
                                 {/if}
                             </div>
                         {/if}
@@ -353,7 +359,7 @@
 
                     <div id={`file-${index}`}>
                         <div
-                            class="sticky top-0 flex cursor-pointer flex-row items-center gap-2 border-b bg-neutral px-2 py-1 shadow-sm"
+                            class="sticky top-0 z-10 flex cursor-pointer flex-row items-center gap-2 border-b bg-neutral px-2 py-1 text-sm shadow-sm"
                             onclick={() => viewer.toggleCollapse(index)}
                             tabindex="0"
                             onkeyup={(event) => event.key === "Enter" && viewer.toggleCollapse(index)}
@@ -423,7 +429,7 @@
                             </div>
                         {/if}
                         {#if !viewer.collapsed[index] && lines !== null && (!viewer.patchHeaderDiffOnly[index] || !globalOptions.omitPatchHeaderOnlyHunks)}
-                            <div class="mb border-b text-sm">
+                            <div class="mb border-b">
                                 <ConciseDiffView
                                     {patch}
                                     syntaxHighlighting={globalOptions.syntaxHighlighting}

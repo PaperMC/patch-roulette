@@ -1,4 +1,4 @@
-import { diffArrays, type ParsedDiff, parsePatch } from "diff";
+import { diffArrays, type Hunk, type ParsedDiff, parsePatch } from "diff";
 import {
     codeToTokens,
     type BundledLanguage,
@@ -21,6 +21,7 @@ export const DEFAULT_THEME_DARK: BundledTheme = "github-dark-default";
 
 export type LineSegment = {
     text?: string | null;
+    html?: string | null;
     iconClass?: string | null;
     caption?: string | null;
     classes?: string;
@@ -37,27 +38,35 @@ export enum PatchLineType {
 
 export type PatchLineTypeProps = {
     classes: string;
-    prefix?: string;
+    lineNoClasses: string;
+    prefix: string;
 };
 
 export const patchLineTypeProps: Record<PatchLineType, PatchLineTypeProps> = {
     [PatchLineType.HEADER]: {
         classes: "bg-[var(--hunk-header-bg)] text-[var(--hunk-header-fg)]",
+        lineNoClasses: "bg-[var(--hunk-header-bg)] text-[var(--hunk-header-fg)]",
+        prefix: "",
     },
     [PatchLineType.ADD]: {
         classes: "bg-[var(--inserted-line-bg)]",
+        lineNoClasses: "bg-[var(--inserted-line-bg)]",
         prefix: "+",
     },
     [PatchLineType.REMOVE]: {
         classes: "bg-[var(--removed-line-bg)]",
+        lineNoClasses: "bg-[var(--removed-line-bg)]",
         prefix: "-",
     },
     [PatchLineType.CONTEXT]: {
         classes: "",
+        lineNoClasses: "text-em-med",
         prefix: " ",
     },
     [PatchLineType.SPACER]: {
         classes: "h-2",
+        lineNoClasses: "",
+        prefix: "",
     },
 };
 
@@ -95,6 +104,8 @@ export type PatchLine = {
     type: PatchLineType;
     content: LineSegment[];
     innerPatchLineType: InnerPatchLineType;
+    oldLineNo?: number;
+    newLineNo?: number;
 };
 
 const noTrailingNewlineMarker: string = "%%" + ["PATCH", "ROULETTE", "NO", "TRAILING", "NEWLINE", "MARKER"].join("%") + "%%";
@@ -120,29 +131,32 @@ class LineProcessor {
     private lastShikiStateContext: GrammarState | null = null;
     private syntaxHighlighting: boolean = true;
     private syntaxHighlightingTheme: BundledTheme = DEFAULT_THEME_LIGHT;
+    private oldLineNo: number = 0;
+    private newLineNo: number = 0;
 
     async process(
         fromFile: string | undefined,
         toFile: string | undefined,
-        contentLines: string[],
-        output: PatchLine[],
+        hunk: Hunk,
         syntaxHighlighting: boolean,
         syntaxHighlightingTheme: BundledTheme | undefined,
-    ) {
-        this.initialize(fromFile, toFile, contentLines, output, syntaxHighlighting, syntaxHighlightingTheme);
+    ): Promise<PatchLine[]> {
+        this.initialize(fromFile, toFile, hunk, syntaxHighlighting, syntaxHighlightingTheme);
         await this.processInternal();
+        return this.output;
     }
 
     private initialize(
         fromFile: string | undefined,
         toFile: string | undefined,
-        contentLines: string[],
-        output: PatchLine[],
+        hunk: Hunk,
         syntaxHighlighting: boolean,
         syntaxHighlightingTheme: BundledTheme | undefined,
     ) {
-        this.contentLines = contentLines;
-        this.output = output;
+        this.contentLines = hunk.lines;
+        this.output = [];
+        this.oldLineNo = hunk.oldStart;
+        this.newLineNo = hunk.newStart;
         this.state = LineProcessorState.CONTEXT;
         this.addLinesText = [];
         this.removeLinesText = [];
@@ -321,6 +335,8 @@ class LineProcessor {
                 content,
                 type: PatchLineType.REMOVE,
                 innerPatchLineType: this.getInnerType(text),
+                oldLineNo: this.oldLineNo++,
+                newLineNo: undefined,
             });
         }
         for (let i = 0; i < this.addLinesText.length; i++) {
@@ -330,6 +346,8 @@ class LineProcessor {
                 content,
                 type: PatchLineType.ADD,
                 innerPatchLineType: this.getInnerType(text),
+                oldLineNo: undefined,
+                newLineNo: this.newLineNo++,
             });
         }
         for (let i = 0; i < this.contextLinesText.length; i++) {
@@ -339,6 +357,8 @@ class LineProcessor {
                 content,
                 type: PatchLineType.CONTEXT,
                 innerPatchLineType: this.getInnerType(text),
+                oldLineNo: this.oldLineNo++,
+                newLineNo: this.newLineNo++,
             });
         }
         this.removeLinesText = [];
@@ -372,7 +392,7 @@ class LineProcessor {
             for (const change of diffResult) {
                 const text = change.value.join("");
                 if (change.added) {
-                    const segments = this.makeSegments(addShikiResult, addPos, text, `bg-[var(--inserted-text-bg)] my-0.5`, LineProcessorState.ADD);
+                    const segments = this.makeSegments(addShikiResult, addPos, text, `bg-[var(--inserted-text-bg)]`, LineProcessorState.ADD);
 
                     segments[0].classes = segments[0].classes + " rounded-l-sm";
                     segments[segments.length - 1].classes = segments[segments.length - 1].classes + " rounded-r-sm";
@@ -380,7 +400,7 @@ class LineProcessor {
                     addLine.push(...segments);
                     addPos += text.length;
                 } else if (change.removed) {
-                    const segments = this.makeSegments(removeShikiResult, removePos, text, `bg-[var(--removed-text-bg)] my-0.5`, LineProcessorState.REMOVE);
+                    const segments = this.makeSegments(removeShikiResult, removePos, text, `bg-[var(--removed-text-bg)]`, LineProcessorState.REMOVE);
 
                     segments[0].classes = segments[0].classes + " rounded-l-sm";
                     segments[segments.length - 1].classes = segments[segments.length - 1].classes + " rounded-r-sm";
@@ -409,6 +429,8 @@ class LineProcessor {
                 content: line,
                 type: PatchLineType.REMOVE,
                 innerPatchLineType: this.getInnerType(line[0].text!),
+                oldLineNo: this.oldLineNo++,
+                newLineNo: undefined,
             });
         });
         addLines.forEach((line) => {
@@ -416,6 +438,8 @@ class LineProcessor {
                 content: line,
                 type: PatchLineType.ADD,
                 innerPatchLineType: this.getInnerType(line[0].text!),
+                oldLineNo: undefined,
+                newLineNo: this.newLineNo++,
             });
         });
 
@@ -499,7 +523,8 @@ class LineProcessor {
 
     private postprocess() {
         for (const line of this.output) {
-            if (line.content.length === 0) {
+            if (line.content.length === 0 || (line.content.length === 1 && line.content[0].text === "")) {
+                line.content = [{ html: "<br>" }];
                 continue;
             }
             const lastSegment = line.content[line.content.length - 1];
@@ -572,14 +597,13 @@ const lineProcessors: LineProcessor[] = [];
 async function processLines(
     fromFile: string | undefined,
     toFile: string | undefined,
-    contentLines: string[],
-    lines: PatchLine[],
+    hunk: Hunk,
     syntaxHighlighting: boolean,
     syntaxHighlightingTheme: BundledTheme | undefined,
-) {
+): Promise<PatchLine[]> {
     const lineProcessor = lineProcessors.pop() ?? new LineProcessor();
     try {
-        return await lineProcessor.process(fromFile, toFile, contentLines, lines, syntaxHighlighting, syntaxHighlightingTheme);
+        return await lineProcessor.process(fromFile, toFile, hunk, syntaxHighlighting, syntaxHighlightingTheme);
     } finally {
         lineProcessors.push(lineProcessor);
     }
@@ -608,10 +632,9 @@ export async function makeLines(
             innerPatchLineType: InnerPatchLineType.NONE,
         });
 
-        const hunkLines: PatchLine[] = [];
         const oldFileName = patch.oldFileName === "/dev/null" ? undefined : patch.oldFileName;
         const newFileName = patch.newFileName === "/dev/null" ? undefined : patch.newFileName;
-        await processLines(oldFileName, newFileName, hunk.lines, hunkLines, syntaxHighlighting, syntaxHighlightingTheme);
+        const hunkLines = await processLines(oldFileName, newFileName, hunk, syntaxHighlighting, syntaxHighlightingTheme);
         lines.push(...hunkLines);
 
         // Add a separator between hunks
