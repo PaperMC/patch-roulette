@@ -19,12 +19,22 @@
         syntaxHighlighting?: boolean;
         syntaxHighlightingTheme?: BundledTheme;
         omitPatchHeaderOnlyHunks?: boolean;
+        wordDiffs?: boolean;
 
         cache?: Map<K, ConciseDiffViewCachedState>;
         cacheKey?: K;
     }
 
-    let { rawPatchContent, patch, syntaxHighlighting = true, syntaxHighlightingTheme, omitPatchHeaderOnlyHunks = true, cache, cacheKey }: Props = $props();
+    let {
+        rawPatchContent,
+        patch,
+        syntaxHighlighting = true,
+        syntaxHighlightingTheme,
+        omitPatchHeaderOnlyHunks = true,
+        wordDiffs = true,
+        cache,
+        cacheKey,
+    }: Props = $props();
 
     const view = new ConciseDiffViewState(cache, cacheKey);
     const parsedPatch = $derived.by(async () => {
@@ -36,7 +46,7 @@
         throw Error("Either rawPatchContent or patch must be provided");
     });
     $effect(() => {
-        view.update(parsedPatch, syntaxHighlighting, syntaxHighlightingTheme, omitPatchHeaderOnlyHunks);
+        view.update(parsedPatch, syntaxHighlighting, syntaxHighlightingTheme, omitPatchHeaderOnlyHunks, wordDiffs);
     });
 
     let baseColors: Promise<string> = $state(new Promise<string>(() => []));

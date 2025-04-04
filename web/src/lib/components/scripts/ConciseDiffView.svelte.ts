@@ -60,7 +60,7 @@ export const patchLineTypeProps: Record<PatchLineType, PatchLineTypeProps> = {
     [PatchLineType.CONTEXT]: {
         classes: "",
         lineNoClasses: "text-em-med",
-        prefix: " ",
+        prefix: "",
     },
     [PatchLineType.SPACER]: {
         classes: "h-2",
@@ -131,6 +131,7 @@ class LineProcessor {
     private lastShikiStateContext: GrammarState | null = null;
     private syntaxHighlighting: boolean = true;
     private syntaxHighlightingTheme: BundledTheme = DEFAULT_THEME_LIGHT;
+    private wordDiffs: boolean = true;
     private oldLineNo: number = 0;
     private newLineNo: number = 0;
 
@@ -140,8 +141,9 @@ class LineProcessor {
         hunk: Hunk,
         syntaxHighlighting: boolean,
         syntaxHighlightingTheme: BundledTheme | undefined,
+        wordDiffs: boolean,
     ): Promise<PatchLine[]> {
-        this.initialize(fromFile, toFile, hunk, syntaxHighlighting, syntaxHighlightingTheme);
+        this.initialize(fromFile, toFile, hunk, syntaxHighlighting, syntaxHighlightingTheme, wordDiffs);
         await this.processInternal();
         return this.output;
     }
@@ -152,6 +154,7 @@ class LineProcessor {
         hunk: Hunk,
         syntaxHighlighting: boolean,
         syntaxHighlightingTheme: BundledTheme | undefined,
+        wordDiffs: boolean,
     ) {
         this.contentLines = hunk.lines;
         this.output = [];
@@ -169,6 +172,7 @@ class LineProcessor {
         this.lastShikiStateContext = null;
         this.syntaxHighlighting = syntaxHighlighting;
         this.syntaxHighlightingTheme = syntaxHighlightingTheme || this.syntaxHighlightingTheme;
+        this.wordDiffs = wordDiffs;
     }
 
     private eitherFileName(): string | undefined {
@@ -217,7 +221,7 @@ class LineProcessor {
                 /*
                  * Transition to CONTEXT
                  */
-                if (this.addLinesText.length == this.removeLinesText.length) {
+                if (this.wordDiffs && this.addLinesText.length == this.removeLinesText.length) {
                     await this.processLineDiff();
                 } else {
                     // The added and removed lines are not adjacent or are not symmetric
@@ -241,7 +245,7 @@ class LineProcessor {
 
         if (this.state === LineProcessorState.CONTEXT) {
             await this.appendRemainingPlain();
-        } else if (this.addLinesText.length == this.removeLinesText.length) {
+        } else if (this.wordDiffs && this.addLinesText.length == this.removeLinesText.length) {
             await this.processLineDiff();
         } else {
             // The added and removed lines are not adjacent or are not symmetric
@@ -601,10 +605,11 @@ async function processLines(
     hunk: Hunk,
     syntaxHighlighting: boolean,
     syntaxHighlightingTheme: BundledTheme | undefined,
+    wordDiffs: boolean,
 ): Promise<PatchLine[]> {
     const lineProcessor = lineProcessors.pop() ?? new LineProcessor();
     try {
-        return await lineProcessor.process(fromFile, toFile, hunk, syntaxHighlighting, syntaxHighlightingTheme);
+        return await lineProcessor.process(fromFile, toFile, hunk, syntaxHighlighting, syntaxHighlightingTheme, wordDiffs);
     } finally {
         lineProcessors.push(lineProcessor);
     }
@@ -615,6 +620,7 @@ export async function makeLines(
     syntaxHighlighting: boolean,
     syntaxHighlightingTheme: BundledTheme | undefined,
     omitPatchHeaderOnlyHunks: boolean,
+    wordDiffs: boolean,
 ): Promise<PatchLine[]> {
     const patch = await patchPromise;
     const lines: PatchLine[] = [];
@@ -635,7 +641,7 @@ export async function makeLines(
 
         const oldFileName = patch.oldFileName === "/dev/null" ? undefined : patch.oldFileName;
         const newFileName = patch.newFileName === "/dev/null" ? undefined : patch.newFileName;
-        const hunkLines = await processLines(oldFileName, newFileName, hunk, syntaxHighlighting, syntaxHighlightingTheme);
+        const hunkLines = await processLines(oldFileName, newFileName, hunk, syntaxHighlighting, syntaxHighlightingTheme, wordDiffs);
         lines.push(...hunkLines);
 
         // Add a separator between hunks
@@ -952,24 +958,28 @@ export class ConciseDiffViewCachedState {
     syntaxHighlighting: boolean;
     syntaxHighlightingTheme: BundledTheme | undefined;
     omitPatchHeaderOnlyHunks: boolean;
+    wordDiffs: boolean;
 
     constructor(
         patchLines: Promise<PatchLine[]>,
         syntaxHighlighting: boolean,
         syntaxHighlightingTheme: BundledTheme | undefined,
         omitPatchHeaderOnlyHunks: boolean,
+        wordDiffs: boolean,
     ) {
         this.patchLines = patchLines;
         this.syntaxHighlighting = syntaxHighlighting;
         this.syntaxHighlightingTheme = syntaxHighlightingTheme;
         this.omitPatchHeaderOnlyHunks = omitPatchHeaderOnlyHunks;
+        this.wordDiffs = wordDiffs;
     }
 
-    compatible(syntaxHighlighting: boolean, syntaxHighlightingTheme: BundledTheme | undefined, omitPatchHeaderOnlyHunks: boolean) {
+    compatible(syntaxHighlighting: boolean, syntaxHighlightingTheme: BundledTheme | undefined, omitPatchHeaderOnlyHunks: boolean, wordDiffs: boolean) {
         return (
             this.syntaxHighlighting === syntaxHighlighting &&
             this.syntaxHighlightingTheme === syntaxHighlightingTheme &&
-            this.omitPatchHeaderOnlyHunks === omitPatchHeaderOnlyHunks
+            this.omitPatchHeaderOnlyHunks === omitPatchHeaderOnlyHunks &&
+            this.wordDiffs === wordDiffs
         );
     }
 }
@@ -999,14 +1009,20 @@ export class ConciseDiffViewState<K> {
         });
     }
 
-    update(patch: Promise<ParsedDiff>, syntaxHighlighting: boolean, syntaxHighlightingTheme: BundledTheme | undefined, omitPatchHeaderOnlyHunks: boolean) {
+    update(
+        patch: Promise<ParsedDiff>,
+        syntaxHighlighting: boolean,
+        syntaxHighlightingTheme: BundledTheme | undefined,
+        omitPatchHeaderOnlyHunks: boolean,
+        wordDiffs: boolean,
+    ) {
         if (this.cache && this.cacheKey) {
             if (this.cache.has(this.cacheKey)) {
                 const state = this.cache.get(this.cacheKey);
                 this.cache.delete(this.cacheKey);
                 if (state) {
                     this.restore(state);
-                    if (state.compatible(syntaxHighlighting, syntaxHighlightingTheme, omitPatchHeaderOnlyHunks)) {
+                    if (state.compatible(syntaxHighlighting, syntaxHighlightingTheme, omitPatchHeaderOnlyHunks, wordDiffs)) {
                         return;
                     }
                 }
@@ -1014,12 +1030,12 @@ export class ConciseDiffViewState<K> {
         }
 
         // TODO: Cache this promise, so that even if we get destroyed before it completes, we don't waste work (usually when scrolling fast)
-        const promise = makeLines(patch, syntaxHighlighting, syntaxHighlightingTheme, omitPatchHeaderOnlyHunks);
+        const promise = makeLines(patch, syntaxHighlighting, syntaxHighlightingTheme, omitPatchHeaderOnlyHunks, wordDiffs);
         promise.then(
             () => {
                 // Don't replace a potentially completed promise with a pending one, wait until the replacement is ready for smooth transitions
                 this.patchLines = promise;
-                this.cachedState = new ConciseDiffViewCachedState(promise, syntaxHighlighting, syntaxHighlightingTheme, omitPatchHeaderOnlyHunks);
+                this.cachedState = new ConciseDiffViewCachedState(promise, syntaxHighlighting, syntaxHighlightingTheme, omitPatchHeaderOnlyHunks, wordDiffs);
             },
             () => {
                 // Propagate errors

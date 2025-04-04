@@ -234,6 +234,8 @@
                 Omit hunks containing only second-level patch header line changes
             </Label.Root>
             <SimpleSwitch id="omit-hunks" aria-labelledby="omit-hunks-label" bind:checked={globalOptions.omitPatchHeaderOnlyHunks} />
+            <Label.Root id="word-diffs-label" class="mt-2 max-w-64 break-words" for="word-diffs">Show word diffs</Label.Root>
+            <SimpleSwitch id="word-diffs" aria-labelledby="word-diffs-label" bind:checked={globalOptions.wordDiffs} />
         {/snippet}
     </SettingsPopover>
 {/snippet}
@@ -435,6 +437,7 @@
                                     syntaxHighlighting={globalOptions.syntaxHighlighting}
                                     syntaxHighlightingTheme={globalOptions.getSyntaxHighlightingTheme()}
                                     omitPatchHeaderOnlyHunks={globalOptions.omitPatchHeaderOnlyHunks}
+                                    wordDiffs={globalOptions.wordDiffs}
                                     cache={viewer.diffViewCache}
                                     cacheKey={value}
                                 />
