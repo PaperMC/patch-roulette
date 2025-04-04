@@ -75,10 +75,10 @@
                 {@const innerLineType = innerPatchLineTypeProps[line.innerPatchLineType]}
                 <tr class="h-[1px]">
                     <td class="line-number h-[inherit] bg-[var(--hunk-header-bg)] select-none">
-                        <div class="h-full px-2 {lineType.lineNoClasses}">{getDisplayLineNo(line, line.oldLineNo)}</div>
+                        <div class="min-h-full px-2 {lineType.lineNoClasses}">{getDisplayLineNo(line, line.oldLineNo)}</div>
                     </td>
                     <td class="line-number h-[inherit] bg-[var(--hunk-header-bg)] select-none">
-                        <div class="h-full px-2 {lineType.lineNoClasses}">{getDisplayLineNo(line, line.newLineNo)}</div>
+                        <div class="min-h-full px-2 {lineType.lineNoClasses}">{getDisplayLineNo(line, line.newLineNo)}</div>
                     </td>
                     <td class="w-full pl-[1rem] {lineType.classes}">
                         <span class="prefix inline leading-[0.875rem]" style={innerLineType.style} data-prefix={lineType.prefix}>
