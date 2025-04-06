@@ -325,7 +325,13 @@
                         {/if}
                     {/snippet}
                     {#snippet childWrapper({ node, collapsed, children })}
-                        <div class:dir-header={node.data.type === "directory" && !collapsed} class="ps-4">
+                        <div
+                            class={{
+                                hidden: collapsed && node.visibleChildren.length > 0,
+                                "dir-header": node.data.type === "directory" && !collapsed,
+                                "ps-4": true,
+                            }}
+                        >
                             {@render children({ node })}
                         </div>
                     {/snippet}

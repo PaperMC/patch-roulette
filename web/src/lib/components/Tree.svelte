@@ -16,14 +16,13 @@
 {#snippet renderNode({ node })}
     {@const collapsed = requireInstance().collapsedNodes.has(node.backingNode)}
     {@render nodeRenderer({ node, collapsed, toggleCollapse: () => requireInstance().toggleCollapse(node.backingNode) })}
-    {#if !collapsed && node.visibleChildren.length > 0}
-        {#if childWrapper !== null}
-            {@render childWrapper({ node, collapsed, children: renderChildren })}
-        {:else}
-            <div class="ps-4">
-                {@render renderChildren({ node })}
-            </div>
-        {/if}
+    {#if childWrapper !== null}
+        {@render childWrapper({ node, collapsed, children: renderChildren })}
+    {:else}
+        {@const childrenVisible = !collapsed && node.visibleChildren.length > 0}
+        <div class={{ "ps-4": true, hidden: childrenVisible }}>
+            {@render renderChildren({ node })}
+        </div>
     {/if}
 {/snippet}
 
