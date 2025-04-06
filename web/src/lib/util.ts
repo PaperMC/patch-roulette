@@ -125,7 +125,7 @@ export function makeFileTree(paths: FileDetails[]): TreeNode<FileTreeNodeData>[]
 
     mergeRedundantDirectories(root);
 
-    if (root.children.length > 1) {
+    if (root.data.type === "directory" && root.data.data === "") {
         return root.children;
     }
     return [root];
