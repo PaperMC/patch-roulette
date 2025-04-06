@@ -196,7 +196,7 @@ class LineProcessor {
             } else if (lineText.startsWith("-")) {
                 this.state = LineProcessorState.REMOVE;
             } else {
-                if (lineText === "\\ No newline at end of file") {
+                if (isNoNewlineAtEofLine(lineText)) {
                     // This is metadata for the previous line
                     switch (this.state) {
                         case LineProcessorState.ADD:
@@ -561,6 +561,10 @@ class LineProcessor {
 
         return InnerPatchLineType.NONE;
     }
+}
+
+export function isNoNewlineAtEofLine(text: string) {
+    return text === "\\ No newline at end of file";
 }
 
 // Our tokens will be split when they intersect two shiki tokens, so we preprocess to merge tokens with same style,

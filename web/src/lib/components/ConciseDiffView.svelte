@@ -150,8 +150,7 @@
 
                 // -1 for the hunk header
                 if (hunkMatchingLines.includes(j - 1)) {
-                    const lineSegments: SearchSegment[] = makeSearchSegments(searchQuery, lineText, count);
-                    hunkSegments[j] = lineSegments;
+                    hunkSegments[j] = makeSearchSegments(searchQuery, lineText, count);
                 }
             }
         }

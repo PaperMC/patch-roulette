@@ -13,6 +13,7 @@ import {
     DEFAULT_THEME_DARK,
     DEFAULT_THEME_LIGHT,
     hasNonHeaderChanges,
+    isNoNewlineAtEofLine,
     parseSinglePatch,
 } from "$lib/components/scripts/ConciseDiffView.svelte";
 import type { BundledTheme } from "shiki";
@@ -290,9 +291,9 @@ export class MultiFileDiffViewerState {
         }
     }
 
-    scrollToFile(index: number) {
+    scrollToFile(index: number, autoExpand: boolean = true) {
         if (!this.vlist) return;
-        if (!this.checked[index]) {
+        if (autoExpand && !this.checked[index]) {
             // Auto-expand on jump when not checked
             this.collapsed[index] = false;
         }
@@ -491,16 +492,22 @@ export class MultiFileDiffViewerState {
                 const hunkLineNumbers: number[] = [];
                 lineNumbers[j] = hunkLineNumbers;
 
+                let lineIdx = 0;
                 for (let k = 0; k < hunk.lines.length; k++) {
+                    if (isNoNewlineAtEofLine(hunk.lines[k])) {
+                        // These lines are 'merged' into the previous line
+                        continue;
+                    }
                     const count = countOccurrences(hunk.lines[k].slice(1).toLowerCase(), query);
                     if (count !== 0) {
                         counts.set(details, (counts.get(details) ?? 0) + count);
                         total += count;
-                        if (!hunkLineNumbers.includes(k)) {
-                            hunkLineNumbers.push(k);
+                        if (!hunkLineNumbers.includes(lineIdx)) {
+                            hunkLineNumbers.push(lineIdx);
                         }
                         found = true;
                     }
+                    lineIdx++;
                 }
             }
 
