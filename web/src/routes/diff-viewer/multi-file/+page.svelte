@@ -18,6 +18,7 @@
     import DiffStats from "$lib/components/DiffStats.svelte";
     import SettingsPopover, { globalThemeSetting, settingsSeparator } from "$lib/components/SettingsPopover.svelte";
     import DiffSearch from "$lib/components/DiffSearch.svelte";
+    import FileHeader from "./FileHeader.svelte";
 
     const globalOptions: GlobalOptions = GlobalOptions.load();
     const viewer = new MultiFileDiffViewerState();
@@ -278,11 +279,12 @@
             <div class="h-100">
                 {#snippet fileSnippet(value: FileDetails)}
                     <div
-                        class="flex cursor-pointer items-center justify-between px-2 py-1 text-sm hover:bg-gray-100 dark:hover:bg-gray-800"
+                        class="flex cursor-pointer items-center justify-between px-2 py-1 text-sm hover:bg-gray-100 focus:ring-2 focus:ring-blue-500 focus:ring-inset dark:hover:bg-gray-800"
                         onclick={(e) => scrollToFileClick(e, viewer.getIndex(value))}
                         onkeydown={(e) => e.key === "Enter" && viewer.scrollToFile(viewer.getIndex(value))}
                         role="button"
                         tabindex="0"
+                        id={"file-tree-file-" + viewer.getIndex(value)}
                     >
                         <span
                             class="{getFileStatusProps(value.status).iconClasses} me-1 flex size-4 shrink-0 items-center justify-center"
@@ -299,14 +301,14 @@
                         />
                     </div>
                 {/snippet}
-                <Tree roots={viewer.fileTreeRoots} filter={filterFileNode}>
+                <Tree roots={viewer.fileTreeRoots} filter={filterFileNode} bind:instance={viewer.tree}>
                     {#snippet nodeRenderer({ node, collapsed, toggleCollapse })}
                         {@const folderIcon = collapsed ? "octicon--file-directory-fill-16" : "octicon--file-directory-open-fill-16"}
                         {#if node.data.type === "file"}
                             {@render fileSnippet(node.data.data as FileDetails)}
                         {:else}
                             <div
-                                class="flex cursor-pointer items-center justify-between px-2 py-1 text-sm hover:bg-gray-100 dark:hover:bg-gray-800"
+                                class="flex cursor-pointer items-center justify-between px-2 py-1 text-sm hover:bg-gray-100 focus:ring-2 focus:ring-blue-500 focus:ring-inset dark:hover:bg-gray-800"
                                 onclick={toggleCollapse}
                                 onkeydown={(e) => e.key === "Enter" && toggleCollapse()}
                                 role="button"
@@ -363,63 +365,7 @@
                     {@const patch = viewer.diffs[index]}
 
                     <div id={`file-${index}`}>
-                        <div
-                            class="sticky top-0 z-10 flex flex-row items-center gap-2 border-b bg-neutral px-2 py-1 text-sm shadow-sm"
-                            tabindex="0"
-                            role="button"
-                            onclick={() => viewer.scrollToFile(index, false)}
-                            onkeyup={(event) => event.key === "Enter" && viewer.scrollToFile(index, false)}
-                        >
-                            <!-- Only show stats for text diffs -->
-                            {#if viewer.diffs[index] !== undefined}
-                                {#await viewer.stats}
-                                    <DiffStats brief />
-                                {:then stats}
-                                    <DiffStats brief add={stats.fileAddedLines[index]} remove={stats.fileRemovedLines[index]} />
-                                {/await}
-                            {/if}
-                            {#if value.fromFile === value.toFile}
-                                <span class="max-w-full overflow-hidden break-all">{value.toFile}</span>
-                            {:else}
-                                <span class="flex max-w-full flex-wrap items-center gap-0.5 overflow-hidden break-all">
-                                    {value.fromFile}
-                                    <span class="iconify inline-block text-blue-500 octicon--arrow-right-16"></span>
-                                    {value.toFile}
-                                </span>
-                            {/if}
-                            <div class="ms-0.5 ml-auto flex items-center gap-2">
-                                {#if viewer.patchHeaderDiffOnly[index]}
-                                    <span class="rounded-sm bg-gray-300 px-1 text-gray-800">Patch-header-only diff</span>
-                                {/if}
-                                {#if !viewer.patchHeaderDiffOnly[index] || !globalOptions.omitPatchHeaderOnlyHunks || (image !== null && image !== undefined)}
-                                    <span
-                                        class="flex size-6 items-center justify-center rounded-md p-0.5 text-blue-500 hover:bg-gray-100 hover:shadow dark:hover:bg-gray-800"
-                                    >
-                                        {#if viewer.collapsed[index]}
-                                            <button
-                                                type="button"
-                                                aria-label="expand file"
-                                                onclick={(e) => {
-                                                    viewer.toggleCollapse(index);
-                                                    e.stopPropagation();
-                                                }}
-                                                class="iconify size-4 shrink-0 text-blue-500 octicon--chevron-right-16"
-                                            ></button>
-                                        {:else}
-                                            <button
-                                                type="button"
-                                                aria-label="collapse file"
-                                                onclick={(e) => {
-                                                    viewer.toggleCollapse(index);
-                                                    e.stopPropagation();
-                                                }}
-                                                class="iconify size-4 shrink-0 text-blue-500 octicon--chevron-down-16"
-                                            ></button>
-                                        {/if}
-                                    </span>
-                                {/if}
-                            </div>
-                        </div>
+                        <FileHeader {viewer} {globalOptions} {index} {value} isImage={image !== null && image !== undefined} />
                         {#if !viewer.collapsed[index] && image !== null}
                             <div class="mb border-b text-sm">
                                 {#if image.load}

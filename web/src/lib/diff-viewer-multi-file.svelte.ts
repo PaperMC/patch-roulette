@@ -21,7 +21,7 @@ import { browser } from "$app/environment";
 import { getEffectiveGlobalTheme } from "$lib/theme.svelte";
 import { countOccurrences, debounce, type FileTreeNodeData, isImageFile, makeFileTree, type LazyPromise, lazyPromise, watchLocalStorage } from "$lib/util";
 import { onDestroy } from "svelte";
-import type { TreeNode } from "$lib/components/scripts/Tree.svelte";
+import { type TreeNode, TreeState } from "$lib/components/scripts/Tree.svelte";
 import { VList } from "virtua/svelte";
 
 const optionsKey = "diff-viewer-global-options";
@@ -227,6 +227,7 @@ export class MultiFileDiffViewerState {
     diffViewCache: Map<FileDetails, ConciseDiffViewCachedState> = new Map();
     images: ImageDiffDetails[] = $state([]);
     vlist: VList<FileDetails> | undefined = $state();
+    tree: TreeState<FileTreeNodeData> | undefined = $state();
     activeSearchResult: ActiveSearchResult | null = $state(null);
 
     readonly stats: Promise<ViewerStatistics> = $derived(this.countStats());

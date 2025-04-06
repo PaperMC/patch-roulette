@@ -1,63 +1,21 @@
 <script lang="ts" generics="T">
-    import { type Snippet, untrack } from "svelte";
-    import { collectAllNodes, filteredView, type TreeNode, type TreeNodeView } from "$lib/components/scripts/Tree.svelte";
+    import { type TreeProps, TreeState } from "$lib/components/scripts/Tree.svelte";
 
-    interface Props {
-        roots: TreeNode<T>[];
-        nodeRenderer: Snippet<
-            [
-                {
-                    node: TreeNodeView<T>;
-                    collapsed: boolean;
-                    toggleCollapse: () => void;
-                },
-            ]
-        >;
-        childWrapper?: Snippet<
-            [
-                {
-                    node: TreeNodeView<T>;
-                    collapsed: boolean;
-                    children: Snippet<[{ node: TreeNodeView<T> }]>;
-                },
-            ]
-        > | null;
-        filter?: ((node: TreeNode<T>) => boolean) | null;
-    }
+    let { instance = $bindable(undefined), roots, nodeRenderer, childWrapper = null, filter = null }: TreeProps<T> = $props();
 
-    let { roots, nodeRenderer, childWrapper = null, filter = null }: Props = $props();
+    instance = new TreeState({ roots: () => roots, filter: () => filter });
 
-    let collapsedNodes: Set<TreeNode<T>> = $state(new Set());
-    let allNodesSet = $derived(collectAllNodes(roots));
-    let filteredRoots: Set<TreeNodeView<T>> = $derived(filteredView(roots, filter));
-
-    $effect(() => {
-        // Untrack to avoid infinite loop
-        const untrackedCollapsed = untrack(() => collapsedNodes);
-        const collapsedCopy = new Set(untrackedCollapsed);
-        for (const c of untrackedCollapsed) {
-            // Remove no longer existing nodes from the collapsed set
-            if (!allNodesSet.has(c)) {
-                collapsedCopy.delete(c);
-            }
+    function requireInstance() {
+        if (instance === undefined) {
+            throw new Error("Tree instance is not defined");
         }
-        collapsedNodes = collapsedCopy;
-    });
-
-    function toggleCollapse(node: TreeNode<T>) {
-        const copy = new Set(collapsedNodes);
-        if (copy.has(node)) {
-            copy.delete(node);
-        } else {
-            copy.add(node);
-        }
-        collapsedNodes = copy;
+        return instance;
     }
 </script>
 
 {#snippet renderNode({ node })}
-    {@const collapsed = collapsedNodes.has(node.backingNode)}
-    {@render nodeRenderer({ node, collapsed, toggleCollapse: () => toggleCollapse(node.backingNode) })}
+    {@const collapsed = requireInstance().collapsedNodes.has(node.backingNode)}
+    {@render nodeRenderer({ node, collapsed, toggleCollapse: () => requireInstance().toggleCollapse(node.backingNode) })}
     {#if !collapsed && node.visibleChildren.length > 0}
         {#if childWrapper !== null}
             {@render childWrapper({ node, collapsed, children: renderChildren })}
@@ -75,6 +33,6 @@
     {/each}
 {/snippet}
 
-{#each filteredRoots as root (root)}
+{#each requireInstance().filteredRoots as root (root)}
     {@render renderNode({ node: root })}
 {/each}
