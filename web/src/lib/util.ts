@@ -6,6 +6,10 @@ import type { BundledLanguage, SpecialLanguage } from "shiki";
 import { onMount } from "svelte";
 import type { Action } from "svelte/action";
 
+export type MutableValue<T> = {
+    value: T;
+};
+
 export function debounce<T extends (...args: any[]) => any>(fn: T, delay: number): (...args: Parameters<T>) => void {
     let timeout: ReturnType<typeof setTimeout> | null = null;
 
@@ -141,12 +145,12 @@ export function isImageFile(fileName: string | null) {
     return imageExtensions.has(extension);
 }
 
-export type MemoizedPromise<T> = {
+export type LazyPromise<T> = {
     hasValue: () => boolean;
     getValue: () => Promise<T>;
 };
 
-export function memoizePromise<T>(fn: () => Promise<T>): MemoizedPromise<T> {
+export function lazyPromise<T>(fn: () => Promise<T>): LazyPromise<T> {
     let value: T | null = null;
     let pendingValue: Promise<T> | null = null;
     return {

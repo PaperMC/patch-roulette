@@ -442,6 +442,7 @@
                                     omitPatchHeaderOnlyHunks={globalOptions.omitPatchHeaderOnlyHunks}
                                     wordDiffs={globalOptions.wordDiffs}
                                     searchQuery={viewer.debouncedSearchQuery}
+                                    searchMatchingLines={() => viewer.searchResults.then((r) => r.lines.get(value))}
                                     activeSearchResult={viewer.activeSearchResult && viewer.activeSearchResult.file === value
                                         ? viewer.activeSearchResult.idx
                                         : undefined}

@@ -12,14 +12,14 @@
     let controlsWidth = $state(0);
 
     $effect(() => {
-        viewer.matchingFiles.then(() => {}); // Trigger reactivity
+        viewer.searchResults.then(() => {}); // Trigger reactivity
 
         // Reset current match index when search results change
         currentMatchIdx = -1;
     });
 
     async function prevResult() {
-        const files = await viewer.matchingFiles;
+        const files = await viewer.searchResults;
         const startIdx = currentMatchIdx == -1 ? 0 : currentMatchIdx;
         currentMatchIdx = (startIdx - 1 + files.totalMatches) % files.totalMatches;
         viewer.activeSearchResult = files.getLocation(currentMatchIdx);
@@ -27,14 +27,14 @@
     }
 
     async function nextResult() {
-        const files = await viewer.matchingFiles;
+        const files = await viewer.searchResults;
         currentMatchIdx = (currentMatchIdx + 1) % files.totalMatches;
         viewer.activeSearchResult = files.getLocation(currentMatchIdx);
         await scrollToMatch();
     }
 
     async function scrollToMatch() {
-        const files = await viewer.matchingFiles;
+        const files = await viewer.searchResults;
         if (currentMatchIdx >= 0 && currentMatchIdx < files.totalMatches) {
             const { file, idx } = files.getLocation(currentMatchIdx);
             await viewer.scrollToMatch(file, idx);
@@ -62,7 +62,7 @@
     <span aria-hidden="true" class="absolute top-1/2 left-1 iconify size-4 -translate-y-1/2 text-em-med octicon--search-16"></span>
     <div class="absolute top-1/2 right-1 flex -translate-y-1/2 flex-row" bind:clientWidth={controlsWidth}>
         {#if viewer.debouncedSearchQuery}
-            {#await viewer.matchingFiles}
+            {#await viewer.searchResults}
                 <Spinner size={4}></Spinner>
             {:then files}
                 <span class="text-sm">{`${currentMatchIdForDisplay()} / ${files.totalMatches}`}</span>

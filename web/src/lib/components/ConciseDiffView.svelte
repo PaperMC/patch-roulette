@@ -4,20 +4,20 @@
         ConciseDiffViewState,
         getBaseColors,
         innerPatchLineTypeProps,
+        type InnerPatchLineTypeProps,
+        makeSearchSegments,
         parseSinglePatch,
         type PatchLine,
         PatchLineType,
         type PatchLineTypeProps,
-        type InnerPatchLineTypeProps,
         patchLineTypeProps,
         type SearchSegment,
-        type MatchCount,
-        makeSearchSegments,
     } from "$lib/components/scripts/ConciseDiffView.svelte.js";
     import { type BundledTheme } from "shiki";
     import Spinner from "$lib/components/Spinner.svelte";
     import { type ParsedDiff } from "diff";
     import { onDestroy } from "svelte";
+    import type { MutableValue } from "$lib/util";
 
     interface Props {
         rawPatchContent?: string;
@@ -27,6 +27,7 @@
         omitPatchHeaderOnlyHunks?: boolean;
         wordDiffs?: boolean;
         searchQuery?: string;
+        searchMatchingLines?: () => Promise<number[][] | undefined>;
         activeSearchResult?: number;
 
         cache?: Map<K, ConciseDiffViewCachedState>;
@@ -41,13 +42,14 @@
         omitPatchHeaderOnlyHunks = true,
         wordDiffs = true,
         searchQuery,
+        searchMatchingLines,
         activeSearchResult = -1,
         cache,
         cacheKey,
     }: Props = $props();
 
     const view = new ConciseDiffViewState(cache, cacheKey);
-    const parsedPatch = $derived.by(async () => {
+    const parsedPatch: Promise<ParsedDiff> = $derived.by(async () => {
         if (rawPatchContent !== undefined) {
             return parseSinglePatch(rawPatchContent);
         } else if (patch !== undefined) {
@@ -114,15 +116,44 @@
         }
     });
 
-    let searchSegments: Promise<SearchSegment[][]> = $derived.by(async () => {
-        if (!searchQuery) {
+    let searchSegments: Promise<SearchSegment[][][]> = $derived.by(async () => {
+        if (!searchQuery || !searchMatchingLines) {
+            return [];
+        }
+        const matchingLines = await searchMatchingLines();
+        if (!matchingLines || matchingLines.length === 0) {
             return [];
         }
         const lines = await view.patchLines;
-        const segments: SearchSegment[][] = [];
-        const count: MatchCount = { count: 0 };
+        const segments: SearchSegment[][][] = [];
+        const count: MutableValue<number> = { value: 0 };
         for (let i = 0; i < lines.length; i++) {
-            segments[i] = makeSearchSegments(searchQuery, lines[i], count);
+            const hunkMatchingLines = matchingLines[i];
+            if (!hunkMatchingLines || hunkMatchingLines.length === 0) {
+                continue;
+            }
+
+            const hunkSegments: SearchSegment[][] = [];
+            segments[i] = hunkSegments;
+
+            const hunkLines = lines[i];
+            for (let j = 0; j < hunkLines.length; j++) {
+                const line = hunkLines[j];
+
+                let lineText = "";
+                for (let k = 0; k < line.content.length; k++) {
+                    const segmentText = line.content[k].text;
+                    if (segmentText) {
+                        lineText += segmentText;
+                    }
+                }
+
+                // -1 for the hunk header
+                if (hunkMatchingLines.includes(j - 1)) {
+                    const lineSegments: SearchSegment[] = makeSearchSegments(searchQuery, lineText, count);
+                    hunkSegments[j] = lineSegments;
+                }
+            }
         }
         return segments;
     });
@@ -141,37 +172,42 @@
     </span>
 {/snippet}
 
-{#snippet lineContentWrapper(line: PatchLine, index: number, lineType: PatchLineTypeProps, innerLineType: InnerPatchLineTypeProps)}
+{#snippet lineContentWrapper(line: PatchLine, hunkIndex: number, lineIndex: number, lineType: PatchLineTypeProps, innerLineType: InnerPatchLineTypeProps)}
     {#await searchSegments}
         {@render lineContent(line, lineType, innerLineType)}
     {:then completedSearchSegments}
-        {@const lineSearchSegments = completedSearchSegments[index]}
-        {#if lineSearchSegments !== undefined && lineSearchSegments.length > 0}
-            <div class="relative">
-                {@render lineContent(line, lineType, innerLineType)}
-                <span class="pointer-events-none absolute top-0 left-0 text-transparent select-none">
-                    <span class="inline leading-[0.875rem]">
-                        {#each lineSearchSegments as segment, index (index)}
-                            {#if segment.highlighted}<span
-                                    bind:this={searchResultElements[segment.id ?? -1]}
-                                    class={{
-                                        "bg-[#d4a72c66]": segment.id !== activeSearchResult,
-                                        "bg-[#ff9632]": segment.id === activeSearchResult,
-                                        "text-em-high-light": segment.id === activeSearchResult,
-                                    }}
-                                    data-match-id={segment.id}>{segment.text}</span
-                                >{:else}{segment.text}{/if}
-                        {/each}
+        {@const hunkSegments = completedSearchSegments[hunkIndex]}
+        {#if hunkSegments !== undefined && hunkSegments.length > 0}
+            {@const lineSegments = hunkSegments[lineIndex]}
+            {#if lineSegments !== undefined && lineSegments.length > 0}
+                <div class="relative">
+                    {@render lineContent(line, lineType, innerLineType)}
+                    <span class="pointer-events-none absolute top-0 left-0 text-transparent select-none">
+                        <span class="inline leading-[0.875rem]">
+                            {#each lineSegments as segment, index (index)}
+                                {#if segment.highlighted}<span
+                                        bind:this={searchResultElements[segment.id ?? -1]}
+                                        class={{
+                                            "bg-[#d4a72c66]": segment.id !== activeSearchResult,
+                                            "bg-[#ff9632]": segment.id === activeSearchResult,
+                                            "text-em-high-light": segment.id === activeSearchResult,
+                                        }}
+                                        data-match-id={segment.id}>{segment.text}</span
+                                    >{:else}{segment.text}{/if}
+                            {/each}
+                        </span>
                     </span>
-                </span>
-            </div>
+                </div>
+            {:else}
+                {@render lineContent(line, lineType, innerLineType)}
+            {/if}
         {:else}
             {@render lineContent(line, lineType, innerLineType)}
         {/if}
     {/await}
 {/snippet}
 
-{#snippet renderLine(line: PatchLine, index: number)}
+{#snippet renderLine(line: PatchLine, hunkIndex: number, lineIndex: number)}
     {@const lineType = patchLineTypeProps[line.type]}
     <tr class="h-[1px]">
         <td class="line-number h-[inherit] bg-[var(--hunk-header-bg)] select-none">
@@ -181,7 +217,7 @@
             <div class="min-h-full px-2 {lineType.lineNoClasses}">{getDisplayLineNo(line, line.newLineNo)}</div>
         </td>
         <td class="w-full pl-[1rem] {lineType.classes}">
-            {@render lineContentWrapper(line, index, lineType, innerPatchLineTypeProps[line.innerPatchLineType])}
+            {@render lineContentWrapper(line, hunkIndex, lineIndex, lineType, innerPatchLineTypeProps[line.innerPatchLineType])}
         </td>
     </tr>
 {/snippet}
@@ -194,8 +230,10 @@
         class="diff-content text-patch-line w-full bg-[var(--editor-bg)] font-mono text-xs leading-[1.25rem] text-[var(--editor-fg)] selection:bg-[var(--select-bg)]"
     >
         <tbody>
-            {#each lines as line, index (index)}
-                {@render renderLine(line, index)}
+            {#each lines as hunkLines, hunkIndex (hunkIndex)}
+                {#each hunkLines as line, lineIndex (lineIndex)}
+                    {@render renderLine(line, hunkIndex, lineIndex)}
+                {/each}
             {/each}
         </tbody>
     </table>

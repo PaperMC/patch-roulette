@@ -18,16 +18,7 @@ import {
 import type { BundledTheme } from "shiki";
 import { browser } from "$app/environment";
 import { getEffectiveGlobalTheme } from "$lib/theme.svelte";
-import {
-    countOccurrences,
-    debounce,
-    type FileTreeNodeData,
-    isImageFile,
-    makeFileTree,
-    type MemoizedPromise,
-    memoizePromise,
-    watchLocalStorage,
-} from "$lib/util";
+import { countOccurrences, debounce, type FileTreeNodeData, isImageFile, makeFileTree, type LazyPromise, lazyPromise, watchLocalStorage } from "$lib/util";
 import { onDestroy } from "svelte";
 import type { TreeNode } from "$lib/components/scripts/Tree.svelte";
 import { VList } from "virtua/svelte";
@@ -204,8 +195,8 @@ export function findHeaderChangeOnlyPatches(patchStrings: string[]) {
 }
 
 export type ImageDiffDetails = {
-    fileA: MemoizedPromise<string> | null;
-    fileB: MemoizedPromise<string> | null;
+    fileA: LazyPromise<string> | null;
+    fileB: LazyPromise<string> | null;
     load: boolean;
 };
 
@@ -243,7 +234,7 @@ export class MultiFileDiffViewerState {
         this.debouncedFileTreeFilter ? this.fileDetails.filter((f) => this.filterFile(f)) : this.fileDetails,
     );
     readonly patchHeaderDiffOnly: boolean[] = $derived(findHeaderChangeOnlyPatches(this.diffText));
-    readonly matchingFiles: Promise<MatchingFiles> = $derived(this.findMatchingFiles());
+    readonly searchResults: Promise<SearchResults> = $derived(this.findSearchResults());
 
     constructor() {
         const updateDebouncedFileTreeFilter = debounce((value: string) => (this.debouncedFileTreeFilter = value), 500);
@@ -369,22 +360,22 @@ export class MultiFileDiffViewerState {
             if (githubDetails && isImageFile(patch.fromFile) && isImageFile(patch.toFile)) {
                 const githubDetailsCopy = githubDetails;
 
-                let fileA: MemoizedPromise<string> | null;
+                let fileA: LazyPromise<string> | null;
                 if (patch.status === "added") {
                     fileA = null;
                 } else {
-                    fileA = memoizePromise(async () =>
+                    fileA = lazyPromise(async () =>
                         URL.createObjectURL(
                             await fetchGithubFile(getGithubToken(), githubDetailsCopy.owner, githubDetailsCopy.repo, patch.fromFile, githubDetailsCopy.base),
                         ),
                     );
                 }
 
-                let fileB: MemoizedPromise<string> | null;
+                let fileB: LazyPromise<string> | null;
                 if (patch.status === "removed") {
                     fileB = null;
                 } else {
-                    fileB = memoizePromise(async () =>
+                    fileB = lazyPromise(async () =>
                         URL.createObjectURL(
                             await fetchGithubFile(getGithubToken(), githubDetailsCopy.owner, githubDetailsCopy.repo, patch.toFile, githubDetailsCopy.head),
                         ),
@@ -473,16 +464,17 @@ export class MultiFileDiffViewerState {
         return { addedLines, removedLines, fileAddedLines, fileRemovedLines };
     }
 
-    private async findMatchingFiles(): Promise<MatchingFiles> {
+    private async findSearchResults(): Promise<SearchResults> {
         let query = this.debouncedSearchQuery;
         if (!query) {
-            return MatchingFiles.EMPTY;
+            return SearchResults.EMPTY;
         }
         query = query.toLowerCase();
 
         const diffs = await Promise.all(this.diffs);
 
         let total = 0;
+        const lines: Map<FileDetails, number[][]> = new Map();
         const counts: Map<FileDetails, number> = new Map();
         const mappings: Map<number, FileDetails> = new Map();
         for (let i = 0; i < diffs.length; i++) {
@@ -491,16 +483,22 @@ export class MultiFileDiffViewerState {
                 continue;
             }
             const details = this.fileDetails[i];
+            const lineNumbers: number[][] = [];
             let found = false;
 
             for (let j = 0; j < diff.hunks.length; j++) {
                 const hunk = diff.hunks[j];
+                const hunkLineNumbers: number[] = [];
+                lineNumbers[j] = hunkLineNumbers;
 
                 for (let k = 0; k < hunk.lines.length; k++) {
-                    const count = countOccurrences(hunk.lines[k].toLowerCase(), query);
+                    const count = countOccurrences(hunk.lines[k].slice(1).toLowerCase(), query);
                     if (count !== 0) {
                         counts.set(details, (counts.get(details) ?? 0) + count);
                         total += count;
+                        if (!hunkLineNumbers.includes(k)) {
+                            hunkLineNumbers.push(k);
+                        }
                         found = true;
                     }
                 }
@@ -508,10 +506,11 @@ export class MultiFileDiffViewerState {
 
             if (found) {
                 mappings.set(total, details);
+                lines.set(details, lineNumbers);
             }
         }
 
-        return new MatchingFiles(counts, total, mappings);
+        return new SearchResults(counts, total, mappings, lines);
     }
 }
 
@@ -520,17 +519,20 @@ export type ActiveSearchResult = {
     idx: number;
 };
 
-export class MatchingFiles {
-    static EMPTY = new MatchingFiles(new Map(), 0, new Map());
+export class SearchResults {
+    static EMPTY = new SearchResults(new Map(), 0, new Map(), new Map());
 
     counts: Map<FileDetails, number>;
     mappings: Map<number, FileDetails> = new Map();
+    // FileDetails -> Hunk -> Line
+    lines: Map<FileDetails, number[][]> = new Map();
     totalMatches: number;
 
-    constructor(counts: Map<FileDetails, number>, total: number, mappings: Map<number, FileDetails>) {
+    constructor(counts: Map<FileDetails, number>, total: number, mappings: Map<number, FileDetails>, lines: Map<FileDetails, number[][]>) {
         this.counts = counts;
         this.totalMatches = total;
         this.mappings = mappings;
+        this.lines = lines;
     }
 
     getLocation(index: number): ActiveSearchResult {
