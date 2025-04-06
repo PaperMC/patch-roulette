@@ -487,6 +487,9 @@ export class MultiFileDiffViewerState {
         const mappings: Map<number, FileDetails> = new Map();
         for (let i = 0; i < diffs.length; i++) {
             const diff = diffs[i];
+            if (diff === undefined) {
+                continue;
+            }
             const details = this.fileDetails[i];
             let found = false;
 
