@@ -364,11 +364,11 @@
 
                     <div id={`file-${index}`}>
                         <div
-                            class="sticky top-0 z-10 flex cursor-pointer flex-row items-center gap-2 border-b bg-neutral px-2 py-1 text-sm shadow-sm"
-                            onclick={() => viewer.toggleCollapse(index)}
+                            class="sticky top-0 z-10 flex flex-row items-center gap-2 border-b bg-neutral px-2 py-1 text-sm shadow-sm"
                             tabindex="0"
-                            onkeyup={(event) => event.key === "Enter" && viewer.toggleCollapse(index)}
                             role="button"
+                            onclick={() => viewer.scrollToFile(index, false)}
+                            onkeyup={(event) => event.key === "Enter" && viewer.scrollToFile(index, false)}
                         >
                             <!-- Only show stats for text diffs -->
                             {#if viewer.diffs[index] !== undefined}
@@ -396,9 +396,25 @@
                                         class="flex size-6 items-center justify-center rounded-md p-0.5 text-blue-500 hover:bg-gray-100 hover:shadow dark:hover:bg-gray-800"
                                     >
                                         {#if viewer.collapsed[index]}
-                                            <span class="iconify size-4 shrink-0 text-blue-500 octicon--chevron-right-16"></span>
+                                            <button
+                                                type="button"
+                                                aria-label="expand file"
+                                                onclick={(e) => {
+                                                    viewer.toggleCollapse(index);
+                                                    e.stopPropagation();
+                                                }}
+                                                class="iconify size-4 shrink-0 text-blue-500 octicon--chevron-right-16"
+                                            ></button>
                                         {:else}
-                                            <span class="iconify size-4 shrink-0 text-blue-500 octicon--chevron-down-16"></span>
+                                            <button
+                                                type="button"
+                                                aria-label="collapse file"
+                                                onclick={(e) => {
+                                                    viewer.toggleCollapse(index);
+                                                    e.stopPropagation();
+                                                }}
+                                                class="iconify size-4 shrink-0 text-blue-500 octicon--chevron-down-16"
+                                            ></button>
                                         {/if}
                                     </span>
                                 {/if}
