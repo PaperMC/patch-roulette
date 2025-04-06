@@ -18,7 +18,16 @@ import {
 import type { BundledTheme } from "shiki";
 import { browser } from "$app/environment";
 import { getEffectiveGlobalTheme } from "$lib/theme.svelte";
-import { debounce, type FileTreeNodeData, isImageFile, makeFileTree, type MemoizedPromise, memoizePromise, watchLocalStorage } from "$lib/util";
+import {
+    countOccurrences,
+    debounce,
+    type FileTreeNodeData,
+    isImageFile,
+    makeFileTree,
+    type MemoizedPromise,
+    memoizePromise,
+    watchLocalStorage,
+} from "$lib/util";
 import { onDestroy } from "svelte";
 import type { TreeNode } from "$lib/components/scripts/Tree.svelte";
 import { VList } from "virtua/svelte";
@@ -226,43 +235,15 @@ export class MultiFileDiffViewerState {
     diffViewCache: Map<FileDetails, ConciseDiffViewCachedState> = new Map();
     images: ImageDiffDetails[] = $state([]);
     vlist: VList<FileDetails> | undefined = $state();
-    stats: Promise<ViewerStatistics> = $derived.by(async () => {
-        let addedLines = 0;
-        let removedLines = 0;
-        const fileAddedLines: number[] = [];
-        const fileRemovedLines: number[] = [];
+    activeSearchResult: ActiveSearchResult | null = $state(null);
 
-        for (let i = 0; i < this.fileDetails.length; i++) {
-            const diff = await this.diffs[i];
-            if (!diff) {
-                continue;
-            }
-
-            for (let j = 0; j < diff.hunks.length; j++) {
-                const hunk = diff.hunks[j];
-
-                for (let k = 0; k < hunk.lines.length; k++) {
-                    const line = hunk.lines[k];
-
-                    if (line.startsWith("+")) {
-                        addedLines++;
-                        fileAddedLines[i] = (fileAddedLines[i] || 0) + 1;
-                    } else if (line.startsWith("-")) {
-                        removedLines++;
-                        fileRemovedLines[i] = (fileRemovedLines[i] || 0) + 1;
-                    }
-                }
-            }
-        }
-
-        return { addedLines, removedLines, fileAddedLines, fileRemovedLines };
-    });
-
+    readonly stats: Promise<ViewerStatistics> = $derived(this.countStats());
     readonly fileTreeRoots: TreeNode<FileTreeNodeData>[] = $derived(makeFileTree(this.fileDetails));
     readonly filteredFileDetails: FileDetails[] = $derived(
         this.debouncedFileTreeFilter ? this.fileDetails.filter((f) => this.filterFile(f)) : this.fileDetails,
     );
     readonly patchHeaderDiffOnly: boolean[] = $derived(findHeaderChangeOnlyPatches(this.diffText));
+    readonly matchingFiles: Promise<MatchingFiles> = $derived(this.findMatchingFiles());
 
     constructor() {
         const updateDebouncedFileTreeFilter = debounce((value: string) => (this.debouncedFileTreeFilter = value), 500);
@@ -319,13 +300,32 @@ export class MultiFileDiffViewerState {
     }
 
     scrollToFile(index: number) {
-        if (this.vlist) {
-            if (!this.checked[index]) {
-                // Auto-expand on jump when not checked
-                this.collapsed[index] = false;
-            }
-            this.vlist.scrollToIndex(index, { align: "start" });
+        if (!this.vlist) return;
+        if (!this.checked[index]) {
+            // Auto-expand on jump when not checked
+            this.collapsed[index] = false;
         }
+        this.vlist.scrollToIndex(index, { align: "start" });
+    }
+
+    // https://github.com/inokawa/virtua/issues/621
+    // https://github.com/inokawa/virtua/discussions/542#discussioncomment-11214618
+    async scrollToMatch(file: FileDetails, idx: number) {
+        if (!this.vlist) return;
+        const fileIdx = this.getIndex(file);
+        this.collapsed[fileIdx] = false;
+        const startIdx = this.vlist.findStartIndex();
+        const endIdx = this.vlist.findEndIndex();
+        if (fileIdx < startIdx || fileIdx > endIdx) {
+            this.vlist.scrollToIndex(fileIdx, { align: "start" });
+        }
+
+        requestAnimationFrame(() => {
+            const fileElement = document.getElementById(`file-${fileIdx}`);
+            const resultElement = fileElement?.querySelector(`[data-match-id='${idx}']`) as HTMLElement | null | undefined;
+            if (!resultElement) return;
+            resultElement.scrollIntoView({ block: "center", inline: "center" });
+        });
     }
 
     clearImages() {
@@ -439,5 +439,111 @@ export class MultiFileDiffViewerState {
 
         alert("Unsupported URL type " + url);
         return false;
+    }
+
+    private async countStats(): Promise<ViewerStatistics> {
+        let addedLines = 0;
+        let removedLines = 0;
+        const fileAddedLines: number[] = [];
+        const fileRemovedLines: number[] = [];
+
+        for (let i = 0; i < this.fileDetails.length; i++) {
+            const diff = await this.diffs[i];
+            if (!diff) {
+                continue;
+            }
+
+            for (let j = 0; j < diff.hunks.length; j++) {
+                const hunk = diff.hunks[j];
+
+                for (let k = 0; k < hunk.lines.length; k++) {
+                    const line = hunk.lines[k];
+
+                    if (line.startsWith("+")) {
+                        addedLines++;
+                        fileAddedLines[i] = (fileAddedLines[i] || 0) + 1;
+                    } else if (line.startsWith("-")) {
+                        removedLines++;
+                        fileRemovedLines[i] = (fileRemovedLines[i] || 0) + 1;
+                    }
+                }
+            }
+        }
+
+        return { addedLines, removedLines, fileAddedLines, fileRemovedLines };
+    }
+
+    private async findMatchingFiles(): Promise<MatchingFiles> {
+        let query = this.debouncedSearchQuery;
+        if (!query) {
+            return MatchingFiles.EMPTY;
+        }
+        query = query.toLowerCase();
+
+        const diffs = await Promise.all(this.diffs);
+
+        let total = 0;
+        const counts: Map<FileDetails, number> = new Map();
+        const mappings: Map<number, FileDetails> = new Map();
+        for (let i = 0; i < diffs.length; i++) {
+            const diff = diffs[i];
+            const details = this.fileDetails[i];
+            let found = false;
+
+            for (let j = 0; j < diff.hunks.length; j++) {
+                const hunk = diff.hunks[j];
+
+                for (let k = 0; k < hunk.lines.length; k++) {
+                    const count = countOccurrences(hunk.lines[k].toLowerCase(), query);
+                    if (count !== 0) {
+                        counts.set(details, (counts.get(details) ?? 0) + count);
+                        total += count;
+                        found = true;
+                    }
+                }
+            }
+
+            if (found) {
+                mappings.set(total, details);
+            }
+        }
+
+        return new MatchingFiles(counts, total, mappings);
+    }
+}
+
+export type ActiveSearchResult = {
+    file: FileDetails;
+    idx: number;
+};
+
+export class MatchingFiles {
+    static EMPTY = new MatchingFiles(new Map(), 0, new Map());
+
+    counts: Map<FileDetails, number>;
+    mappings: Map<number, FileDetails> = new Map();
+    totalMatches: number;
+
+    constructor(counts: Map<FileDetails, number>, total: number, mappings: Map<number, FileDetails>) {
+        this.counts = counts;
+        this.totalMatches = total;
+        this.mappings = mappings;
+    }
+
+    getLocation(index: number): ActiveSearchResult {
+        index++; // Mappings are 1-based
+        const originalIndex = index;
+
+        let file = this.mappings.get(index);
+        while (file === undefined && index < this.totalMatches) {
+            index++;
+            file = this.mappings.get(index);
+        }
+        if (file === undefined) {
+            throw new Error("No file found");
+        }
+
+        const matchCount = this.counts.get(file) || 0;
+        return { file, idx: matchCount - 1 - (index - originalIndex) };
     }
 }

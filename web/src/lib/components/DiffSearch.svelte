@@ -1,5 +1,5 @@
 <script lang="ts">
-    import type { FileDetails, MultiFileDiffViewerState } from "$lib/diff-viewer-multi-file.svelte";
+    import { type MultiFileDiffViewerState } from "$lib/diff-viewer-multi-file.svelte";
     import Spinner from "$lib/components/Spinner.svelte";
 
     interface Props {
@@ -8,129 +8,75 @@
 
     let { viewer }: Props = $props();
 
-    class MatchingFiles {
-        static EMPTY = new MatchingFiles(new Map(), 0, new Map());
-
-        counts: Map<FileDetails, number>;
-        mappings: Map<number, FileDetails> = new Map();
-        total: number;
-
-        constructor(counts: Map<FileDetails, number>, total: number, mappings: Map<number, FileDetails>) {
-            this.counts = counts;
-            this.total = total;
-            this.mappings = mappings;
-        }
-
-        getFile(index: number): FileDetails {
-            index++; // Mappings are 1-based
-
-            let file = this.mappings.get(index);
-            while (file === undefined && index < this.total) {
-                index++;
-                file = this.mappings.get(index);
-            }
-            if (file === undefined) {
-                throw new Error("No file found");
-            }
-            return file;
-        }
-    }
-
-    let matchingFiles: Promise<MatchingFiles> = $derived(findMatchingFiles(viewer.debouncedSearchQuery));
     let currentMatchIdx = $state(-1);
+    let controlsWidth = $state(0);
 
     $effect(() => {
-        matchingFiles.then(() => {}); // Trigger reactivity
+        viewer.matchingFiles.then(() => {}); // Trigger reactivity
 
         // Reset current match index when search results change
         currentMatchIdx = -1;
     });
 
-    async function findMatchingFiles(query: string): Promise<MatchingFiles> {
-        if (!query) {
-            return MatchingFiles.EMPTY;
-        }
-        query = query.toLowerCase();
-
-        const diffs = await Promise.all(viewer.diffs);
-
-        let total = 0;
-        const counts: Map<FileDetails, number> = new Map();
-        const mappings: Map<number, FileDetails> = new Map();
-        for (let i = 0; i < diffs.length; i++) {
-            const diff = diffs[i];
-
-            for (let j = 0; j < diff.hunks.length; j++) {
-                const hunk = diff.hunks[j];
-
-                for (let k = 0; k < hunk.lines.length; k++) {
-                    const count = countOccurrences(hunk.lines[k].toLowerCase(), query);
-                    if (count !== 0) {
-                        const details = viewer.fileDetails[i];
-                        counts.set(details, (counts.get(details) ?? 0) + count);
-                        total += count;
-                        mappings.set(total, details);
-                    }
-                }
-            }
-        }
-
-        return new MatchingFiles(counts, total, mappings);
-    }
-
-    function countOccurrences(str: string, substr: string): number {
-        let count = 0;
-        let idx = 0;
-        while (idx > -1) {
-            idx = str.indexOf(substr, idx);
-            if (idx > -1) {
-                count++;
-                idx += substr.length;
-            }
-        }
-        return count;
-    }
-
     async function prevResult() {
-        const files = await matchingFiles;
-        currentMatchIdx = (currentMatchIdx - 1 + files.total) % files.total;
+        const files = await viewer.matchingFiles;
+        const startIdx = currentMatchIdx == -1 ? 0 : currentMatchIdx;
+        currentMatchIdx = (startIdx - 1 + files.totalMatches) % files.totalMatches;
+        viewer.activeSearchResult = files.getLocation(currentMatchIdx);
         await scrollToMatch();
     }
 
     async function nextResult() {
-        const files = await matchingFiles;
-        currentMatchIdx = (currentMatchIdx + 1) % files.total;
+        const files = await viewer.matchingFiles;
+        currentMatchIdx = (currentMatchIdx + 1) % files.totalMatches;
+        viewer.activeSearchResult = files.getLocation(currentMatchIdx);
         await scrollToMatch();
     }
 
     async function scrollToMatch() {
-        const files = await matchingFiles;
-        if (currentMatchIdx >= 0 && currentMatchIdx < files.total) {
-            viewer.scrollToFile(viewer.getIndex(files.getFile(currentMatchIdx)));
+        const files = await viewer.matchingFiles;
+        if (currentMatchIdx >= 0 && currentMatchIdx < files.totalMatches) {
+            const { file, idx } = files.getLocation(currentMatchIdx);
+            await viewer.scrollToMatch(file, idx);
         }
+    }
+
+    function currentMatchIdForDisplay(): string {
+        const id = currentMatchIdx + 1;
+        if (id === 0) {
+            return "-";
+        }
+        return id.toString();
     }
 </script>
 
-<div class="relative">
+<div class="relative flex max-w-96 grow">
     <input
         type="text"
         placeholder="Search diff content..."
         bind:value={viewer.searchQuery}
-        class="max-w-96 rounded-md border py-1 ps-8 pe-2 overflow-ellipsis focus:ring-2 focus:ring-blue-500 focus:outline-none"
+        class="w-full rounded-md border py-0.5 ps-6 text-sm overflow-ellipsis focus:ring-2 focus:ring-blue-500 focus:outline-none"
         autocomplete="off"
+        style="padding-inline-end: {0.5 + controlsWidth / 16}rem;"
     />
-    <span aria-hidden="true" class="absolute top-1/2 left-2 iconify size-4 -translate-y-1/2 octicon--search-16"></span>
+    <span aria-hidden="true" class="absolute top-1/2 left-1 iconify size-4 -translate-y-1/2 text-em-med octicon--search-16"></span>
+    <div class="absolute top-1/2 right-1 flex -translate-y-1/2 flex-row" bind:clientWidth={controlsWidth}>
+        {#if viewer.debouncedSearchQuery}
+            {#await viewer.matchingFiles}
+                <Spinner size={4}></Spinner>
+            {:then files}
+                <span class="text-sm">{`${currentMatchIdForDisplay()} / ${files.totalMatches}`}</span>
+                <button class="flex size-5 items-center justify-center" onclick={() => prevResult()} aria-label="previous match">
+                    <span class="flex size-4 items-center justify-center rounded-sm hover:bg-gray-100 dark:hover:bg-gray-800">
+                        <span aria-hidden="true" class="iconify size-4 octicon--chevron-left-16"></span>
+                    </span>
+                </button>
+                <button class="flex size-5 items-center justify-center" onclick={() => nextResult()} aria-label="next match">
+                    <span class="flex size-4 items-center justify-center rounded-sm hover:bg-gray-100 dark:hover:bg-gray-800">
+                        <span aria-hidden="true" class="iconify size-4 octicon--chevron-right-16"></span>
+                    </span>
+                </button>
+            {/await}
+        {/if}
+    </div>
 </div>
-{#if viewer.debouncedSearchQuery}
-    {#await matchingFiles}
-        <Spinner size={4}></Spinner>
-    {:then files}
-        {`${currentMatchIdx + 1} / ${files.total}`}
-        <button class="flex size-5 items-center justify-center rounded-sm bg-blue-500" onclick={() => prevResult()} aria-label="previous match">
-            <span aria-hidden="true" class="iconify size-4 text-white octicon--chevron-left-16"></span>
-        </button>
-        <button class="flex size-5 items-center justify-center rounded-sm bg-blue-500" onclick={() => nextResult()} aria-label="next match">
-            <span aria-hidden="true" class="iconify size-4 text-white octicon--chevron-right-16"></span>
-        </button>
-    {/await}
-{/if}

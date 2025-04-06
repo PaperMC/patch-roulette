@@ -1049,3 +1049,58 @@ export class ConciseDiffViewState<K> {
         this.cachedState = state;
     }
 }
+
+export type SearchSegment = {
+    id?: number;
+    text: string;
+    highlighted: boolean;
+};
+
+export type MatchCount = {
+    count: number;
+};
+
+export function makeSearchSegments(searchQuery: string, line: PatchLine, count: MatchCount): SearchSegment[] {
+    if (!searchQuery) {
+        return [];
+    }
+    const searchQueryLower = searchQuery.toLowerCase();
+
+    let linePlain = "";
+    for (const segment of line.content) {
+        if (segment.text) {
+            linePlain += segment.text;
+        }
+    }
+    let linePlainOriginalCase = linePlain;
+    linePlain = linePlain.toLowerCase();
+
+    if (linePlain.length === 0) {
+        return [];
+    }
+
+    const segments: SearchSegment[] = [];
+    let idx = linePlain.indexOf(searchQueryLower);
+    if (idx === -1) {
+        return [];
+    }
+
+    while (idx !== -1) {
+        const before = linePlain.slice(0, idx);
+        const after = linePlain.slice(idx + searchQueryLower.length);
+        if (before.length > 0) {
+            segments.push({ text: before, highlighted: false });
+        }
+        segments.push({ id: count.count, text: linePlainOriginalCase.slice(idx, idx + searchQueryLower.length), highlighted: true });
+        count.count++;
+        linePlain = after;
+        linePlainOriginalCase = linePlainOriginalCase.slice(idx + searchQueryLower.length);
+        idx = linePlain.indexOf(searchQueryLower);
+    }
+
+    if (linePlain.length > 0) {
+        segments.push({ text: linePlain, highlighted: false });
+    }
+
+    return segments;
+}

@@ -10,10 +10,14 @@
         type PatchLineTypeProps,
         type InnerPatchLineTypeProps,
         patchLineTypeProps,
+        type SearchSegment,
+        type MatchCount,
+        makeSearchSegments,
     } from "$lib/components/scripts/ConciseDiffView.svelte.js";
     import { type BundledTheme } from "shiki";
     import Spinner from "$lib/components/Spinner.svelte";
     import { type ParsedDiff } from "diff";
+    import { onDestroy } from "svelte";
 
     interface Props {
         rawPatchContent?: string;
@@ -23,6 +27,7 @@
         omitPatchHeaderOnlyHunks?: boolean;
         wordDiffs?: boolean;
         searchQuery?: string;
+        activeSearchResult?: number;
 
         cache?: Map<K, ConciseDiffViewCachedState>;
         cacheKey?: K;
@@ -36,6 +41,7 @@
         omitPatchHeaderOnlyHunks = true,
         wordDiffs = true,
         searchQuery,
+        activeSearchResult = -1,
         cache,
         cacheKey,
     }: Props = $props();
@@ -75,52 +81,51 @@
         }
     }
 
-    type SearchSegment = {
-        text: string;
-        highlighted: boolean;
-    };
+    let searchResultElements: HTMLSpanElement[] = $state([]);
+    let didInitialJump = $state(false);
+    let scheduledJump: number | undefined = undefined;
+    $effect(() => {
+        if (didInitialJump) {
+            return;
+        }
+        if (activeSearchResult >= 0 && searchResultElements[activeSearchResult] !== undefined) {
+            const element = searchResultElements[activeSearchResult];
+            const anchorElement = element.closest("tr");
+            // This is an exceptionally stupid and unreliable hack, but at least
+            // jumping to a result in a not-yet-loaded file works most of the time with a delay
+            // instead of never.
+            scheduledJump = setTimeout(() => {
+                if (scheduledJump !== undefined) {
+                    clearTimeout(scheduledJump);
+                    scheduledJump = undefined;
+                }
 
-    function makeSearchSegments(line: PatchLine): SearchSegment[] {
+                if (anchorElement !== null) {
+                    anchorElement.scrollIntoView({ block: "center", inline: "center" });
+                }
+            }, 200);
+            didInitialJump = true;
+        }
+    });
+    onDestroy(() => {
+        if (scheduledJump !== undefined) {
+            clearTimeout(scheduledJump);
+            scheduledJump = undefined;
+        }
+    });
+
+    let searchSegments: Promise<SearchSegment[][]> = $derived.by(async () => {
         if (!searchQuery) {
             return [];
         }
-        let searchQueryLower = searchQuery.toLowerCase();
-
-        let linePlain = "";
-        for (const segment of line.content) {
-            if (segment.text) {
-                linePlain += segment.text;
-            }
+        const lines = await view.patchLines;
+        const segments: SearchSegment[][] = [];
+        const count: MatchCount = { count: 0 };
+        for (let i = 0; i < lines.length; i++) {
+            segments[i] = makeSearchSegments(searchQuery, lines[i], count);
         }
-        linePlain = linePlain.toLowerCase();
-
-        if (linePlain.length === 0) {
-            return [];
-        }
-
-        let segments: SearchSegment[] = [];
-        let idx = linePlain.indexOf(searchQueryLower);
-        if (idx === -1) {
-            return [];
-        }
-
-        while (idx !== -1) {
-            const before = linePlain.slice(0, idx);
-            const after = linePlain.slice(idx + searchQueryLower.length);
-            if (before.length > 0) {
-                segments.push({ text: before, highlighted: false });
-            }
-            segments.push({ text: linePlain.slice(idx, idx + searchQueryLower.length), highlighted: true });
-            linePlain = after;
-            idx = linePlain.indexOf(searchQueryLower);
-        }
-
-        if (linePlain.length > 0) {
-            segments.push({ text: linePlain, highlighted: false });
-        }
-
         return segments;
-    }
+    });
 </script>
 
 {#snippet lineContent(line: PatchLine, lineType: PatchLineTypeProps, innerLineType: InnerPatchLineTypeProps)}
@@ -136,25 +141,37 @@
     </span>
 {/snippet}
 
-{#snippet lineContentWrapper(line: PatchLine, lineType: PatchLineTypeProps, innerLineType: InnerPatchLineTypeProps)}
-    {@const searchSegments = makeSearchSegments(line)}
-    {#if searchSegments.length > 0}
-        <div class="relative">
-            {@render lineContent(line, lineType, innerLineType)}
-            <span class="absolute top-0 left-0 text-transparent">
-                <span class="inline leading-[0.875rem] select-none">
-                    {#each searchSegments as segment, index (index)}
-                        {#if segment.highlighted}<span class="bg-yellow-300/35">{segment.text}</span>{:else}{segment.text}{/if}
-                    {/each}
-                </span>
-            </span>
-        </div>
-    {:else}
+{#snippet lineContentWrapper(line: PatchLine, index: number, lineType: PatchLineTypeProps, innerLineType: InnerPatchLineTypeProps)}
+    {#await searchSegments}
         {@render lineContent(line, lineType, innerLineType)}
-    {/if}
+    {:then completedSearchSegments}
+        {@const lineSearchSegments = completedSearchSegments[index]}
+        {#if lineSearchSegments !== undefined && lineSearchSegments.length > 0}
+            <div class="relative">
+                {@render lineContent(line, lineType, innerLineType)}
+                <span class="pointer-events-none absolute top-0 left-0 text-transparent select-none">
+                    <span class="inline leading-[0.875rem]">
+                        {#each lineSearchSegments as segment, index (index)}
+                            {#if segment.highlighted}<span
+                                    bind:this={searchResultElements[segment.id ?? -1]}
+                                    class={{
+                                        "bg-[#d4a72c66]": segment.id !== activeSearchResult,
+                                        "bg-[#ff9632]": segment.id === activeSearchResult,
+                                        "text-em-high-light": segment.id === activeSearchResult,
+                                    }}
+                                    data-match-id={segment.id}>{segment.text}</span
+                                >{:else}{segment.text}{/if}
+                        {/each}
+                    </span>
+                </span>
+            </div>
+        {:else}
+            {@render lineContent(line, lineType, innerLineType)}
+        {/if}
+    {/await}
 {/snippet}
 
-{#snippet renderLine(line: PatchLine)}
+{#snippet renderLine(line: PatchLine, index: number)}
     {@const lineType = patchLineTypeProps[line.type]}
     <tr class="h-[1px]">
         <td class="line-number h-[inherit] bg-[var(--hunk-header-bg)] select-none">
@@ -164,7 +181,7 @@
             <div class="min-h-full px-2 {lineType.lineNoClasses}">{getDisplayLineNo(line, line.newLineNo)}</div>
         </td>
         <td class="w-full pl-[1rem] {lineType.classes}">
-            {@render lineContentWrapper(line, lineType, innerPatchLineTypeProps[line.innerPatchLineType])}
+            {@render lineContentWrapper(line, index, lineType, innerPatchLineTypeProps[line.innerPatchLineType])}
         </td>
     </tr>
 {/snippet}
@@ -178,7 +195,7 @@
     >
         <tbody>
             {#each lines as line, index (index)}
-                {@render renderLine(line)}
+                {@render renderLine(line, index)}
             {/each}
         </tbody>
     </table>

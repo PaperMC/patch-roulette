@@ -306,6 +306,19 @@ export function capitalizeFirstLetter(val: string): string {
     return val.charAt(0).toUpperCase() + val.slice(1);
 }
 
+export function countOccurrences(str: string, substr: string): number {
+    let count = 0;
+    let idx = 0;
+    while (idx > -1) {
+        idx = str.indexOf(substr, idx);
+        if (idx > -1) {
+            count++;
+            idx += substr.length;
+        }
+    }
+    return count;
+}
+
 // Watches for changes to local storage in other tabs
 export function watchLocalStorage(key: string, callback: (newValue: string | null) => void) {
     onMount(() => {

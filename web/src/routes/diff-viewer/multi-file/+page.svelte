@@ -256,7 +256,7 @@
                     class="w-full rounded-md border px-8 py-1 overflow-ellipsis focus:ring-2 focus:ring-blue-500 focus:outline-none"
                     autocomplete="off"
                 />
-                <span aria-hidden="true" class="absolute top-1/2 left-2 iconify size-4 -translate-y-1/2 octicon--filter-16"></span>
+                <span aria-hidden="true" class="absolute top-1/2 left-2 iconify size-4 -translate-y-1/2 text-em-med octicon--filter-16"></span>
                 {#if viewer.debouncedFileTreeFilter}
                     <button
                         class="absolute top-1/2 right-2 iconify size-4 -translate-y-1/2 text-gray-500 octicon--x-16 hover:text-gray-700"
@@ -347,7 +347,7 @@
                 {@render settingsPopover()}
             </div>
         </div>
-        <div class="flex flex-row items-center gap-2">
+        <div class="mb-1 flex flex-row items-center justify-between gap-2">
             {#await viewer.stats}
                 <DiffStats />
             {:then stats}
@@ -442,6 +442,9 @@
                                     omitPatchHeaderOnlyHunks={globalOptions.omitPatchHeaderOnlyHunks}
                                     wordDiffs={globalOptions.wordDiffs}
                                     searchQuery={viewer.debouncedSearchQuery}
+                                    activeSearchResult={viewer.activeSearchResult && viewer.activeSearchResult.file === value
+                                        ? viewer.activeSearchResult.idx
+                                        : undefined}
                                     cache={viewer.diffViewCache}
                                     cacheKey={value}
                                 />
