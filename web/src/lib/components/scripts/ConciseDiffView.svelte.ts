@@ -10,7 +10,7 @@ import {
     type ThemeRegistration,
     bundledThemes,
 } from "shiki";
-import { guessLanguageFromExtension } from "$lib/util";
+import { guessLanguageFromExtension, type MutableValue } from "$lib/util";
 import type { IRawThemeSetting } from "shiki/textmate";
 import chroma from "chroma-js";
 import { getEffectiveGlobalTheme } from "$lib/theme.svelte";
@@ -599,17 +599,10 @@ function mergeTokens(tokens: ThemedToken[]): ThemedToken[] {
 
 const lineProcessors: LineProcessor[] = [];
 
-async function processLines(
-    fromFile: string | undefined,
-    toFile: string | undefined,
-    hunk: Hunk,
-    syntaxHighlighting: boolean,
-    syntaxHighlightingTheme: BundledTheme | undefined,
-    wordDiffs: boolean,
-): Promise<PatchLine[]> {
+async function withLineProcessor<R>(fn: (proc: LineProcessor) => Promise<R>): Promise<R> {
     const lineProcessor = lineProcessors.pop() ?? new LineProcessor();
     try {
-        return await lineProcessor.process(fromFile, toFile, hunk, syntaxHighlighting, syntaxHighlightingTheme, wordDiffs);
+        return await fn(lineProcessor);
     } finally {
         lineProcessors.push(lineProcessor);
     }
@@ -621,32 +614,51 @@ export async function makeLines(
     syntaxHighlightingTheme: BundledTheme | undefined,
     omitPatchHeaderOnlyHunks: boolean,
     wordDiffs: boolean,
-): Promise<PatchLine[]> {
+): Promise<PatchLine[][]> {
     const patch = await patchPromise;
+    const lines: PatchLine[][] = [];
+
+    for (let i = 0; i < patch.hunks.length; i++) {
+        const hunk = patch.hunks[i];
+        const hunkLines = await makeHunkLines(patch, hunk, syntaxHighlighting, syntaxHighlightingTheme, omitPatchHeaderOnlyHunks, wordDiffs);
+        lines.push(hunkLines);
+    }
+
+    return lines;
+}
+
+async function makeHunkLines(
+    patch: ParsedDiff,
+    hunk: Hunk,
+    syntaxHighlighting: boolean,
+    syntaxHighlightingTheme: BundledTheme | undefined,
+    omitPatchHeaderOnlyHunks: boolean,
+    wordDiffs: boolean,
+): Promise<PatchLine[]> {
     const lines: PatchLine[] = [];
 
-    for (const hunk of patch.hunks) {
-        // Skip this hunk if it only contains header changes
-        if (omitPatchHeaderOnlyHunks && !hasNonHeaderChanges(hunk.lines)) {
-            continue;
-        }
-
-        // Add the hunk header
-        const header = `@@ -${hunk.oldStart},${hunk.oldLines} +${hunk.newStart},${hunk.newLines} @@`;
-        lines.push({
-            type: PatchLineType.HEADER,
-            content: [{ text: header }],
-            innerPatchLineType: InnerPatchLineType.NONE,
-        });
-
-        const oldFileName = patch.oldFileName === "/dev/null" ? undefined : patch.oldFileName;
-        const newFileName = patch.newFileName === "/dev/null" ? undefined : patch.newFileName;
-        const hunkLines = await processLines(oldFileName, newFileName, hunk, syntaxHighlighting, syntaxHighlightingTheme, wordDiffs);
-        lines.push(...hunkLines);
-
-        // Add a separator between hunks
-        lines.push({ content: [{ text: "" }], type: PatchLineType.SPACER, innerPatchLineType: InnerPatchLineType.NONE });
+    // Skip this hunk if it only contains header changes
+    if (omitPatchHeaderOnlyHunks && !hasNonHeaderChanges(hunk.lines)) {
+        return lines;
     }
+
+    // Add the hunk header
+    const header = `@@ -${hunk.oldStart},${hunk.oldLines} +${hunk.newStart},${hunk.newLines} @@`;
+    lines.push({
+        type: PatchLineType.HEADER,
+        content: [{ text: header }],
+        innerPatchLineType: InnerPatchLineType.NONE,
+    });
+
+    const oldFileName = patch.oldFileName === "/dev/null" ? undefined : patch.oldFileName;
+    const newFileName = patch.newFileName === "/dev/null" ? undefined : patch.newFileName;
+    const hunkLines = await withLineProcessor((proc) => {
+        return proc.process(oldFileName, newFileName, hunk, syntaxHighlighting, syntaxHighlightingTheme, wordDiffs);
+    });
+    lines.push(...hunkLines);
+
+    // Add a separator between hunks
+    lines.push({ content: [{ text: "" }], type: PatchLineType.SPACER, innerPatchLineType: InnerPatchLineType.NONE });
 
     return lines;
 }
@@ -954,14 +966,14 @@ async function getTheme(theme: BundledTheme | undefined): Promise<null | { defau
 }
 
 export class ConciseDiffViewCachedState {
-    patchLines: Promise<PatchLine[]>;
+    patchLines: Promise<PatchLine[][]>;
     syntaxHighlighting: boolean;
     syntaxHighlightingTheme: BundledTheme | undefined;
     omitPatchHeaderOnlyHunks: boolean;
     wordDiffs: boolean;
 
     constructor(
-        patchLines: Promise<PatchLine[]>,
+        patchLines: Promise<PatchLine[][]>,
         syntaxHighlighting: boolean,
         syntaxHighlightingTheme: BundledTheme | undefined,
         omitPatchHeaderOnlyHunks: boolean,
@@ -993,7 +1005,7 @@ export function parseSinglePatch(rawPatchContent: string): ParsedDiff {
 }
 
 export class ConciseDiffViewState<K> {
-    patchLines: Promise<PatchLine[]> = $state(new Promise<PatchLine[]>(() => []));
+    patchLines: Promise<PatchLine[][]> = $state(new Promise<PatchLine[][]>(() => []));
     cachedState: ConciseDiffViewCachedState | undefined = undefined;
 
     private readonly cache: Map<K, ConciseDiffViewCachedState> | undefined;
@@ -1048,4 +1060,49 @@ export class ConciseDiffViewState<K> {
         this.patchLines = state.patchLines;
         this.cachedState = state;
     }
+}
+
+export type SearchSegment = {
+    id?: number;
+    text: string;
+    highlighted: boolean;
+};
+
+export function makeSearchSegments(searchQuery: string, line: string, count: MutableValue<number>): SearchSegment[] {
+    if (!searchQuery) {
+        return [];
+    }
+    const searchQueryLower = searchQuery.toLowerCase();
+
+    let lineOriginalCase = line;
+    line = line.toLowerCase();
+
+    if (line.length === 0) {
+        return [];
+    }
+
+    const segments: SearchSegment[] = [];
+    let idx = line.indexOf(searchQueryLower);
+    if (idx === -1) {
+        return [];
+    }
+
+    while (idx !== -1) {
+        const before = line.slice(0, idx);
+        const after = line.slice(idx + searchQueryLower.length);
+        if (before.length > 0) {
+            segments.push({ text: before, highlighted: false });
+        }
+        segments.push({ id: count.value, text: lineOriginalCase.slice(idx, idx + searchQueryLower.length), highlighted: true });
+        count.value++;
+        line = after;
+        lineOriginalCase = lineOriginalCase.slice(idx + searchQueryLower.length);
+        idx = line.indexOf(searchQueryLower);
+    }
+
+    if (line.length > 0) {
+        segments.push({ text: line, highlighted: false });
+    }
+
+    return segments;
 }

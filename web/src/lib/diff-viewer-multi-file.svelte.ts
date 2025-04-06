@@ -18,7 +18,7 @@ import {
 import type { BundledTheme } from "shiki";
 import { browser } from "$app/environment";
 import { getEffectiveGlobalTheme } from "$lib/theme.svelte";
-import { debounce, type FileTreeNodeData, isImageFile, makeFileTree, type MemoizedPromise, memoizePromise, watchLocalStorage } from "$lib/util";
+import { countOccurrences, debounce, type FileTreeNodeData, isImageFile, makeFileTree, type LazyPromise, lazyPromise, watchLocalStorage } from "$lib/util";
 import { onDestroy } from "svelte";
 import type { TreeNode } from "$lib/components/scripts/Tree.svelte";
 import { VList } from "virtua/svelte";
@@ -195,8 +195,8 @@ export function findHeaderChangeOnlyPatches(patchStrings: string[]) {
 }
 
 export type ImageDiffDetails = {
-    fileA: MemoizedPromise<string> | null;
-    fileB: MemoizedPromise<string> | null;
+    fileA: LazyPromise<string> | null;
+    fileB: LazyPromise<string> | null;
     load: boolean;
 };
 
@@ -214,6 +214,8 @@ export type ViewerStatistics = {
 };
 
 export class MultiFileDiffViewerState {
+    fileTreeFilter: string = $state("");
+    debouncedFileTreeFilter: string = $state("");
     searchQuery: string = $state("");
     debouncedSearchQuery: string = $state("");
     collapsed: boolean[] = $state([]);
@@ -224,45 +226,22 @@ export class MultiFileDiffViewerState {
     diffViewCache: Map<FileDetails, ConciseDiffViewCachedState> = new Map();
     images: ImageDiffDetails[] = $state([]);
     vlist: VList<FileDetails> | undefined = $state();
-    stats: Promise<ViewerStatistics> = $derived.by(async () => {
-        let addedLines = 0;
-        let removedLines = 0;
-        const fileAddedLines: number[] = [];
-        const fileRemovedLines: number[] = [];
+    activeSearchResult: ActiveSearchResult | null = $state(null);
 
-        for (let i = 0; i < this.fileDetails.length; i++) {
-            const diff = await this.diffs[i];
-            if (!diff) {
-                continue;
-            }
-
-            for (let j = 0; j < diff.hunks.length; j++) {
-                const hunk = diff.hunks[j];
-
-                for (let k = 0; k < hunk.lines.length; k++) {
-                    const line = hunk.lines[k];
-
-                    if (line.startsWith("+")) {
-                        addedLines++;
-                        fileAddedLines[i] = (fileAddedLines[i] || 0) + 1;
-                    } else if (line.startsWith("-")) {
-                        removedLines++;
-                        fileRemovedLines[i] = (fileRemovedLines[i] || 0) + 1;
-                    }
-                }
-            }
-        }
-
-        return { addedLines, removedLines, fileAddedLines, fileRemovedLines };
-    });
-
+    readonly stats: Promise<ViewerStatistics> = $derived(this.countStats());
     readonly fileTreeRoots: TreeNode<FileTreeNodeData>[] = $derived(makeFileTree(this.fileDetails));
-    readonly filteredFileDetails: FileDetails[] = $derived(this.debouncedSearchQuery ? this.fileDetails.filter((f) => this.filterFile(f)) : this.fileDetails);
+    readonly filteredFileDetails: FileDetails[] = $derived(
+        this.debouncedFileTreeFilter ? this.fileDetails.filter((f) => this.filterFile(f)) : this.fileDetails,
+    );
     readonly patchHeaderDiffOnly: boolean[] = $derived(findHeaderChangeOnlyPatches(this.diffText));
+    readonly searchResults: Promise<SearchResults> = $derived(this.findSearchResults());
 
     constructor() {
-        const updateDebouncedSearch = debounce((value: string) => (this.debouncedSearchQuery = value), 500);
-        $effect(() => updateDebouncedSearch(this.searchQuery));
+        const updateDebouncedFileTreeFilter = debounce((value: string) => (this.debouncedFileTreeFilter = value), 500);
+        $effect(() => updateDebouncedFileTreeFilter(this.fileTreeFilter));
+
+        const updateDebouncedSearchQuery = debounce((value: string) => (this.debouncedSearchQuery = value), 500);
+        $effect(() => updateDebouncedSearchQuery(this.searchQuery));
 
         // Auto-check all patch header diff only diffs
         $effect(() => {
@@ -282,13 +261,13 @@ export class MultiFileDiffViewerState {
     }
 
     filterFile(file: FileDetails): boolean {
-        const queryLower = this.debouncedSearchQuery.toLowerCase();
+        const queryLower = this.debouncedFileTreeFilter.toLowerCase();
         return file.toFile.toLowerCase().includes(queryLower) || file.fromFile.toLowerCase().includes(queryLower);
     }
 
     clearSearch() {
-        this.searchQuery = "";
-        this.debouncedSearchQuery = "";
+        this.fileTreeFilter = "";
+        this.debouncedFileTreeFilter = "";
     }
 
     toggleCollapse(index: number) {
@@ -312,13 +291,32 @@ export class MultiFileDiffViewerState {
     }
 
     scrollToFile(index: number) {
-        if (this.vlist) {
-            if (!this.checked[index]) {
-                // Auto-expand on jump when not checked
-                this.collapsed[index] = false;
-            }
-            this.vlist.scrollToIndex(index, { align: "start" });
+        if (!this.vlist) return;
+        if (!this.checked[index]) {
+            // Auto-expand on jump when not checked
+            this.collapsed[index] = false;
         }
+        this.vlist.scrollToIndex(index, { align: "start" });
+    }
+
+    // https://github.com/inokawa/virtua/issues/621
+    // https://github.com/inokawa/virtua/discussions/542#discussioncomment-11214618
+    async scrollToMatch(file: FileDetails, idx: number) {
+        if (!this.vlist) return;
+        const fileIdx = this.getIndex(file);
+        this.collapsed[fileIdx] = false;
+        const startIdx = this.vlist.findStartIndex();
+        const endIdx = this.vlist.findEndIndex();
+        if (fileIdx < startIdx || fileIdx > endIdx) {
+            this.vlist.scrollToIndex(fileIdx, { align: "start" });
+        }
+
+        requestAnimationFrame(() => {
+            const fileElement = document.getElementById(`file-${fileIdx}`);
+            const resultElement = fileElement?.querySelector(`[data-match-id='${idx}']`) as HTMLElement | null | undefined;
+            if (!resultElement) return;
+            resultElement.scrollIntoView({ block: "center", inline: "center" });
+        });
     }
 
     clearImages() {
@@ -362,22 +360,22 @@ export class MultiFileDiffViewerState {
             if (githubDetails && isImageFile(patch.fromFile) && isImageFile(patch.toFile)) {
                 const githubDetailsCopy = githubDetails;
 
-                let fileA: MemoizedPromise<string> | null;
+                let fileA: LazyPromise<string> | null;
                 if (patch.status === "added") {
                     fileA = null;
                 } else {
-                    fileA = memoizePromise(async () =>
+                    fileA = lazyPromise(async () =>
                         URL.createObjectURL(
                             await fetchGithubFile(getGithubToken(), githubDetailsCopy.owner, githubDetailsCopy.repo, patch.fromFile, githubDetailsCopy.base),
                         ),
                     );
                 }
 
-                let fileB: MemoizedPromise<string> | null;
+                let fileB: LazyPromise<string> | null;
                 if (patch.status === "removed") {
                     fileB = null;
                 } else {
-                    fileB = memoizePromise(async () =>
+                    fileB = lazyPromise(async () =>
                         URL.createObjectURL(
                             await fetchGithubFile(getGithubToken(), githubDetailsCopy.owner, githubDetailsCopy.repo, patch.toFile, githubDetailsCopy.head),
                         ),
@@ -432,5 +430,125 @@ export class MultiFileDiffViewerState {
 
         alert("Unsupported URL type " + url);
         return false;
+    }
+
+    private async countStats(): Promise<ViewerStatistics> {
+        let addedLines = 0;
+        let removedLines = 0;
+        const fileAddedLines: number[] = [];
+        const fileRemovedLines: number[] = [];
+
+        for (let i = 0; i < this.fileDetails.length; i++) {
+            const diff = await this.diffs[i];
+            if (!diff) {
+                continue;
+            }
+
+            for (let j = 0; j < diff.hunks.length; j++) {
+                const hunk = diff.hunks[j];
+
+                for (let k = 0; k < hunk.lines.length; k++) {
+                    const line = hunk.lines[k];
+
+                    if (line.startsWith("+")) {
+                        addedLines++;
+                        fileAddedLines[i] = (fileAddedLines[i] || 0) + 1;
+                    } else if (line.startsWith("-")) {
+                        removedLines++;
+                        fileRemovedLines[i] = (fileRemovedLines[i] || 0) + 1;
+                    }
+                }
+            }
+        }
+
+        return { addedLines, removedLines, fileAddedLines, fileRemovedLines };
+    }
+
+    private async findSearchResults(): Promise<SearchResults> {
+        let query = this.debouncedSearchQuery;
+        if (!query) {
+            return SearchResults.EMPTY;
+        }
+        query = query.toLowerCase();
+
+        const diffs = await Promise.all(this.diffs);
+
+        let total = 0;
+        const lines: Map<FileDetails, number[][]> = new Map();
+        const counts: Map<FileDetails, number> = new Map();
+        const mappings: Map<number, FileDetails> = new Map();
+        for (let i = 0; i < diffs.length; i++) {
+            const diff = diffs[i];
+            if (diff === undefined) {
+                continue;
+            }
+            const details = this.fileDetails[i];
+            const lineNumbers: number[][] = [];
+            let found = false;
+
+            for (let j = 0; j < diff.hunks.length; j++) {
+                const hunk = diff.hunks[j];
+                const hunkLineNumbers: number[] = [];
+                lineNumbers[j] = hunkLineNumbers;
+
+                for (let k = 0; k < hunk.lines.length; k++) {
+                    const count = countOccurrences(hunk.lines[k].slice(1).toLowerCase(), query);
+                    if (count !== 0) {
+                        counts.set(details, (counts.get(details) ?? 0) + count);
+                        total += count;
+                        if (!hunkLineNumbers.includes(k)) {
+                            hunkLineNumbers.push(k);
+                        }
+                        found = true;
+                    }
+                }
+            }
+
+            if (found) {
+                mappings.set(total, details);
+                lines.set(details, lineNumbers);
+            }
+        }
+
+        return new SearchResults(counts, total, mappings, lines);
+    }
+}
+
+export type ActiveSearchResult = {
+    file: FileDetails;
+    idx: number;
+};
+
+export class SearchResults {
+    static EMPTY = new SearchResults(new Map(), 0, new Map(), new Map());
+
+    counts: Map<FileDetails, number>;
+    mappings: Map<number, FileDetails> = new Map();
+    // FileDetails -> Hunk -> Line
+    lines: Map<FileDetails, number[][]> = new Map();
+    totalMatches: number;
+
+    constructor(counts: Map<FileDetails, number>, total: number, mappings: Map<number, FileDetails>, lines: Map<FileDetails, number[][]>) {
+        this.counts = counts;
+        this.totalMatches = total;
+        this.mappings = mappings;
+        this.lines = lines;
+    }
+
+    getLocation(index: number): ActiveSearchResult {
+        index++; // Mappings are 1-based
+        const originalIndex = index;
+
+        let file = this.mappings.get(index);
+        while (file === undefined && index < this.totalMatches) {
+            index++;
+            file = this.mappings.get(index);
+        }
+        if (file === undefined) {
+            throw new Error("No file found");
+        }
+
+        const matchCount = this.counts.get(file) || 0;
+        return { file, idx: matchCount - 1 - (index - originalIndex) };
     }
 }
