@@ -292,13 +292,13 @@ export class MultiFileDiffViewerState {
         }
     }
 
-    scrollToFile(index: number, autoExpand: boolean = true) {
+    scrollToFile(index: number, autoExpand: boolean = true, smooth: boolean = false) {
         if (!this.vlist) return;
         if (autoExpand && !this.checked[index]) {
             // Auto-expand on jump when not checked
             this.collapsed[index] = false;
         }
-        this.vlist.scrollToIndex(index, { align: "start" });
+        this.vlist.scrollToIndex(index, { align: "start", smooth });
     }
 
     // https://github.com/inokawa/virtua/issues/621

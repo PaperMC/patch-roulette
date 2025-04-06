@@ -15,11 +15,12 @@
     let { viewer, globalOptions, index, value, isImage }: Props = $props();
 
     async function onSelect() {
-        let fileTreeElement = document.getElementById("file-tree-file-" + index);
+        const getFileTreeElement = () => document.getElementById("file-tree-file-" + index);
+        let fileTreeElement = getFileTreeElement();
         if (!fileTreeElement) {
             viewer.tree?.expandParents((node) => node.data === value);
             await tick();
-            fileTreeElement = document.getElementById("file-tree-file-" + index);
+            fileTreeElement = getFileTreeElement();
         }
         if (fileTreeElement) {
             requestAnimationFrame(() => {
@@ -86,8 +87,8 @@
                 class="sticky top-0 z-10 flex flex-row items-center gap-2 border-b bg-neutral px-2 py-1 text-sm shadow-sm"
                 tabindex="0"
                 role="button"
-                onclick={() => viewer.scrollToFile(index, false)}
-                onkeyup={(event) => event.key === "Enter" && viewer.scrollToFile(index, false)}
+                onclick={() => viewer.scrollToFile(index, false, true)}
+                onkeyup={(event) => event.key === "Enter" && viewer.scrollToFile(index, false, true)}
                 {...props}
             >
                 {@render triggerContents()}
