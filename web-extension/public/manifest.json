@@ -1,0 +1,17 @@
+{
+    "manifest_version": 3,
+    "name": "Patch Roulette",
+    "version": "0.0.1",
+    "description": "Adds a button to open diffs in the Patch Roulette diff viewer.",
+    "permissions": ["tabs", "storage"],
+    "icons": {
+        "128": "favicon.png"
+    },
+    "action": {
+        "default_title": "Patch Roulette",
+        "default_icon": {
+            "128": "favicon.png"
+        },
+        "default_popup": "index.html"
+    }
+}
