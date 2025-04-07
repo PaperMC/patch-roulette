@@ -13,5 +13,10 @@
             "128": "favicon.png"
         },
         "default_popup": "index.html"
+    },
+    "browser_specific_settings": {
+        "gecko": {
+            "id": "patch-roulette@papermc.io"
+        }
     }
 }
