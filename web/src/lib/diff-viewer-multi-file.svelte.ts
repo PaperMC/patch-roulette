@@ -229,6 +229,7 @@ export class MultiFileDiffViewerState {
     vlist: VList<FileDetails> | undefined = $state();
     tree: TreeState<FileTreeNodeData> | undefined = $state();
     activeSearchResult: ActiveSearchResult | null = $state(null);
+    sidebarCollapsed = $state(false);
 
     readonly stats: Promise<ViewerStatistics> = $derived(this.countStats());
     readonly fileTreeRoots: TreeNode<FileTreeNodeData>[] = $derived(makeFileTree(this.fileDetails));

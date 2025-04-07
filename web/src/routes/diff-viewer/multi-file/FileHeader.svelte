@@ -1,7 +1,7 @@
 <script lang="ts">
     import DiffStats from "$lib/components/DiffStats.svelte";
     import { type FileDetails, GlobalOptions, type MultiFileDiffViewerState } from "$lib/diff-viewer-multi-file.svelte";
-    import { ContextMenu } from "bits-ui";
+    import { Popover } from "bits-ui";
     import { tick } from "svelte";
 
     interface Props {
@@ -14,10 +14,14 @@
 
     let { viewer, globalOptions, index, value, isImage }: Props = $props();
 
-    async function onSelect() {
+    let popoverOpen = $state(false);
+
+    async function showInFileTree() {
         const fileTreeElement = document.getElementById("file-tree-file-" + index);
         if (fileTreeElement) {
+            popoverOpen = false;
             viewer.tree?.expandParents((node) => node.data === value);
+            viewer.sidebarCollapsed = false;
             await tick();
             requestAnimationFrame(() => {
                 fileTreeElement.focus();
@@ -26,15 +30,7 @@
     }
 </script>
 
-{#snippet triggerContents()}
-    <!-- Only show stats for text diffs -->
-    {#if viewer.diffs[index] !== undefined}
-        {#await viewer.stats}
-            <DiffStats brief />
-        {:then stats}
-            <DiffStats brief add={stats.fileAddedLines[index]} remove={stats.fileRemovedLines[index]} />
-        {/await}
-    {/if}
+{#snippet fileName()}
     {#if value.fromFile === value.toFile}
         <span class="max-w-full overflow-hidden break-all">{value.toFile}</span>
     {:else}
@@ -44,56 +40,64 @@
             {value.toFile}
         </span>
     {/if}
+{/snippet}
+
+{#snippet collapseToggle()}
+    <button
+        type="button"
+        class="flex size-6 items-center justify-center rounded-md p-0.5 text-blue-500 hover:bg-gray-100 hover:shadow-sm dark:hover:bg-gray-800"
+        onclick={(e) => {
+            viewer.toggleCollapse(index);
+            e.stopPropagation();
+        }}
+    >
+        {#if viewer.collapsed[index]}
+            <span aria-label="expand file" class="iconify size-4 shrink-0 text-blue-500 octicon--chevron-right-16"></span>
+        {:else}
+            <span aria-label="collapse file" class="iconify size-4 shrink-0 text-blue-500 octicon--chevron-down-16"></span>
+        {/if}
+    </button>
+{/snippet}
+
+{#snippet popover()}
+    <Popover.Root bind:open={popoverOpen}>
+        <Popover.Trigger
+            class="flex size-6 items-center justify-center rounded-md p-0.5 hover:bg-gray-100 hover:shadow-sm dark:hover:bg-gray-800"
+            onclick={(e) => e.stopPropagation()}
+        >
+            <span class="iconify size-4 bg-blue-500 octicon--kebab-horizontal-16"></span>
+        </Popover.Trigger>
+        <Popover.Portal>
+            <Popover.Content class="overflow-hidden rounded-sm border bg-neutral shadow-sm select-none">
+                <button onclick={showInFileTree} class="px-2 py-1 text-sm hover:bg-gray-100 dark:hover:bg-gray-800">Show in file tree</button>
+            </Popover.Content>
+        </Popover.Portal>
+    </Popover.Root>
+{/snippet}
+
+<div
+    class="sticky top-0 z-10 flex flex-row items-center gap-2 border-b bg-neutral px-2 py-1 text-sm shadow-sm"
+    tabindex={0}
+    role="button"
+    onclick={() => viewer.scrollToFile(index, false, true)}
+    onkeyup={(event) => event.key === "Enter" && viewer.scrollToFile(index, false, true)}
+>
+    <!-- Only show stats for text diffs -->
+    {#if viewer.diffs[index] !== undefined}
+        {#await viewer.stats}
+            <DiffStats brief />
+        {:then stats}
+            <DiffStats brief add={stats.fileAddedLines[index]} remove={stats.fileRemovedLines[index]} />
+        {/await}
+    {/if}
+    {@render fileName()}
     <div class="ms-0.5 ml-auto flex items-center gap-2">
         {#if viewer.patchHeaderDiffOnly[index]}
             <span class="rounded-sm bg-gray-300 px-1 text-gray-800">Patch-header-only diff</span>
         {/if}
+        {@render popover()}
         {#if !viewer.patchHeaderDiffOnly[index] || !globalOptions.omitPatchHeaderOnlyHunks || isImage}
-            <span class="flex size-6 items-center justify-center rounded-md p-0.5 text-blue-500 hover:bg-gray-100 hover:shadow dark:hover:bg-gray-800">
-                {#if viewer.collapsed[index]}
-                    <button
-                        type="button"
-                        aria-label="expand file"
-                        onclick={(e) => {
-                            viewer.toggleCollapse(index);
-                            e.stopPropagation();
-                        }}
-                        class="iconify size-4 shrink-0 text-blue-500 octicon--chevron-right-16"
-                    ></button>
-                {:else}
-                    <button
-                        type="button"
-                        aria-label="collapse file"
-                        onclick={(e) => {
-                            viewer.toggleCollapse(index);
-                            e.stopPropagation();
-                        }}
-                        class="iconify size-4 shrink-0 text-blue-500 octicon--chevron-down-16"
-                    ></button>
-                {/if}
-            </span>
+            {@render collapseToggle()}
         {/if}
     </div>
-{/snippet}
-
-<ContextMenu.Root>
-    <ContextMenu.Trigger>
-        {#snippet child({ props })}
-            <div
-                class="sticky top-0 z-10 flex flex-row items-center gap-2 border-b bg-neutral px-2 py-1 text-sm shadow-sm"
-                tabindex="0"
-                role="button"
-                onclick={() => viewer.scrollToFile(index, false, true)}
-                onkeyup={(event) => event.key === "Enter" && viewer.scrollToFile(index, false, true)}
-                {...props}
-            >
-                {@render triggerContents()}
-            </div>
-        {/snippet}
-    </ContextMenu.Trigger>
-    <ContextMenu.Portal>
-        <ContextMenu.Content class="overflow-hidden rounded-sm border bg-neutral shadow-sm select-none">
-            <ContextMenu.Item {onSelect} class="px-2 py-1 text-sm hover:bg-gray-100 dark:hover:bg-gray-800">Show in file tree</ContextMenu.Item>
-        </ContextMenu.Content>
-    </ContextMenu.Portal>
-</ContextMenu.Root>
+</div>

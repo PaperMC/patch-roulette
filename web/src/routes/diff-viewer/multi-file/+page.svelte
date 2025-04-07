@@ -23,7 +23,6 @@
     const globalOptions: GlobalOptions = GlobalOptions.load();
     const viewer = new MultiFileDiffViewerState();
 
-    let sidebarCollapsed = $state(false);
     let modalOpen = $state(false);
     let githubUrl = $state("");
     let dragActive = $state(false);
@@ -125,9 +124,9 @@
     <button
         type="button"
         class="size-8 rounded-md p-1.5 text-blue-500 hover:bg-gray-100 hover:shadow dark:hover:bg-gray-800"
-        onclick={() => (sidebarCollapsed = !sidebarCollapsed)}
+        onclick={() => (viewer.sidebarCollapsed = !viewer.sidebarCollapsed)}
     >
-        {#if sidebarCollapsed}
+        {#if viewer.sidebarCollapsed}
             <span class="iconify octicon--sidebar-collapse-16"></span>
         {:else}
             <span class="iconify octicon--sidebar-expand-16"></span>
@@ -245,8 +244,8 @@
 <div class="relative flex min-h-screen flex-row justify-center">
     <div
         class="absolute top-0 left-0 z-10 h-full w-full flex-col border-e bg-neutral md:w-[350px] md:shadow-md lg:static lg:h-auto lg:shadow-none"
-        class:flex={!sidebarCollapsed}
-        class:hidden={sidebarCollapsed}
+        class:flex={!viewer.sidebarCollapsed}
+        class:hidden={viewer.sidebarCollapsed}
     >
         <div class="m-2 flex flex-row items-center gap-2">
             <div class="relative grow">
