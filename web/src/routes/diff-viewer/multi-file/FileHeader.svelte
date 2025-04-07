@@ -15,14 +15,10 @@
     let { viewer, globalOptions, index, value, isImage }: Props = $props();
 
     async function onSelect() {
-        const getFileTreeElement = () => document.getElementById("file-tree-file-" + index);
-        let fileTreeElement = getFileTreeElement();
-        if (!fileTreeElement) {
+        const fileTreeElement = document.getElementById("file-tree-file-" + index);
+        if (fileTreeElement) {
             viewer.tree?.expandParents((node) => node.data === value);
             await tick();
-            fileTreeElement = getFileTreeElement();
-        }
-        if (fileTreeElement) {
             requestAnimationFrame(() => {
                 fileTreeElement.focus();
             });
