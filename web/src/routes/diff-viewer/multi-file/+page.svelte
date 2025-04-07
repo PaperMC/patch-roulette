@@ -327,7 +327,7 @@
                     {#snippet childWrapper({ node, collapsed, children })}
                         <div
                             class={{
-                                hidden: collapsed && node.visibleChildren.length > 0,
+                                hidden: collapsed || node.visibleChildren.length <= 0,
                                 "dir-header": node.data.type === "directory" && !collapsed,
                                 "ps-4": true,
                             }}
