@@ -19,7 +19,7 @@
     <div id="login-container" class="relative flex h-screen flex-col items-center justify-center p-4">
         <Login {onLogin}></Login>
 
-        <a href="/diff-viewer/multi-file" class="absolute bottom-4 flex items-center rounded-md bg-blue-500 px-4 py-2 text-center text-white hover:bg-blue-600">
+        <a href="/diff" class="absolute bottom-4 flex items-center rounded-md bg-blue-500 px-4 py-2 text-center text-white hover:bg-blue-600">
             <span class="me-2 iconify octicon--file-diff-16"></span>Looking for the diff viewer?
         </a>
     </div>
