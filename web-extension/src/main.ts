@@ -1,4 +1,4 @@
-const defaultUrl = "https://patch-roulette.papermc.io/diff-viewer/multi-file";
+const defaultUrl = "https://patch-roulette.papermc.io/diff";
 let currentUrl = defaultUrl;
 const data = await chrome.storage.sync.get("url");
 if (data.url) {
