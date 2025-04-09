@@ -49,7 +49,7 @@
         }
     },
     "dependencies": {
-        "@octokit/openapi-types": "^24.2.0",
+        "@octokit/openapi-types": "^25.0.0",
         "ag-grid-svelte5-extended": "^0.0.13",
         "bits-ui": "^1.3.19",
         "chroma-js": "^3.1.2",
