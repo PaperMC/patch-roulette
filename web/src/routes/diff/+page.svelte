@@ -95,11 +95,11 @@
         modalOpen = false;
         const url = new URL(githubUrl);
         // exclude hash + query params
-        const test = url.protocol + url.hostname + url.pathname
-        
+        const test = url.protocol + url.hostname + url.pathname;
+
         const regex = /^https:\/\/github\.com\/([^/]+)\/([^/]+)\/(commit|pull|compare)\/(.+)/;
         const match = test.match(regex);
-        
+
         if (!match) {
             alert("Invalid GitHub URL. Use: https://github.com/owner/repo/(commit|pull|compare)/(id|ref_a...ref_b)");
             modalOpen = true;
