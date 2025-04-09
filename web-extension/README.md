@@ -2,7 +2,7 @@
 
 ## Building
 
-1. Install the latest version of [`bun`](https://bun.sh/) (1.2.8 at time of writing)
+1. Install the latest version of [`bun`](https://bun.sh/) (1.2.9 at time of writing)
 2. Run `bun install` to install dependencies
 3. Run `bun run build` to build the extension
 
