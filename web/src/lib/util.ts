@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import type { FileDetails } from "./diff-viewer-multi-file.svelte";
 import type { FileStatus } from "./github.svelte";
 import type { TreeNode } from "$lib/components/scripts/Tree.svelte";
@@ -9,21 +8,6 @@ import type { Action } from "svelte/action";
 export type MutableValue<T> = {
     value: T;
 };
-
-export function debounce<T extends (...args: any[]) => any>(fn: T, delay: number): (...args: Parameters<T>) => void {
-    let timeout: ReturnType<typeof setTimeout> | null = null;
-
-    return function (...args: Parameters<T>) {
-        if (timeout !== null) {
-            clearTimeout(timeout);
-        }
-
-        timeout = setTimeout(() => {
-            fn(...args);
-            timeout = null;
-        }, delay);
-    };
-}
 
 function isFullCommitHash(s: string): boolean {
     return /^[0-9a-fA-F]{40}$/.test(s);

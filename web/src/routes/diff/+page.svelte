@@ -278,7 +278,7 @@
                     autocomplete="off"
                 />
                 <span aria-hidden="true" class="absolute top-1/2 left-2 iconify size-4 -translate-y-1/2 text-em-med octicon--filter-16"></span>
-                {#if viewer.debouncedFileTreeFilter}
+                {#if viewer.fileTreeFilterDebounced.current}
                     <button
                         class="absolute top-1/2 right-2 iconify size-4 -translate-y-1/2 text-gray-500 octicon--x-16 hover:text-gray-700"
                         onclick={() => viewer.clearSearch()}
@@ -430,7 +430,7 @@
                                     syntaxHighlightingTheme={globalOptions.getSyntaxHighlightingTheme()}
                                     omitPatchHeaderOnlyHunks={globalOptions.omitPatchHeaderOnlyHunks}
                                     wordDiffs={globalOptions.wordDiffs}
-                                    searchQuery={viewer.debouncedSearchQuery}
+                                    searchQuery={viewer.searchQueryDebounced.current}
                                     searchMatchingLines={() => viewer.searchResults.then((r) => r.lines.get(value))}
                                     activeSearchResult={viewer.activeSearchResult && viewer.activeSearchResult.file === value
                                         ? viewer.activeSearchResult.idx

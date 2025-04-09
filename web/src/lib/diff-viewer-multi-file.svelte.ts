@@ -19,10 +19,11 @@ import {
 import type { BundledTheme } from "shiki";
 import { browser } from "$app/environment";
 import { getEffectiveGlobalTheme } from "$lib/theme.svelte";
-import { countOccurrences, debounce, type FileTreeNodeData, isImageFile, makeFileTree, type LazyPromise, lazyPromise, watchLocalStorage } from "$lib/util";
+import { countOccurrences, type FileTreeNodeData, isImageFile, makeFileTree, type LazyPromise, lazyPromise, watchLocalStorage } from "$lib/util";
 import { onDestroy } from "svelte";
 import { type TreeNode, TreeState } from "$lib/components/scripts/Tree.svelte";
 import { VList } from "virtua/svelte";
+import { Debounced } from "runed";
 
 const optionsKey = "diff-viewer-global-options";
 
@@ -222,9 +223,7 @@ export type DiffMetadata = {
 
 export class MultiFileDiffViewerState {
     fileTreeFilter: string = $state("");
-    debouncedFileTreeFilter: string = $state("");
     searchQuery: string = $state("");
-    debouncedSearchQuery: string = $state("");
     collapsed: boolean[] = $state([]);
     checked: boolean[] = $state([]);
     fileDetails: FileDetails[] = $state([]);
@@ -238,21 +237,17 @@ export class MultiFileDiffViewerState {
     sidebarCollapsed = $state(false);
     diffMetadata: DiffMetadata | null = $state(null);
 
+    readonly fileTreeFilterDebounced = new Debounced(() => this.fileTreeFilter, 500);
+    readonly searchQueryDebounced = new Debounced(() => this.searchQuery, 500);
     readonly stats: Promise<ViewerStatistics> = $derived(this.countStats());
     readonly fileTreeRoots: TreeNode<FileTreeNodeData>[] = $derived(makeFileTree(this.fileDetails));
     readonly filteredFileDetails: FileDetails[] = $derived(
-        this.debouncedFileTreeFilter ? this.fileDetails.filter((f) => this.filterFile(f)) : this.fileDetails,
+        this.fileTreeFilterDebounced.current ? this.fileDetails.filter((f) => this.filterFile(f)) : this.fileDetails,
     );
     readonly patchHeaderDiffOnly: boolean[] = $derived(findHeaderChangeOnlyPatches(this.diffText));
     readonly searchResults: Promise<SearchResults> = $derived(this.findSearchResults());
 
     constructor() {
-        const updateDebouncedFileTreeFilter = debounce((value: string) => (this.debouncedFileTreeFilter = value), 500);
-        $effect(() => updateDebouncedFileTreeFilter(this.fileTreeFilter));
-
-        const updateDebouncedSearchQuery = debounce((value: string) => (this.debouncedSearchQuery = value), 500);
-        $effect(() => updateDebouncedSearchQuery(this.searchQuery));
-
         // Auto-check all patch header diff only diffs
         $effect(() => {
             for (let i = 0; i < this.patchHeaderDiffOnly.length; i++) {
@@ -271,13 +266,12 @@ export class MultiFileDiffViewerState {
     }
 
     filterFile(file: FileDetails): boolean {
-        const queryLower = this.debouncedFileTreeFilter.toLowerCase();
+        const queryLower = this.fileTreeFilterDebounced.current.toLowerCase();
         return file.toFile.toLowerCase().includes(queryLower) || file.fromFile.toLowerCase().includes(queryLower);
     }
 
     clearSearch() {
         this.fileTreeFilter = "";
-        this.debouncedFileTreeFilter = "";
     }
 
     toggleCollapse(index: number) {
@@ -486,7 +480,7 @@ export class MultiFileDiffViewerState {
     }
 
     private async findSearchResults(): Promise<SearchResults> {
-        let query = this.debouncedSearchQuery;
+        let query = this.searchQueryDebounced.current;
         if (!query) {
             return SearchResults.EMPTY;
         }
