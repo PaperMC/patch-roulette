@@ -27,14 +27,12 @@ export function initThemeHooks() {
             theme = newValue as Theme;
         }
     });
-    $effect(() => {
-        localStorage.setItem(themeKey, theme);
-        document.documentElement.setAttribute("data-theme", theme);
-    });
+    $effect(() => document.documentElement.setAttribute("data-theme", theme));
 }
 
 export function setGlobalTheme(newTheme: Theme) {
     theme = newTheme;
+    localStorage.setItem(themeKey, newTheme);
 }
 
 export function getGlobalTheme(): Theme {
