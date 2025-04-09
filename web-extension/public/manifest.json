@@ -1,7 +1,7 @@
 {
     "manifest_version": 3,
     "name": "Patch Roulette",
-    "version": "0.0.1",
+    "version": "0.0.2",
     "description": "Adds a button to open diffs in the Patch Roulette diff viewer.",
     "permissions": ["tabs", "storage"],
     "icons": {
