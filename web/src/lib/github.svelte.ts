@@ -1,6 +1,6 @@
 import { browser } from "$app/environment";
 import type { components } from "@octokit/openapi-types";
-import { splitMultiFilePatch } from "$lib/util";
+import { splitMultiFilePatch, trimCommitHash } from "$lib/util";
 import type { FileDetails } from "$lib/diff-viewer-multi-file.svelte";
 import { PUBLIC_GITHUB_APP_NAME, PUBLIC_GITHUB_CLIENT_ID } from "$env/static/public";
 
@@ -16,6 +16,8 @@ export type GithubDiff = {
     repo: string;
     base: string;
     head: string;
+    description: string;
+    backlink: string;
 };
 
 export type GithubDiffResult = {
@@ -109,7 +111,8 @@ export async function fetchGithubPRComparison(token: string | null, owner: strin
     const prInfo = await fetchGithubPRInfo(token, owner, repo, prNumber);
     const base = prInfo.base.sha;
     const head = prInfo.head.sha;
-    return await fetchGithubComparison(token, owner, repo, base, head);
+    const title = `${prInfo.title} (#${prInfo.number})`;
+    return await fetchGithubComparison(token, owner, repo, base, head, title, prInfo.html_url);
 }
 
 function injectOptionalToken(token: string | null, opts: RequestInit) {
@@ -136,7 +139,15 @@ export async function fetchGithubPRInfo(token: string | null, owner: string, rep
     }
 }
 
-export async function fetchGithubComparison(token: string | null, owner: string, repo: string, base: string, head: string): Promise<GithubDiffResult> {
+export async function fetchGithubComparison(
+    token: string | null,
+    owner: string,
+    repo: string,
+    base: string,
+    head: string,
+    description?: string,
+    url?: string,
+): Promise<GithubDiffResult> {
     const opts: RequestInit = {
         headers: {
             Accept: "application/vnd.github.v3.diff",
@@ -145,7 +156,13 @@ export async function fetchGithubComparison(token: string | null, owner: string,
     injectOptionalToken(token, opts);
     const response = await fetch(`https://api.github.com/repos/${owner}/${repo}/compare/${base}...${head}`, opts);
     if (response.ok) {
-        return { files: splitMultiFilePatch(await response.text()), info: { owner, repo, base, head } };
+        if (!description) {
+            description = `Comparing ${trimCommitHash(base)}...${trimCommitHash(head)}`;
+        }
+        if (!url) {
+            url = `https://github.com/${owner}/${repo}/compare/${base}...${head}`;
+        }
+        return { files: splitMultiFilePatch(await response.text()), info: { owner, repo, base, head, description, backlink: url } };
     } else {
         throw Error(`Failed to retrieve comparison (${response.status}): ${await response.text()}`);
     }
@@ -173,7 +190,11 @@ export async function fetchGithubCommitDiff(token: string | null, owner: string,
         }
         const meta: GithubCommitDetails = await metaResponse.json();
         const firstParent = meta.parents[0].sha;
-        return { files: splitMultiFilePatch(await response.text()), info: { owner, repo, base: firstParent, head: commit } };
+        const description = `${meta.commit.message.split("\n")[0]} (${trimCommitHash(commit)})`;
+        return {
+            files: splitMultiFilePatch(await response.text()),
+            info: { owner, repo, base: firstParent, head: commit, description, backlink: meta.html_url },
+        };
     } else {
         throw Error(`Failed to retrieve commit diff (${response.status}): ${await response.text()}`);
     }

@@ -214,6 +214,12 @@ export type ViewerStatistics = {
     fileRemovedLines: number[];
 };
 
+export type DiffMetadata = {
+    type: "file" | "github";
+    fileName?: string;
+    githubDetails?: GithubDiff;
+};
+
 export class MultiFileDiffViewerState {
     fileTreeFilter: string = $state("");
     debouncedFileTreeFilter: string = $state("");
@@ -230,6 +236,7 @@ export class MultiFileDiffViewerState {
     tree: TreeState<FileTreeNodeData> | undefined = $state();
     activeSearchResult: ActiveSearchResult | null = $state(null);
     sidebarCollapsed = $state(false);
+    diffMetadata: DiffMetadata | null = $state(null);
 
     readonly stats: Promise<ViewerStatistics> = $derived(this.countStats());
     readonly fileTreeRoots: TreeNode<FileTreeNodeData>[] = $derived(makeFileTree(this.fileDetails));
@@ -346,7 +353,7 @@ export class MultiFileDiffViewerState {
         this.images = [];
     }
 
-    loadPatches(patches: FileDetails[], githubDetails?: GithubDiff) {
+    loadPatches(patches: FileDetails[], meta: { githubDetails?: GithubDiff; fileName?: string }) {
         // Reset state
         this.collapsed = [];
         this.checked = [];
@@ -356,12 +363,23 @@ export class MultiFileDiffViewerState {
         this.clearImages();
         this.vlist?.scrollToIndex(0, { align: "start" });
 
+        if (meta.fileName) {
+            this.diffMetadata = { type: "file", fileName: meta.fileName };
+        } else if (meta.githubDetails) {
+            this.diffMetadata = {
+                type: "github",
+                githubDetails: meta.githubDetails,
+            };
+        } else {
+            this.diffMetadata = null;
+        }
+
         // Load new state
         for (let i = 0; i < patches.length; i++) {
             const patch = patches[i];
 
-            if (githubDetails && isImageFile(patch.fromFile) && isImageFile(patch.toFile)) {
-                const githubDetailsCopy = githubDetails;
+            if (meta.githubDetails && isImageFile(patch.fromFile) && isImageFile(patch.toFile)) {
+                const githubDetailsCopy = meta.githubDetails;
 
                 let fileA: LazyPromise<string> | null;
                 if (patch.status === "added") {
@@ -407,11 +425,11 @@ export class MultiFileDiffViewerState {
         try {
             if (type === "commit") {
                 const { info, files } = await fetchGithubCommitDiff(token, owner, repo, id);
-                this.loadPatches(files, info);
+                this.loadPatches(files, { githubDetails: info });
                 return true;
             } else if (type === "pull") {
                 const { info, files } = await fetchGithubPRComparison(token, owner, repo, id);
-                this.loadPatches(files, info);
+                this.loadPatches(files, { githubDetails: info });
                 return true;
             } else if (type === "compare") {
                 const refs = id.split("...");
@@ -422,7 +440,7 @@ export class MultiFileDiffViewerState {
                 const base = refs[0];
                 const head = refs[1];
                 const { info, files } = await fetchGithubComparison(token, owner, repo, base, head);
-                this.loadPatches(files, info);
+                this.loadPatches(files, { githubDetails: info });
                 return true;
             }
         } catch (error) {

@@ -15,7 +15,7 @@
     let { content, ...restProps }: Props = $props();
 
     const defTriggerProps = {
-        class: "size-8 rounded-md p-1.5 text-blue-500 hover:bg-gray-100 hover:shadow dark:hover:bg-gray-800",
+        class: "size-6 rounded-md flex items-center justify-center text-blue-500 hover:bg-gray-100 hover:shadow dark:hover:bg-gray-800",
     };
 
     let triggerProps = $derived(mergeProps(defTriggerProps, restProps));
@@ -34,7 +34,7 @@
 
 <Popover.Root>
     <Popover.Trigger {...triggerProps}>
-        <span class="iconify octicon--gear-16" aria-hidden="true"></span>
+        <span class="iconify size-4 shrink-0 octicon--gear-16" aria-hidden="true"></span>
     </Popover.Trigger>
     <Popover.Portal>
         <Popover.Content aria-label="Options" class="z-50 mx-2 flex flex-col rounded-md border bg-neutral p-3 shadow-md">

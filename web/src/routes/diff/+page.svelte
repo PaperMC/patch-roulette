@@ -19,6 +19,7 @@
     import SettingsPopover, { globalThemeSetting, settingsSeparator } from "$lib/components/SettingsPopover.svelte";
     import DiffSearch from "$lib/components/DiffSearch.svelte";
     import FileHeader from "./FileHeader.svelte";
+    import DiffTitle from "./DiffTitle.svelte";
 
     const globalOptions: GlobalOptions = GlobalOptions.load();
     const viewer = new MultiFileDiffViewerState();
@@ -40,14 +41,14 @@
         return file.data.type === "file" && viewer.filterFile(file.data.data as FileDetails);
     }
 
-    function loadFromFile(patchContent: string) {
+    function loadFromFile(fileName: string, patchContent: string) {
         const files = splitMultiFilePatch(patchContent);
         if (files.length === 0) {
             alert("No valid patches found in the file.");
             modalOpen = true;
             return;
         }
-        viewer.loadPatches(files);
+        viewer.loadPatches(files, { fileName });
     }
 
     async function handleFileUpload(event: Event) {
@@ -61,7 +62,8 @@
             return;
         }
         modalOpen = false;
-        loadFromFile(await files[0].text());
+        const file = files[0];
+        loadFromFile(file.name, await file.text());
     }
 
     function handleDragOver(event: DragEvent) {
@@ -85,7 +87,8 @@
             return;
         }
         modalOpen = false;
-        loadFromFile(await files[0].text());
+        const file = files[0];
+        loadFromFile(file.name, await file.text());
     }
 
     async function handleGithubUrl() {
@@ -118,25 +121,39 @@
             viewer.scrollToFile(index);
         }
     }
+
+    function getPageTitle() {
+        if (viewer.diffMetadata) {
+            const meta = viewer.diffMetadata;
+            if (meta.type === "github" && meta.githubDetails) {
+                return `${meta.githubDetails.description} - GitHub/${meta.githubDetails.owner}/${meta.githubDetails.repo} - Diff Viewer - Patch Roulette`;
+            } else if (meta.type === "file" && meta.fileName) {
+                return `${meta.fileName} - Diff Viewer - Patch Roulette`;
+            }
+        }
+        return "Diff Viewer - Patch Roulette";
+    }
+
+    let pageTitle = $derived(getPageTitle());
 </script>
 
 {#snippet sidebarToggle()}
     <button
         type="button"
-        class="size-8 rounded-md p-1.5 text-blue-500 hover:bg-gray-100 hover:shadow dark:hover:bg-gray-800"
+        class="flex size-6 items-center justify-center rounded-md text-blue-500 hover:bg-gray-100 hover:shadow dark:hover:bg-gray-800"
         onclick={() => (viewer.sidebarCollapsed = !viewer.sidebarCollapsed)}
     >
         {#if viewer.sidebarCollapsed}
-            <span class="iconify octicon--sidebar-collapse-16"></span>
+            <span class="iconify size-4 shrink-0 octicon--sidebar-collapse-16"></span>
         {:else}
-            <span class="iconify octicon--sidebar-expand-16"></span>
+            <span class="iconify size-4 shrink-0 octicon--sidebar-expand-16"></span>
         {/if}
     </button>
 {/snippet}
 
 {#snippet mainDialog()}
     <Dialog.Root bind:open={modalOpen}>
-        <Dialog.Trigger class="rounded-md bg-blue-500 px-2 py-1 text-white hover:bg-blue-600" onclick={() => (dragActive = false)}>
+        <Dialog.Trigger class="h-fit rounded-md bg-blue-500 px-2 py-0.5 text-white hover:bg-blue-600" onclick={() => (dragActive = false)}>
             Load another diff
         </Dialog.Trigger>
         <Dialog.Portal>
@@ -222,7 +239,7 @@
 {/snippet}
 
 {#snippet settingsPopover()}
-    <SettingsPopover>
+    <SettingsPopover class="self-center">
         {#snippet content()}
             {@render globalThemeSetting()}
             {@render settingsSeparator()}
@@ -240,6 +257,10 @@
         {/snippet}
     </SettingsPopover>
 {/snippet}
+
+<svelte:head>
+    <title>{pageTitle}</title>
+</svelte:head>
 
 <div class="relative flex min-h-screen flex-row justify-center">
     <div
@@ -339,22 +360,23 @@
         </div>
     </div>
     <div class="flex grow flex-col p-3">
-        <div class="mb-2 flex justify-between gap-2">
-            <div class="flex flex-row items-center gap-2">
-                {@render sidebarToggle()}
+        <div class="mb-2 flex flex-wrap items-center gap-2">
+            {#if viewer.diffMetadata !== null}
+                <DiffTitle meta={viewer.diffMetadata} />
+            {/if}
+            <div class="ml-auto flex h-fit flex-row gap-2">
                 {@render mainDialog()}
-            </div>
-            <div class="flex flex-row items-center gap-2">
-                <button type="button" class="rounded-md bg-blue-500 px-2 py-1 text-white hover:bg-blue-600" onclick={() => viewer.expandAll()}>
+                <button type="button" class="h-fit rounded-md bg-blue-500 px-2 py-0.5 text-white hover:bg-blue-600" onclick={() => viewer.expandAll()}>
                     Expand All
                 </button>
-                <button type="button" class="rounded-md bg-blue-500 px-2 py-1 text-white hover:bg-blue-600" onclick={() => viewer.collapseAll()}>
+                <button type="button" class="h-fit rounded-md bg-blue-500 px-2 py-0.5 text-white hover:bg-blue-600" onclick={() => viewer.collapseAll()}>
                     Collapse All
                 </button>
                 {@render settingsPopover()}
             </div>
         </div>
-        <div class="mb-1 flex flex-row items-center justify-between gap-2">
+        <div class="mb-1 flex flex-row items-center gap-2">
+            {@render sidebarToggle()}
             {#await viewer.stats}
                 <DiffStats />
             {:then stats}

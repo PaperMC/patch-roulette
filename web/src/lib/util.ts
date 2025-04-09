@@ -25,6 +25,17 @@ export function debounce<T extends (...args: any[]) => any>(fn: T, delay: number
     };
 }
 
+function isFullCommitHash(s: string): boolean {
+    return /^[0-9a-fA-F]{40}$/.test(s);
+}
+
+export function trimCommitHash(hash: string): string {
+    if (isFullCommitHash(hash)) {
+        return hash.substring(0, 8);
+    }
+    return hash;
+}
+
 const fileRegex = /diff --git a\/(\S+) b\/(\S+)\r?\n(?:.+\r?\n)*?(?=diff --git|$)/g;
 
 export function splitMultiFilePatch(patchContent: string): FileDetails[] {

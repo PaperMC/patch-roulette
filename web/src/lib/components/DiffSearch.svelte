@@ -50,7 +50,7 @@
     }
 </script>
 
-<div class="relative flex max-w-96 grow">
+<div class="relative ms-auto flex max-w-96 grow">
     <input
         type="text"
         placeholder="Search diff content..."
