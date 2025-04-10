@@ -5,6 +5,8 @@ import type { BundledLanguage, SpecialLanguage } from "shiki";
 import { onMount } from "svelte";
 import type { Action } from "svelte/action";
 
+export type Getter<T> = () => T;
+
 export type MutableValue<T> = {
     value: T;
 };

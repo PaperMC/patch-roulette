@@ -3,7 +3,10 @@
 
     let { instance = $bindable(undefined), roots, nodeRenderer, childWrapper = null, filter = null }: TreeProps<T> = $props();
 
-    instance = new TreeState({ roots: () => roots, filter: () => filter });
+    instance = new TreeState(
+        () => roots,
+        () => filter,
+    );
 
     function requireInstance() {
         if (instance === undefined) {

@@ -1,4 +1,7 @@
-import { type Snippet, untrack } from "svelte";
+import { type Snippet } from "svelte";
+import type { Getter } from "$lib/util";
+import { watch } from "runed";
+import { SvelteSet } from "svelte/reactivity";
 
 export type TreeNode<T> = {
     children: TreeNode<T>[];
@@ -34,49 +37,40 @@ export interface TreeProps<T> {
     filter?: ((node: TreeNode<T>) => boolean) | null;
 }
 
-export type TreeStateParams<T> = {
-    roots: () => TreeNode<T>[];
-    filter: () => ((node: TreeNode<T>) => boolean) | null;
-};
-
 export class TreeState<T> {
-    props: TreeStateParams<T>;
-    collapsedNodes: Set<TreeNode<T>> = $state(new Set());
-    allNodesSet: Set<TreeNode<T>> = $derived.by(() => collectAllNodes(this.props.roots()));
-    filteredRoots: Set<TreeNodeView<T>> = $derived.by(() => filteredView(this.props.roots(), this.props.filter() ?? null));
+    roots: Getter<TreeNode<T>[]>;
+    filter: Getter<((node: TreeNode<T>) => boolean) | null>;
+    collapsedNodes: SvelteSet<TreeNode<T>> = new SvelteSet();
+    allNodesSet: Set<TreeNode<T>> = $derived.by(() => collectAllNodes(this.roots()));
+    filteredRoots: Set<TreeNodeView<T>> = $derived.by(() => filteredView(this.roots(), this.filter() ?? null));
 
-    constructor(props: TreeStateParams<T>) {
-        this.props = props;
+    constructor(roots: Getter<TreeNode<T>[]>, filter: Getter<((node: TreeNode<T>) => boolean) | null>) {
+        this.roots = roots;
+        this.filter = filter;
 
-        $effect(() => {
-            // Untrack to avoid infinite loop
-            const untrackedCollapsed = untrack(() => this.collapsedNodes);
-            const collapsedCopy = new Set(untrackedCollapsed);
-            for (const c of untrackedCollapsed) {
-                // Remove no longer existing nodes from the collapsed set
-                if (!this.allNodesSet.has(c)) {
-                    collapsedCopy.delete(c);
+        watch(
+            () => this.allNodesSet,
+            (newNodes, maybeOldNodes) => {
+                const oldNodes = maybeOldNodes ?? new Set();
+                const removed = oldNodes.difference(newNodes);
+                for (const node of removed) {
+                    // Remove no longer existing nodes from the collapsed set
+                    this.collapsedNodes.delete(node);
                 }
-            }
-            this.collapsedNodes = collapsedCopy;
-        });
+            },
+        );
     }
 
     toggleCollapse(node: TreeNode<T>) {
-        const copy = new Set(this.collapsedNodes);
-        if (copy.has(node)) {
-            copy.delete(node);
+        if (this.collapsedNodes.has(node)) {
+            this.collapsedNodes.delete(node);
         } else {
-            copy.add(node);
+            this.collapsedNodes.add(node);
         }
-        this.collapsedNodes = copy;
     }
 
     expand(node: TreeNode<T>) {
-        const copy = new Set(this.collapsedNodes);
-        if (copy.delete(node)) {
-            this.collapsedNodes = copy;
-        }
+        this.collapsedNodes.delete(node);
     }
 
     expandParents(selector: (value: T) => boolean) {
@@ -101,7 +95,7 @@ export class TreeState<T> {
             return false;
         }
 
-        this.props.roots().forEach((node) => walk(node));
+        this.roots().forEach((node) => walk(node));
     }
 }
 
