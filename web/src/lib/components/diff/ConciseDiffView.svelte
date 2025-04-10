@@ -208,34 +208,30 @@
 
 {#snippet renderLine(line: PatchLine, hunkIndex: number, lineIndex: number)}
     {@const lineType = patchLineTypeProps[line.type]}
-    <tr class="h-[1px]">
-        <td class="line-number h-[inherit] bg-[var(--hunk-header-bg)] select-none">
-            <div class="min-h-full px-2 {lineType.lineNoClasses}">{getDisplayLineNo(line, line.oldLineNo)}</div>
-        </td>
-        <td class="line-number h-[inherit] bg-[var(--hunk-header-bg)] select-none">
-            <div class="min-h-full px-2 {lineType.lineNoClasses}">{getDisplayLineNo(line, line.newLineNo)}</div>
-        </td>
-        <td class="w-full pl-[1rem] {lineType.classes}">
-            {@render lineContentWrapper(line, hunkIndex, lineIndex, lineType, innerPatchLineTypeProps[line.innerPatchLineType])}
-        </td>
-    </tr>
+    <div class="bg-[var(--hunk-header-bg)]">
+        <div class="line-number h-full px-2 select-none {lineType.lineNoClasses}">{getDisplayLineNo(line, line.oldLineNo)}</div>
+    </div>
+    <div class="bg-[var(--hunk-header-bg)]">
+        <div class="line-number h-full px-2 select-none {lineType.lineNoClasses}">{getDisplayLineNo(line, line.newLineNo)}</div>
+    </div>
+    <div class="w-full pl-[1rem] {lineType.classes}">
+        {@render lineContentWrapper(line, hunkIndex, lineIndex, lineType, innerPatchLineTypeProps[line.innerPatchLineType])}
+    </div>
 {/snippet}
 
 {#await Promise.all([baseColors, view.patchLines])}
     <div class="flex items-center justify-center bg-gray-300 p-4 dark:bg-gray-700"><Spinner /></div>
 {:then [baseColors, lines]}
-    <table
+    <div
         style={baseColors}
         class="diff-content text-patch-line w-full bg-[var(--editor-bg)] font-mono text-xs leading-[1.25rem] text-[var(--editor-fg)] selection:bg-[var(--select-bg)]"
     >
-        <tbody>
-            {#each lines as hunkLines, hunkIndex (hunkIndex)}
-                {#each hunkLines as line, lineIndex (lineIndex)}
-                    {@render renderLine(line, hunkIndex, lineIndex)}
-                {/each}
+        {#each lines as hunkLines, hunkIndex (hunkIndex)}
+            {#each hunkLines as line, lineIndex (lineIndex)}
+                {@render renderLine(line, hunkIndex, lineIndex)}
             {/each}
-        </tbody>
-    </table>
+        {/each}
+    </div>
 {/await}
 
 <style>
@@ -262,16 +258,15 @@
         word-break: break-all;
         overflow-wrap: anywhere;
         white-space: pre-wrap;
+
+        display: grid;
+        grid-template-columns: min-content min-content auto;
     }
 
     .line-number {
         text-align: end;
         vertical-align: top;
         text-wrap: nowrap;
-        width: 1%;
-    }
-    .line-number::after {
-        content: attr(data-line-number);
     }
 
     .prefix {
