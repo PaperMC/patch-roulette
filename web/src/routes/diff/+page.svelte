@@ -175,7 +175,7 @@
                             <span class="iconify octicon--x-16"></span>
                         </Dialog.Close>
                     </div>
-                    <Separator.Root class="mb-2 h-[1px] w-full bg-gray-300 dark:bg-gray-700" />
+                    <Separator.Root class="mb-2 h-[1px] w-full bg-edge" />
 
                     <label for="githubUrl">
                         <span>Load from GitHub URL</span>
@@ -254,7 +254,7 @@
                 >
                     Expand All
                 </DropdownMenu.Item>
-                <Separator.Root class="h-[1px] w-full bg-gray-300 dark:bg-gray-700" />
+                <Separator.Root class="h-[1px] w-full bg-edge" />
                 <DropdownMenu.Item
                     class="px-2 py-1 text-left data-highlighted:bg-gray-100 dark:data-highlighted:bg-gray-800"
                     onSelect={() => viewer.collapseAll()}
@@ -421,19 +421,19 @@
                                 {#if image.load}
                                     {#if image.fileA !== null && image.fileB !== null}
                                         {#await Promise.all([image.fileA.getValue(), image.fileB.getValue()])}
-                                            <div class="flex items-center justify-center bg-gray-300 p-4 dark:bg-gray-700"><Spinner /></div>
+                                            <div class="flex items-center justify-center bg-neutral-2 p-4"><Spinner /></div>
                                         {:then images}
                                             <ImageDiff fileA={images[0]} fileB={images[1]} />
                                         {/await}
                                     {:else}
                                         {#await requireEitherImage(image).getValue()}
-                                            <div class="flex items-center justify-center bg-gray-300 p-4 dark:bg-gray-700"><Spinner /></div>
+                                            <div class="flex items-center justify-center bg-neutral-2 p-4"><Spinner /></div>
                                         {:then file}
                                             <AddedOrRemovedImage {file} mode={image.fileA === null ? "add" : "remove"} />
                                         {/await}
                                     {/if}
                                 {:else}
-                                    <div class="flex justify-center bg-gray-300 p-4 dark:bg-gray-700">
+                                    <div class="flex justify-center bg-neutral-2 p-4">
                                         <button
                                             type="button"
                                             class=" flex flex-row items-center justify-center gap-1 rounded-md bg-blue-500 px-2 py-1 text-white hover:bg-blue-600"

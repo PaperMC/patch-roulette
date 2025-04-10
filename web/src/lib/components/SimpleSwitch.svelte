@@ -13,7 +13,7 @@
     } = $props();
 
     const ourProps = {
-        class: "block cursor-pointer overflow-hidden rounded-full bg-gray-300 dark:bg-gray-700 transition-colors ease-in-out data-[state='checked']:bg-blue-500",
+        class: "block cursor-pointer overflow-hidden rounded-full bg-neutral-3 transition-colors ease-in-out data-[state='checked']:bg-blue-500",
         style: `height: ${0.25 * (size + padding * 2)}rem; width: ${0.25 * (size * 2 + padding * 2)}rem; padding: ${padding * 0.25}rem;`,
     };
     const mergedProps = $derived(mergeProps(restProps, ourProps));

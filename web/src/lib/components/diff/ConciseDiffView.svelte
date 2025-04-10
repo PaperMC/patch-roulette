@@ -220,7 +220,7 @@
 {/snippet}
 
 {#await Promise.all([baseColors, view.patchLines])}
-    <div class="flex items-center justify-center bg-gray-300 p-4 dark:bg-gray-700"><Spinner /></div>
+    <div class="flex items-center justify-center bg-neutral-2 p-4"><Spinner /></div>
 {:then [baseColors, lines]}
     <div
         style={baseColors}

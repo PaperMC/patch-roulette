@@ -35,6 +35,12 @@
     --color-neutral-light: var(--color-white);
     --color-neutral-dark: var(--color-neutral-900);
     --color-neutral: var(--color-neutral-light);
+    --color-neutral-light-2: var(--color-neutral-100);
+    --color-neutral-dark-2: var(--color-neutral-800);
+    --color-neutral-2: var(--color-neutral-light-2);
+    --color-neutral-light-3: var(--color-neutral-200);
+    --color-neutral-dark-3: var(--color-neutral-700);
+    --color-neutral-3: var(--color-neutral-light-3);
 
     /* Border colors */
     --color-edge-light: rgba(0, 0, 0, 0.2);
@@ -49,6 +55,8 @@
         --color-em-disabled: var(--color-em-disabled-dark);
 
         --color-neutral: var(--color-neutral-dark);
+        --color-neutral-2: var(--color-neutral-dark-2);
+        --color-neutral-3: var(--color-neutral-dark-3);
 
         --color-edge: var(--color-edge-dark);
     }

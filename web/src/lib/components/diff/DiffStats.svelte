@@ -72,7 +72,7 @@
     {/if}
     <Tooltip.Root>
         <Tooltip.Trigger>
-            <div class="relative h-3 w-12 bg-gray-300 dark:bg-gray-700">
+            <div class="relative h-3 w-12 bg-neutral-2">
                 <div
                     class="absolute top-0 left-0 h-3 border border-green-700 bg-green-600 dark:border-green-600 dark:bg-green-400"
                     style={getAddBarStyle()}
@@ -83,7 +83,7 @@
         <Tooltip.Portal>
             <Tooltip.Content class="z-50 rounded-sm border bg-neutral px-1 py-0.5 text-sm shadow-sm">
                 {#if brief}
-                    {@render counts()} <span class="text-gray-700 dark:text-gray-300">({@render ratio()})</span>
+                    {@render counts()} <span class="text-em-med">({@render ratio()})</span>
                 {:else}
                     {@render ratio()}
                 {/if}

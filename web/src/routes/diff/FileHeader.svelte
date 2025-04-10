@@ -70,7 +70,7 @@
         <Popover.Portal>
             <Popover.Content class="flex flex-col overflow-hidden rounded-sm border bg-neutral text-sm shadow-sm select-none">
                 <button onclick={showInFileTree} type="button" class="px-2 py-1 hover:bg-gray-100 dark:hover:bg-gray-800">Show in file tree</button>
-                <Separator.Root class="h-[1px] w-full bg-gray-300 dark:bg-gray-700" />
+                <Separator.Root class="h-[1px] w-full bg-edge" />
                 <Label.Root class="flex w-full flex-row items-center justify-between gap-1 px-2 py-1 hover:bg-gray-100 dark:hover:bg-gray-800">
                     File viewed
                     <button class="flex items-center" type="button" onclick={() => viewer.toggleChecked(index)}>
@@ -104,7 +104,7 @@
     {@render fileName()}
     <div class="ms-0.5 ml-auto flex items-center gap-2">
         {#if viewer.patchHeaderDiffOnly[index]}
-            <span class="rounded-sm bg-gray-300 px-1 text-gray-800">Patch-header-only diff</span>
+            <span class="rounded-sm bg-neutral-3 px-1.5">Patch-header-only diff</span>
         {/if}
         {@render popover()}
         {#if !viewer.patchHeaderDiffOnly[index] || !globalOptions.omitPatchHeaderOnlyHunks || isImage}

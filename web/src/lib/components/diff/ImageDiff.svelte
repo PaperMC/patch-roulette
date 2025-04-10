@@ -182,7 +182,7 @@
     </div>
 {/snippet}
 
-<div class="flex flex-col items-center justify-center bg-gray-300 p-4 dark:bg-gray-700">
+<div class="flex flex-col items-center justify-center bg-neutral-2 p-4">
     {@render modeSelector()}
     {#await dimensions}
         <Spinner />
