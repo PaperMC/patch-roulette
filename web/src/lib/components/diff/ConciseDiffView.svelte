@@ -12,12 +12,12 @@
         type PatchLineTypeProps,
         patchLineTypeProps,
         type SearchSegment,
-    } from "$lib/components/scripts/ConciseDiffView.svelte.js";
+    } from "$lib/components/diff/scripts/ConciseDiffView.svelte";
     import { type BundledTheme } from "shiki";
     import Spinner from "$lib/components/Spinner.svelte";
     import { type ParsedDiff } from "diff";
     import { onDestroy } from "svelte";
-    import type { MutableValue } from "$lib/util";
+    import { type MutableValue } from "$lib/util";
 
     interface Props {
         rawPatchContent?: string;

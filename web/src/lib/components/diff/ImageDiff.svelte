@@ -2,7 +2,7 @@
     import { Slider } from "bits-ui";
     import Spinner from "$lib/components/Spinner.svelte";
     import { getDimensions, type ImageDimensions } from "$lib/image";
-    import AddedOrRemovedImageLabel from "$lib/components/AddedOrRemovedImageLabel.svelte";
+    import AddedOrRemovedImageLabel from "$lib/components/diff/AddedOrRemovedImageLabel.svelte";
 
     interface Props {
         fileA: string;

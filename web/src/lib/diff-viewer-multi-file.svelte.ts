@@ -15,7 +15,7 @@ import {
     hasNonHeaderChanges,
     isNoNewlineAtEofLine,
     parseSinglePatch,
-} from "$lib/components/scripts/ConciseDiffView.svelte";
+} from "$lib/components/diff/scripts/ConciseDiffView.svelte";
 import type { BundledTheme } from "shiki";
 import { browser } from "$app/environment";
 import { getEffectiveGlobalTheme } from "$lib/theme.svelte";

@@ -1,5 +1,5 @@
 <script lang="ts">
-    import Login from "$lib/components/Login.svelte";
+    import Login from "./Login.svelte";
     import { onMount } from "svelte";
     import { goto } from "$app/navigation";
 

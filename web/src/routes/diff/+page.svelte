@@ -1,5 +1,5 @@
 <script lang="ts">
-    import ConciseDiffView from "$lib/components/ConciseDiffView.svelte";
+    import ConciseDiffView from "$lib/components/diff/ConciseDiffView.svelte";
     import { type FileTreeNodeData, splitMultiFilePatch } from "$lib/util";
     import { VList } from "virtua/svelte";
     import { getGithubUsername, GITHUB_URL_PARAM, installGithubApp, loginWithGithub, logoutGithub } from "$lib/github.svelte";
@@ -10,14 +10,14 @@
     import type { TreeNode } from "$lib/components/scripts/Tree.svelte";
     import { page } from "$app/state";
     import { goto } from "$app/navigation";
-    import ImageDiff from "$lib/components/ImageDiff.svelte";
+    import ImageDiff from "$lib/components/diff/ImageDiff.svelte";
     import { Label, Dialog, Separator } from "bits-ui";
     import SimpleSwitch from "$lib/components/SimpleSwitch.svelte";
-    import AddedOrRemovedImage from "$lib/components/AddedOrRemovedImage.svelte";
+    import AddedOrRemovedImage from "$lib/components/diff/AddedOrRemovedImage.svelte";
     import ShikiThemeSelector from "$lib/components/ShikiThemeSelector.svelte";
-    import DiffStats from "$lib/components/DiffStats.svelte";
+    import DiffStats from "$lib/components/diff/DiffStats.svelte";
     import SettingsPopover, { globalThemeSetting, settingsSeparator } from "$lib/components/SettingsPopover.svelte";
-    import DiffSearch from "$lib/components/DiffSearch.svelte";
+    import DiffSearch from "./DiffSearch.svelte";
     import FileHeader from "./FileHeader.svelte";
     import DiffTitle from "./DiffTitle.svelte";
 
@@ -299,7 +299,7 @@
             <div class="h-100">
                 {#snippet fileSnippet(value: FileDetails)}
                     <div
-                        class="flex cursor-pointer items-center justify-between px-2 py-1 text-sm hover:bg-gray-100 focus:ring-2 focus:ring-blue-500 focus:ring-inset dark:hover:bg-gray-800"
+                        class="flex cursor-pointer items-center justify-between px-2 py-1 text-sm hover:bg-gray-100 focus:ring-2 focus:ring-blue-500 focus:outline-none focus:ring-inset dark:hover:bg-gray-800"
                         onclick={(e) => scrollToFileClick(e, viewer.getIndex(value))}
                         onkeydown={(e) => e.key === "Enter" && viewer.scrollToFile(viewer.getIndex(value))}
                         role="button"
@@ -328,7 +328,7 @@
                             {@render fileSnippet(node.data.data as FileDetails)}
                         {:else}
                             <div
-                                class="flex cursor-pointer items-center justify-between px-2 py-1 text-sm hover:bg-gray-100 focus:ring-2 focus:ring-blue-500 focus:ring-inset dark:hover:bg-gray-800"
+                                class="flex cursor-pointer items-center justify-between px-2 py-1 text-sm hover:bg-gray-100 focus:ring-2 focus:ring-blue-500 focus:outline-none focus:ring-inset dark:hover:bg-gray-800"
                                 onclick={toggleCollapse}
                                 onkeydown={(e) => e.key === "Enter" && toggleCollapse()}
                                 role="button"

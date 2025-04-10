@@ -1,5 +1,5 @@
 <script lang="ts">
-    import DiffStats from "$lib/components/DiffStats.svelte";
+    import DiffStats from "$lib/components/diff/DiffStats.svelte";
     import { type FileDetails, GlobalOptions, type MultiFileDiffViewerState } from "$lib/diff-viewer-multi-file.svelte";
     import { Popover } from "bits-ui";
     import { tick } from "svelte";
