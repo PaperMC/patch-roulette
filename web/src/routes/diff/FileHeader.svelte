@@ -1,7 +1,7 @@
 <script lang="ts">
     import DiffStats from "$lib/components/diff/DiffStats.svelte";
     import { type FileDetails, GlobalOptions, type MultiFileDiffViewerState } from "$lib/diff-viewer-multi-file.svelte";
-    import { Popover } from "bits-ui";
+    import { Popover, Label, Separator } from "bits-ui";
     import { tick } from "svelte";
 
     interface Props {
@@ -68,8 +68,19 @@
             <span class="iconify size-4 bg-blue-500 octicon--kebab-horizontal-16"></span>
         </Popover.Trigger>
         <Popover.Portal>
-            <Popover.Content class="overflow-hidden rounded-sm border bg-neutral shadow-sm select-none">
-                <button onclick={showInFileTree} class="px-2 py-1 text-sm hover:bg-gray-100 dark:hover:bg-gray-800">Show in file tree</button>
+            <Popover.Content class="flex flex-col overflow-hidden rounded-sm border bg-neutral text-sm shadow-sm select-none">
+                <button onclick={showInFileTree} type="button" class="px-2 py-1 hover:bg-gray-100 dark:hover:bg-gray-800">Show in file tree</button>
+                <Separator.Root class="h-[1px] w-full bg-gray-300 dark:bg-gray-700" />
+                <Label.Root class="flex w-full flex-row items-center justify-between gap-1 px-2 py-1 hover:bg-gray-100 dark:hover:bg-gray-800">
+                    File viewed
+                    <button class="flex items-center" type="button" onclick={() => viewer.toggleChecked(index)}>
+                        {#if viewer.checked[index]}
+                            <span aria-hidden="true" class="iconify size-4 shrink-0 text-blue-500 octicon--check-16"></span>
+                        {:else}
+                            <span aria-hidden="true" class="iconify size-4 shrink-0 text-em-med octicon--check-16"></span>
+                        {/if}
+                    </button>
+                </Label.Root>
             </Popover.Content>
         </Popover.Portal>
     </Popover.Root>

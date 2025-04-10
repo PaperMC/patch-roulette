@@ -11,7 +11,7 @@
     import { page } from "$app/state";
     import { goto } from "$app/navigation";
     import ImageDiff from "$lib/components/diff/ImageDiff.svelte";
-    import { Label, Dialog, Separator } from "bits-ui";
+    import { Label, Dialog, Separator, DropdownMenu } from "bits-ui";
     import SimpleSwitch from "$lib/components/SimpleSwitch.svelte";
     import AddedOrRemovedImage from "$lib/components/diff/AddedOrRemovedImage.svelte";
     import ShikiThemeSelector from "$lib/components/ShikiThemeSelector.svelte";
@@ -238,6 +238,34 @@
     </Dialog.Root>
 {/snippet}
 
+{#snippet actionsDropdown()}
+    <DropdownMenu.Root>
+        <DropdownMenu.Trigger
+            aria-label="Actions"
+            class="flex size-6 items-center justify-center self-center rounded-md p-0.5 hover:bg-gray-100 hover:shadow-sm dark:hover:bg-gray-800"
+        >
+            <span aria-hidden="true" class="iconify size-4 bg-blue-500 octicon--kebab-horizontal-16"></span>
+        </DropdownMenu.Trigger>
+        <DropdownMenu.Portal>
+            <DropdownMenu.Content class="flex flex-col overflow-hidden rounded-sm border bg-neutral text-sm shadow-sm select-none">
+                <DropdownMenu.Item
+                    class="px-2 py-1 text-left data-highlighted:bg-gray-100 dark:data-highlighted:bg-gray-800"
+                    onSelect={() => viewer.expandAll()}
+                >
+                    Expand All
+                </DropdownMenu.Item>
+                <Separator.Root class="h-[1px] w-full bg-gray-300 dark:bg-gray-700" />
+                <DropdownMenu.Item
+                    class="px-2 py-1 text-left data-highlighted:bg-gray-100 dark:data-highlighted:bg-gray-800"
+                    onSelect={() => viewer.collapseAll()}
+                >
+                    Collapse All
+                </DropdownMenu.Item>
+            </DropdownMenu.Content>
+        </DropdownMenu.Portal>
+    </DropdownMenu.Root>
+{/snippet}
+
 {#snippet settingsPopover()}
     <SettingsPopover class="self-center">
         {#snippet content()}
@@ -315,7 +343,7 @@
                             type="checkbox"
                             class="ms-1 size-4 shrink-0 rounded-sm border"
                             autocomplete="off"
-                            aria-label="File reviewed"
+                            aria-label="File viewed"
                             onchange={() => viewer.toggleChecked(viewer.getIndex(value))}
                             checked={viewer.checked[viewer.getIndex(value)]}
                         />
@@ -366,12 +394,7 @@
             {/if}
             <div class="ml-auto flex h-fit flex-row gap-2">
                 {@render mainDialog()}
-                <button type="button" class="h-fit rounded-md bg-blue-500 px-2 py-0.5 text-white hover:bg-blue-600" onclick={() => viewer.expandAll()}>
-                    Expand All
-                </button>
-                <button type="button" class="h-fit rounded-md bg-blue-500 px-2 py-0.5 text-white hover:bg-blue-600" onclick={() => viewer.collapseAll()}>
-                    Collapse All
-                </button>
+                {@render actionsDropdown()}
                 {@render settingsPopover()}
             </div>
         </div>
