@@ -126,12 +126,12 @@
         if (viewer.diffMetadata) {
             const meta = viewer.diffMetadata;
             if (meta.type === "github" && meta.githubDetails) {
-                return `${meta.githubDetails.description} - GitHub/${meta.githubDetails.owner}/${meta.githubDetails.repo} - Diff Viewer - Patch Roulette`;
+                return `${meta.githubDetails.description} - GitHub/${meta.githubDetails.owner}/${meta.githubDetails.repo} - Patch Roulette Diff Viewer`;
             } else if (meta.type === "file" && meta.fileName) {
-                return `${meta.fileName} - Diff Viewer - Patch Roulette`;
+                return `${meta.fileName} - Patch Roulette Diff Viewer`;
             }
         }
-        return "Diff Viewer - Patch Roulette";
+        return "Patch Roulette Diff Viewer";
     }
 
     let pageTitle = $derived(getPageTitle());
