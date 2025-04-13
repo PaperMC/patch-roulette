@@ -288,6 +288,7 @@
 
 <svelte:head>
     <title>{pageTitle}</title>
+    <meta name="description" content="Multi-file rich diff viewer for GitHub and diff/patch files" />
 </svelte:head>
 
 <div class="relative flex min-h-screen flex-row justify-center">
