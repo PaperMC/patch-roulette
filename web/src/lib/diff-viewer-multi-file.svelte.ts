@@ -418,11 +418,11 @@ export class MultiFileDiffViewerState {
 
         try {
             if (type === "commit") {
-                const { info, files } = await fetchGithubCommitDiff(token, owner, repo, id);
+                const { info, files } = await fetchGithubCommitDiff(token, owner, repo, id.split("/")[0]);
                 this.loadPatches(files, { githubDetails: info });
                 return true;
             } else if (type === "pull") {
-                const { info, files } = await fetchGithubPRComparison(token, owner, repo, id);
+                const { info, files } = await fetchGithubPRComparison(token, owner, repo, id.split("/")[0]);
                 this.loadPatches(files, { githubDetails: info });
                 return true;
             } else if (type === "compare") {
