@@ -43,11 +43,6 @@
         "typescript-eslint": "^8.29.1",
         "vite": "^6.2.5"
     },
-    "bunrc": {
-        "run": {
-            "bun": true
-        }
-    },
     "dependencies": {
         "@octokit/openapi-types": "^25.0.0",
         "ag-grid-svelte5-extended": "^0.0.13",
@@ -58,5 +53,10 @@
         "runed": "^0.25.0",
         "shiki": "^3.2.1",
         "virtua": "^0.40.3"
+    },
+    "bunrc": {
+        "run": {
+            "bun": true
+        }
     }
 }
