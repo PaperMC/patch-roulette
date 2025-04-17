@@ -28,6 +28,12 @@ SvelteKit frontend using tailwindcss for styling. Hosted as static files by the 
 
 - [`/diff`](https://patch-roulette.papermc.io/diff): Multi-file concise diff viewer
 
+### Web Extension
+
+Web extension that streamlines opening diffs in the viewer.
+- [Firefox](https://addons.mozilla.org/en-US/firefox/addon/patch-roulette/)
+- [Chrome](https://chromewebstore.google.com/detail/patch-roulette/feaaoepdocmiibjilhoahgldkaajfnhb)
+
 ## Development
 
 Note that Bun can be substituted with the package manager of your choice.
