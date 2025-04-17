@@ -7,7 +7,7 @@ await writeManifest();
 
 async function writeManifest() {
     const manifest = makeManifest();
-    const path = Bun.file("dist/manifest.json");
+    const path = Bun.file("public/manifest.json");
     if (await path.exists()) {
         await path.delete();
     }

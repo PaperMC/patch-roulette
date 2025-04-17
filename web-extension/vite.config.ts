@@ -15,6 +15,9 @@ export default defineConfig({
                 entryFileNames: "[name].js",
             },
         },
+        terserOptions: {
+            mangle: false,
+        },
     },
     plugins: [tailwindcss()],
 });
