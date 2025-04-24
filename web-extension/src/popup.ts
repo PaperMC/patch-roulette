@@ -11,9 +11,11 @@ button.addEventListener("click", async () => {
     const activeTab = await getActiveTab();
     if (activeTab && activeTab.url) {
         await openInPatchRoulette(activeTab.url);
+        window.close();
     }
 });
 
 settingsButton.addEventListener("click", async () => {
     await chrome.runtime.openOptionsPage();
+    window.close();
 });
