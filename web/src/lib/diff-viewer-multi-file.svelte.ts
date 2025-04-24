@@ -426,10 +426,13 @@ export class MultiFileDiffViewerState {
                 this.loadPatches(files, { githubDetails: info });
                 return true;
             } else if (type === "compare") {
-                const refs = id.split("...");
+                let refs = id.split("...");
                 if (refs.length !== 2) {
-                    alert(`Invalid comparison URL. '${id}' does not match format 'ref_a...ref_b'`);
-                    return false;
+                    refs = id.split("..");
+                    if (refs.length !== 2) {
+                        alert(`Invalid comparison URL. '${id}' does not match format 'ref_a...ref_b' or 'ref_a..ref_b'`);
+                        return false;
+                    }
                 }
                 const base = refs[0];
                 const head = refs[1];
