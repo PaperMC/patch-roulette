@@ -32,6 +32,7 @@ export class GlobalOptions {
     syntaxHighlightingThemeLight: BundledTheme = $state(DEFAULT_THEME_LIGHT);
     syntaxHighlightingThemeDark: BundledTheme = $state(DEFAULT_THEME_DARK);
     wordDiffs = $state(true);
+    lineWrap = $state(true);
     omitPatchHeaderOnlyHunks = $state(true);
 
     private constructor() {
@@ -80,6 +81,7 @@ export class GlobalOptions {
             syntaxHighlighting: this.syntaxHighlighting,
             omitPatchHeaderOnlyHunks: this.omitPatchHeaderOnlyHunks,
             wordDiff: this.wordDiffs,
+            lineWrap: this.lineWrap,
         };
         if (this.syntaxHighlightingThemeLight !== DEFAULT_THEME_LIGHT) {
             cereal.syntaxHighlightingThemeLight = this.syntaxHighlightingThemeLight;
@@ -110,6 +112,9 @@ export class GlobalOptions {
         }
         if (jsonObject.wordDiff !== undefined) {
             this.wordDiffs = jsonObject.wordDiff;
+        }
+        if (jsonObject.lineWrap !== undefined) {
+            this.lineWrap = jsonObject.lineWrap;
         }
     }
 }

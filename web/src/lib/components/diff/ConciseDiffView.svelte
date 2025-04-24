@@ -26,6 +26,7 @@
         syntaxHighlightingTheme?: BundledTheme;
         omitPatchHeaderOnlyHunks?: boolean;
         wordDiffs?: boolean;
+        lineWrap?: boolean;
         searchQuery?: string;
         searchMatchingLines?: () => Promise<number[][] | undefined>;
         activeSearchResult?: number;
@@ -41,6 +42,7 @@
         syntaxHighlightingTheme,
         omitPatchHeaderOnlyHunks = true,
         wordDiffs = true,
+        lineWrap = true,
         searchQuery,
         searchMatchingLines,
         activeSearchResult = -1,
@@ -225,6 +227,7 @@
     <div
         style={baseColors}
         class="diff-content text-patch-line w-full bg-[var(--editor-bg)] font-mono text-xs leading-[1.25rem] text-[var(--editor-fg)] selection:bg-[var(--select-bg)]"
+        data-wrap={lineWrap}
     >
         {#each lines as hunkLines, hunkIndex (hunkIndex)}
             {#each hunkLines as line, lineIndex (lineIndex)}
@@ -255,12 +258,19 @@
         --hunk-header-bg: var(--hunk-header-bg-themed, var(--color-editor-bg-600, var(--color-gray-200)));
         --hunk-header-fg: var(--hunk-header-fg-themed, var(--editor-fg));
 
+        display: grid;
+        grid-template-columns: min-content min-content auto;
+    }
+    .diff-content[data-wrap="true"] {
         word-break: break-all;
         overflow-wrap: anywhere;
         white-space: pre-wrap;
-
-        display: grid;
-        grid-template-columns: min-content min-content auto;
+    }
+    .diff-content[data-wrap="false"] {
+        word-break: keep-all;
+        overflow-wrap: normal;
+        white-space: pre;
+        overflow-x: auto;
     }
 
     .line-number {

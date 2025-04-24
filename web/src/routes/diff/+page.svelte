@@ -285,6 +285,8 @@
             <SimpleSwitch id="omit-hunks" aria-labelledby="omit-hunks-label" bind:checked={globalOptions.omitPatchHeaderOnlyHunks} />
             <Label.Root id="word-diffs-label" class="mt-2 max-w-64 break-words" for="word-diffs">Show word diffs</Label.Root>
             <SimpleSwitch id="word-diffs" aria-labelledby="word-diffs-label" bind:checked={globalOptions.wordDiffs} />
+            <Label.Root id="line-wrap-label" class="mt-2 max-w-64 break-words" for="line-wrap">Line wrapping</Label.Root>
+            <SimpleSwitch id="line-wrap" aria-labelledby="line-wrap-label" bind:checked={globalOptions.lineWrap} />
         {/snippet}
     </SettingsPopover>
 {/snippet}
@@ -457,6 +459,7 @@
                                     syntaxHighlightingTheme={globalOptions.getSyntaxHighlightingTheme()}
                                     omitPatchHeaderOnlyHunks={globalOptions.omitPatchHeaderOnlyHunks}
                                     wordDiffs={globalOptions.wordDiffs}
+                                    lineWrap={globalOptions.lineWrap}
                                     searchQuery={viewer.searchQueryDebounced.current}
                                     searchMatchingLines={() => viewer.searchResults.then((r) => r.lines.get(value))}
                                     activeSearchResult={viewer.activeSearchResult && viewer.activeSearchResult.file === value
