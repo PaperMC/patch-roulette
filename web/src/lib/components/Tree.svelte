@@ -1,5 +1,5 @@
 <script lang="ts" generics="T">
-    import { type TreeProps, TreeState } from "$lib/components/scripts/Tree.svelte";
+    import { type TreeNodeView, type TreeProps, TreeState } from "$lib/components/scripts/Tree.svelte";
 
     let { instance = $bindable(undefined), roots, nodeRenderer, childWrapper = null, filter = null }: TreeProps<T> = $props();
 
@@ -16,7 +16,7 @@
     }
 </script>
 
-{#snippet renderNode({ node })}
+{#snippet renderNode({ node }: { node: TreeNodeView<T> })}
     {@const collapsed = requireInstance().collapsedNodes.has(node.backingNode)}
     {@render nodeRenderer({ node, collapsed, toggleCollapse: () => requireInstance().toggleCollapse(node.backingNode) })}
     {#if childWrapper !== null}
@@ -29,7 +29,7 @@
     {/if}
 {/snippet}
 
-{#snippet renderChildren({ node })}
+{#snippet renderChildren({ node }: { node: TreeNodeView<T> })}
     {#each node.visibleChildren as childNode (childNode)}
         {@render renderNode({ node: childNode })}
     {/each}
