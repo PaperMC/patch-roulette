@@ -24,7 +24,7 @@
 {#snippet globalThemeSetting()}
     <SettingsPopoverGroup title="Theme">
         <div class="px-2 py-1">
-            <GlobalThemeRadio />
+            <GlobalThemeRadio aria-label="Select theme" />
         </div>
     </SettingsPopoverGroup>
 {/snippet}
