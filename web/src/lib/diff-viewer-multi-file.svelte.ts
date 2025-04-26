@@ -21,7 +21,7 @@ import { browser } from "$app/environment";
 import { getEffectiveGlobalTheme } from "$lib/theme.svelte";
 import { countOccurrences, type FileTreeNodeData, isImageFile, makeFileTree, type LazyPromise, lazyPromise, watchLocalStorage } from "$lib/util";
 import { onDestroy } from "svelte";
-import { type TreeNode, TreeState } from "$lib/components/scripts/Tree.svelte";
+import { type TreeNode, TreeState } from "$lib/components/tree/index.svelte";
 import { VList } from "virtua/svelte";
 import { Debounced } from "runed";
 

@@ -5,18 +5,19 @@
     import { getGithubUsername, GITHUB_URL_PARAM, installGithubApp, loginWithGithub, logoutGithub } from "$lib/github.svelte";
     import { onMount } from "svelte";
     import { type FileDetails, getFileStatusProps, GlobalOptions, MultiFileDiffViewerState, requireEitherImage } from "$lib/diff-viewer-multi-file.svelte";
-    import Tree from "$lib/components/Tree.svelte";
+    import Tree from "$lib/components/tree/Tree.svelte";
     import Spinner from "$lib/components/Spinner.svelte";
-    import type { TreeNode } from "$lib/components/scripts/Tree.svelte";
+    import type { TreeNode } from "$lib/components/tree/index.svelte";
     import { page } from "$app/state";
     import { goto } from "$app/navigation";
     import ImageDiff from "$lib/components/diff/ImageDiff.svelte";
-    import { Label, Dialog, Separator, DropdownMenu } from "bits-ui";
-    import SimpleSwitch from "$lib/components/SimpleSwitch.svelte";
+    import { Dialog, Separator, DropdownMenu } from "bits-ui";
     import AddedOrRemovedImage from "$lib/components/diff/AddedOrRemovedImage.svelte";
-    import ShikiThemeSelector from "$lib/components/ShikiThemeSelector.svelte";
     import DiffStats from "$lib/components/diff/DiffStats.svelte";
-    import SettingsPopover, { globalThemeSetting, settingsSeparator } from "$lib/components/SettingsPopover.svelte";
+    import SettingsPopover, { globalThemeSetting } from "$lib/components/settings-popover/SettingsPopover.svelte";
+    import SettingsPopoverGroup from "$lib/components/settings-popover/SettingsPopoverGroup.svelte";
+    import SettingsPopoverToggle from "$lib/components/settings-popover/SettingsPopoverToggle.svelte";
+    import ShikiThemeSelector from "$lib/components/settings-popover/ShikiThemeSelector.svelte";
     import DiffSearch from "./DiffSearch.svelte";
     import FileHeader from "./FileHeader.svelte";
     import DiffTitle from "./DiffTitle.svelte";
@@ -245,7 +246,7 @@
     <DropdownMenu.Root>
         <DropdownMenu.Trigger
             aria-label="Actions"
-            class="flex size-6 items-center justify-center self-center rounded-md p-0.5 hover:bg-gray-100 hover:shadow-sm dark:hover:bg-gray-800"
+            class="flex size-6 items-center justify-center self-center rounded-md p-0.5 hover:bg-gray-100 hover:shadow-sm data-[state=open]:bg-gray-100 data-[state=open]:shadow-sm dark:hover:bg-gray-800 dark:data-[state=open]:bg-gray-800"
         >
             <span aria-hidden="true" class="iconify size-4 bg-blue-500 octicon--kebab-horizontal-16"></span>
         </DropdownMenu.Trigger>
@@ -271,23 +272,17 @@
 
 {#snippet settingsPopover()}
     <SettingsPopover class="self-center">
-        {#snippet content()}
-            {@render globalThemeSetting()}
-            {@render settingsSeparator()}
-            <Label.Root for="syntax-highlight-toggle" id="syntax-highlight-label" class="mb-0.5">Syntax Highlighting</Label.Root>
-            <SimpleSwitch id="syntax-highlight-toggle" aria-labelledby="syntax-highlight-label" bind:checked={globalOptions.syntaxHighlighting} />
-            <ShikiThemeSelector class="flex flex-col gap-0.5" bind:value={globalOptions.syntaxHighlightingThemeLight} mode="light" />
-            <ShikiThemeSelector class="flex flex-col gap-0.5" bind:value={globalOptions.syntaxHighlightingThemeDark} mode="dark" />
-            {@render settingsSeparator()}
-            <Label.Root id="omit-hunks-label" class="max-w-64 break-words" for="omit-hunks">
-                Omit hunks containing only second-level patch header line changes
-            </Label.Root>
-            <SimpleSwitch id="omit-hunks" aria-labelledby="omit-hunks-label" bind:checked={globalOptions.omitPatchHeaderOnlyHunks} />
-            <Label.Root id="word-diffs-label" class="mt-2 max-w-64 break-words" for="word-diffs">Show word diffs</Label.Root>
-            <SimpleSwitch id="word-diffs" aria-labelledby="word-diffs-label" bind:checked={globalOptions.wordDiffs} />
-            <Label.Root id="line-wrap-label" class="mt-2 max-w-64 break-words" for="line-wrap">Line wrapping</Label.Root>
-            <SimpleSwitch id="line-wrap" aria-labelledby="line-wrap-label" bind:checked={globalOptions.lineWrap} />
-        {/snippet}
+        {@render globalThemeSetting()}
+        <SettingsPopoverGroup title="Syntax Highlighting">
+            <SettingsPopoverToggle labelText="Enable" bind:checked={globalOptions.syntaxHighlighting} />
+            <ShikiThemeSelector mode="light" bind:value={globalOptions.syntaxHighlightingThemeLight} />
+            <ShikiThemeSelector mode="dark" bind:value={globalOptions.syntaxHighlightingThemeDark} />
+        </SettingsPopoverGroup>
+        <SettingsPopoverGroup title="Misc.">
+            <SettingsPopoverToggle labelText="Concise nested diffs" bind:checked={globalOptions.omitPatchHeaderOnlyHunks} />
+            <SettingsPopoverToggle labelText="Word diffs" bind:checked={globalOptions.wordDiffs} />
+            <SettingsPopoverToggle labelText="Line wrapping" bind:checked={globalOptions.lineWrap} />
+        </SettingsPopoverGroup>
     </SettingsPopover>
 {/snippet}
 

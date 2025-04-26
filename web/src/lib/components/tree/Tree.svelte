@@ -1,5 +1,5 @@
 <script lang="ts" generics="T">
-    import { type TreeProps, TreeState } from "$lib/components/scripts/Tree.svelte";
+    import { type TreeProps, TreeState } from "./index.svelte";
 
     let { instance = $bindable(undefined), roots, nodeRenderer, childWrapper = null, filter = null }: TreeProps<T> = $props();
 

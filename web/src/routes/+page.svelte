@@ -5,10 +5,10 @@
     import { fetchApi } from "$lib/api";
     import PatchesTable from "$lib/components/PatchesTable.svelte";
     import PatchesStats from "$lib/components/PatchesStats.svelte";
-    import SimpleSwitch from "$lib/components/SimpleSwitch.svelte";
-    import { Label } from "bits-ui";
     import { capitalizeFirstLetter } from "$lib/util";
-    import SettingsPopover, { globalThemeSetting, settingsSeparator } from "$lib/components/SettingsPopover.svelte";
+    import SettingsPopover, { globalThemeSetting } from "$lib/components/settings-popover/SettingsPopover.svelte";
+    import SettingsPopoverGroup from "$lib/components/settings-popover/SettingsPopoverGroup.svelte";
+    import SettingsPopoverToggle from "$lib/components/settings-popover/SettingsPopoverToggle.svelte";
     import Spinner from "$lib/components/Spinner.svelte";
 
     let instance = new PatchRouletteState();
@@ -61,12 +61,10 @@
 
 {#snippet settingsPopover()}
     <SettingsPopover class="ms-2">
-        {#snippet content()}
-            {@render globalThemeSetting()}
-            {@render settingsSeparator()}
-            <Label.Root id="auto-refresh-label" for="auto-refresh">Auto refresh</Label.Root>
-            <SimpleSwitch bind:checked={instance.autoRefresh} aria-labelledby="auto-refresh-label" id="auto-refresh" />
-        {/snippet}
+        {@render globalThemeSetting()}
+        <SettingsPopoverGroup title="Misc.">
+            <SettingsPopoverToggle labelText="Auto refresh" bind:checked={instance.autoRefresh} />
+        </SettingsPopoverGroup>
     </SettingsPopover>
 {/snippet}
 

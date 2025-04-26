@@ -1,6 +1,6 @@
 import type { FileDetails } from "./diff-viewer-multi-file.svelte";
 import type { FileStatus } from "./github.svelte";
-import type { TreeNode } from "$lib/components/scripts/Tree.svelte";
+import type { TreeNode } from "$lib/components/tree/index.svelte";
 import type { BundledLanguage, SpecialLanguage } from "shiki";
 import { onMount } from "svelte";
 import type { Action } from "svelte/action";
