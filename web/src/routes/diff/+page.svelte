@@ -135,7 +135,7 @@
         }
     }
 
-    export const focusFileDoubleClick: Action<HTMLDivElement, { index: number }> = (div, { index }) => {
+    const focusFileDoubleClick: Action<HTMLDivElement, { index: number }> = (div, { index }) => {
         const destroyDblclick = on(div, "dblclick", (event) => {
             const element: HTMLElement = event.target as HTMLElement;
             if (element.tagName.toLowerCase() !== "input") {
