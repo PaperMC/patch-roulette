@@ -87,11 +87,12 @@
 {/snippet}
 
 <div
-    class="sticky top-0 z-10 flex flex-row items-center gap-2 border-b bg-neutral px-2 py-1 text-sm shadow-sm"
+    id="file-header-{index}"
+    class="sticky top-0 z-10 flex flex-row items-center gap-2 border-b bg-neutral px-2 py-1 text-sm shadow-sm focus:ring-2 focus:ring-blue-500 focus:outline-none focus:ring-inset"
     tabindex={0}
     role="button"
-    onclick={() => viewer.scrollToFile(index, false, true)}
-    onkeyup={(event) => event.key === "Enter" && viewer.scrollToFile(index, false, true)}
+    onclick={() => viewer.scrollToFile(index, { autoExpand: false, smooth: true })}
+    onkeyup={(event) => event.key === "Enter" && viewer.scrollToFile(index, { autoExpand: false, smooth: true })}
 >
     <!-- Only show stats for text diffs -->
     {#if viewer.diffs[index] !== undefined}

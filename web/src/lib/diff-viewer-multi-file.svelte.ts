@@ -24,6 +24,7 @@ import { onDestroy } from "svelte";
 import { type TreeNode, TreeState } from "$lib/components/tree/index.svelte";
 import { VList } from "virtua/svelte";
 import { Debounced } from "runed";
+import { MediaQuery } from "svelte/reactivity";
 
 const optionsKey = "diff-viewer-global-options";
 
@@ -118,6 +119,8 @@ export class GlobalOptions {
         }
     }
 }
+
+export const staticSidebar = new MediaQuery("(width >= 64rem)");
 
 export type AddOrRemove = "add" | "remove";
 
@@ -299,13 +302,24 @@ export class MultiFileDiffViewerState {
         }
     }
 
-    scrollToFile(index: number, autoExpand: boolean = true, smooth: boolean = false) {
+    scrollToFile(index: number, options: { autoExpand?: boolean; smooth?: boolean; focus?: boolean } = {}) {
         if (!this.vlist) return;
+
+        const autoExpand = options.autoExpand ?? true;
+        const smooth = options.smooth ?? false;
+        const focus = options.focus ?? false;
+
         if (autoExpand && !this.checked[index]) {
             // Auto-expand on jump when not checked
             this.collapsed[index] = false;
         }
         this.vlist.scrollToIndex(index, { align: "start", smooth });
+        if (focus) {
+            requestAnimationFrame(() => {
+                const headerElement = document.getElementById(`file-header-${index}`);
+                headerElement?.focus();
+            });
+        }
     }
 
     // https://github.com/inokawa/virtua/issues/621

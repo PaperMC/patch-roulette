@@ -4,10 +4,17 @@
     import { VList } from "virtua/svelte";
     import { getGithubUsername, GITHUB_URL_PARAM, installGithubApp, loginWithGithub, logoutGithub } from "$lib/github.svelte";
     import { onMount } from "svelte";
-    import { type FileDetails, getFileStatusProps, GlobalOptions, MultiFileDiffViewerState, requireEitherImage } from "$lib/diff-viewer-multi-file.svelte";
+    import {
+        type FileDetails,
+        getFileStatusProps,
+        GlobalOptions,
+        MultiFileDiffViewerState,
+        requireEitherImage,
+        staticSidebar,
+    } from "$lib/diff-viewer-multi-file.svelte";
     import Tree from "$lib/components/tree/Tree.svelte";
     import Spinner from "$lib/components/Spinner.svelte";
-    import type { TreeNode } from "$lib/components/tree/index.svelte";
+    import { type TreeNode } from "$lib/components/tree/index.svelte";
     import { page } from "$app/state";
     import { goto } from "$app/navigation";
     import ImageDiff from "$lib/components/diff/ImageDiff.svelte";
@@ -21,6 +28,8 @@
     import DiffSearch from "./DiffSearch.svelte";
     import FileHeader from "./FileHeader.svelte";
     import DiffTitle from "./DiffTitle.svelte";
+    import { type Action } from "svelte/action";
+    import { on } from "svelte/events";
 
     const globalOptions: GlobalOptions = GlobalOptions.load();
     const viewer = new MultiFileDiffViewerState();
@@ -125,6 +134,31 @@
             viewer.scrollToFile(index);
         }
     }
+
+    const focusFileDoubleClick: Action<HTMLDivElement, { index: number }> = (div, { index }) => {
+        const destroyDblclick = on(div, "dblclick", (event) => {
+            const element: HTMLElement = event.target as HTMLElement;
+            if (element.tagName.toLowerCase() !== "input") {
+                viewer.scrollToFile(index, { focus: true });
+                if (!staticSidebar.current) {
+                    viewer.sidebarCollapsed = true;
+                }
+            }
+        });
+        const destoryMousedown = on(div, "mousedown", (event) => {
+            const element: HTMLElement = event.target as HTMLElement;
+            if (element.tagName.toLowerCase() !== "input" && event.detail === 2) {
+                // Don't select text on double click
+                event.preventDefault();
+            }
+        });
+        return {
+            destroy() {
+                destroyDblclick();
+                destoryMousedown();
+            },
+        };
+    };
 
     function getPageTitle() {
         if (viewer.diffMetadata) {
@@ -330,6 +364,7 @@
                     <div
                         class="flex cursor-pointer items-center justify-between px-2 py-1 text-sm hover:bg-gray-100 focus:ring-2 focus:ring-blue-500 focus:outline-none focus:ring-inset dark:hover:bg-gray-800"
                         onclick={(e) => scrollToFileClick(e, viewer.getIndex(value))}
+                        use:focusFileDoubleClick={{ index: viewer.getIndex(value) }}
                         onkeydown={(e) => e.key === "Enter" && viewer.scrollToFile(viewer.getIndex(value))}
                         role="button"
                         tabindex="0"
