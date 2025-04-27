@@ -12,18 +12,13 @@
     let checkboxId = useId();
 </script>
 
-<Checkbox.Root
-    id={checkboxId}
-    aria-labelledby={labelId}
-    bind:checked
-    class="flex cursor-pointer items-center justify-between gap-2 px-2 py-1 hover:bg-gray-200 dark:hover:bg-gray-800"
->
+<Checkbox.Root id={checkboxId} aria-labelledby={labelId} bind:checked class="flex cursor-pointer items-center justify-between gap-2 btn-ghost px-2 py-1">
     {#snippet children({ checked })}
         <Label.Root id={labelId} for={checkboxId} class="cursor-pointer">
             {labelText}
         </Label.Root>
         <div
-            class="relative size-5 rounded-sm border bg-neutral transition-colors ease-in-out data-[state=checked]:bg-blue-500"
+            class="relative size-5 rounded-sm border bg-neutral transition-colors ease-in-out data-[state=checked]:bg-primary"
             data-state={checked ? "checked" : "unchecked"}
         >
             <span

@@ -15,10 +15,10 @@
     }
 </script>
 
-<div class="flex min-h-screen flex-row justify-center bg-blue-500 px-2 py-2 lg:py-6">
+<div class="flex min-h-screen flex-row justify-center bg-primary px-2 py-2 lg:py-6">
     <div class="flex min-h-[500px] max-w-7xl grow flex-col rounded-lg bg-white p-3 shadow-md md:p-6">
         <div class="mb-2 flex">
-            <label for="patchUpload" class="cursor-pointer rounded-lg bg-blue-500 px-4 py-2 text-white hover:bg-blue-600">
+            <label for="patchUpload" class="cursor-pointer rounded-lg btn-primary px-4 py-2">
                 Load Patch File
                 <input id="patchUpload" type="file" class="hidden" onchange={handleFileUpload} />
             </label>

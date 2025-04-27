@@ -18,7 +18,7 @@
     import { page } from "$app/state";
     import { goto } from "$app/navigation";
     import ImageDiff from "$lib/components/diff/ImageDiff.svelte";
-    import { Dialog, Separator, DropdownMenu } from "bits-ui";
+    import { Dialog, Separator } from "bits-ui";
     import AddedOrRemovedImage from "$lib/components/diff/AddedOrRemovedImage.svelte";
     import DiffStats from "$lib/components/diff/DiffStats.svelte";
     import SettingsPopover, { globalThemeSetting } from "$lib/components/settings-popover/SettingsPopover.svelte";
@@ -30,6 +30,7 @@
     import DiffTitle from "./DiffTitle.svelte";
     import { type Action } from "svelte/action";
     import { on } from "svelte/events";
+    import ActionsPopover from "./ActionsPopover.svelte";
 
     const globalOptions: GlobalOptions = GlobalOptions.load();
     const viewer = new MultiFileDiffViewerState();
@@ -175,10 +176,15 @@
     let pageTitle = $derived(getPageTitle());
 </script>
 
+<svelte:head>
+    <title>{pageTitle}</title>
+    <meta name="description" content="Multi-file rich diff viewer for GitHub and diff/patch files" />
+</svelte:head>
+
 {#snippet sidebarToggle()}
     <button
         type="button"
-        class="flex size-6 items-center justify-center rounded-md text-blue-500 hover:bg-gray-100 hover:shadow dark:hover:bg-gray-800"
+        class="flex size-6 items-center justify-center rounded-md btn-ghost text-primary"
         onclick={() => (viewer.sidebarCollapsed = !viewer.sidebarCollapsed)}
     >
         {#if viewer.sidebarCollapsed}
@@ -191,9 +197,7 @@
 
 {#snippet mainDialog()}
     <Dialog.Root bind:open={modalOpen}>
-        <Dialog.Trigger class="h-fit rounded-md bg-blue-500 px-2 py-0.5 text-white hover:bg-blue-600" onclick={() => (dragActive = false)}>
-            Load another diff
-        </Dialog.Trigger>
+        <Dialog.Trigger class="h-fit rounded-md btn-primary px-2 py-0.5" onclick={() => (dragActive = false)}>Load another diff</Dialog.Trigger>
         <Dialog.Portal>
             <Dialog.Overlay class="fixed inset-0 z-50 bg-black/50 dark:bg-white/20" />
             <Dialog.Content class="fixed top-1/2 left-1/2 z-50 w-full max-w-fit -translate-x-1/2 -translate-y-1/2 rounded-md bg-neutral p-4 shadow-md">
@@ -207,9 +211,7 @@
                 >
                     <div class="relative mb-4 flex flex-row items-center justify-center">
                         <Dialog.Title class="text-lg font-semibold">Load a diff</Dialog.Title>
-                        <Dialog.Close
-                            class="absolute top-0 right-0 flex size-8 items-center justify-center rounded-md text-blue-500 hover:bg-gray-100 hover:shadow dark:hover:bg-gray-800"
-                        >
+                        <Dialog.Close class="absolute top-0 right-0 flex size-8 items-center justify-center rounded-md btn-ghost text-primary">
                             <span class="iconify octicon--x-16"></span>
                         </Dialog.Close>
                     </div>
@@ -233,13 +235,13 @@
                             }}
                             autocomplete="off"
                         />
-                        <button type="button" onclick={handleGithubUrl} class="rounded-md bg-blue-500 px-2 py-1 text-white hover:bg-blue-600">Go</button>
+                        <button type="button" onclick={handleGithubUrl} class="rounded-md btn-primary px-2 py-1">Go</button>
                     </div>
 
                     <div class="mb-2 flex flex-row items-center gap-2">
                         <button
                             aria-labelledby="loginToGitHubLabel"
-                            class="flex w-fit flex-row items-center justify-between gap-2 rounded-md bg-blue-500 px-2 py-1 text-white hover:bg-blue-600"
+                            class="flex w-fit flex-row items-center justify-between gap-2 rounded-md btn-primary px-2 py-1"
                             onclick={loginWithGithub}
                             type="button"
                         >
@@ -256,7 +258,7 @@
                         <button
                             aria-labelledby="githubAppLabel"
                             type="button"
-                            class="flex w-fit flex-row items-center gap-2 rounded-md bg-blue-500 px-2 py-1 text-white hover:bg-blue-600"
+                            class="flex w-fit flex-row items-center gap-2 rounded-md btn-primary px-2 py-1"
                             onclick={installGithubApp}
                         >
                             <span class="iconify shrink-0 octicon--mark-github-16"></span> Install/configure GitHub App
@@ -264,7 +266,7 @@
                         <span id="githubAppLabel">Install the GitHub App to view private repos.</span>
                     </div>
 
-                    <div class="w-fit cursor-pointer rounded-md bg-blue-500 px-2 py-1 text-white hover:bg-blue-600">
+                    <div class="w-fit cursor-pointer rounded-md btn-primary px-2 py-1">
                         <label for="patchUpload">
                             Load Patch File
                             <input id="patchUpload" type="file" class="hidden" onchange={handleFileUpload} />
@@ -274,34 +276,6 @@
             </Dialog.Content>
         </Dialog.Portal>
     </Dialog.Root>
-{/snippet}
-
-{#snippet actionsDropdown()}
-    <DropdownMenu.Root>
-        <DropdownMenu.Trigger
-            aria-label="Actions"
-            class="flex size-6 items-center justify-center self-center rounded-md p-0.5 hover:bg-gray-100 hover:shadow-sm data-[state=open]:bg-gray-100 data-[state=open]:shadow-sm dark:hover:bg-gray-800 dark:data-[state=open]:bg-gray-800"
-        >
-            <span aria-hidden="true" class="iconify size-4 bg-blue-500 octicon--kebab-horizontal-16"></span>
-        </DropdownMenu.Trigger>
-        <DropdownMenu.Portal>
-            <DropdownMenu.Content class="flex flex-col overflow-hidden rounded-sm border bg-neutral text-sm shadow-sm select-none">
-                <DropdownMenu.Item
-                    class="px-2 py-1 text-left data-highlighted:bg-gray-100 dark:data-highlighted:bg-gray-800"
-                    onSelect={() => viewer.expandAll()}
-                >
-                    Expand All
-                </DropdownMenu.Item>
-                <Separator.Root class="h-[1px] w-full bg-edge" />
-                <DropdownMenu.Item
-                    class="px-2 py-1 text-left data-highlighted:bg-gray-100 dark:data-highlighted:bg-gray-800"
-                    onSelect={() => viewer.collapseAll()}
-                >
-                    Collapse All
-                </DropdownMenu.Item>
-            </DropdownMenu.Content>
-        </DropdownMenu.Portal>
-    </DropdownMenu.Root>
 {/snippet}
 
 {#snippet settingsPopover()}
@@ -320,16 +294,10 @@
     </SettingsPopover>
 {/snippet}
 
-<svelte:head>
-    <title>{pageTitle}</title>
-    <meta name="description" content="Multi-file rich diff viewer for GitHub and diff/patch files" />
-</svelte:head>
-
 <div class="relative flex min-h-screen flex-row justify-center">
     <div
-        class="absolute top-0 left-0 z-10 h-full w-full flex-col border-e bg-neutral md:w-[350px] md:shadow-md lg:static lg:h-auto lg:shadow-none"
-        class:flex={!viewer.sidebarCollapsed}
-        class:hidden={viewer.sidebarCollapsed}
+        class="absolute top-0 left-0 z-10 flex h-full w-full flex-col border-e bg-neutral data-[collapsed=true]:hidden md:w-[350px] md:shadow-md lg:static lg:h-auto lg:shadow-none"
+        data-collapsed={viewer.sidebarCollapsed}
     >
         <div class="m-2 flex flex-row items-center gap-2">
             <div class="relative grow">
@@ -337,7 +305,7 @@
                     type="text"
                     placeholder="Filter file tree..."
                     bind:value={viewer.fileTreeFilter}
-                    class="w-full rounded-md border px-8 py-1 overflow-ellipsis focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                    class="w-full rounded-md border px-8 py-1 overflow-ellipsis focus:ring-2 focus:ring-primary focus:outline-none"
                     autocomplete="off"
                 />
                 <span aria-hidden="true" class="absolute top-1/2 left-2 iconify size-4 -translate-y-1/2 text-em-med octicon--filter-16"></span>
@@ -362,7 +330,7 @@
             <div class="h-100">
                 {#snippet fileSnippet(value: FileDetails)}
                     <div
-                        class="flex cursor-pointer items-center justify-between px-2 py-1 text-sm hover:bg-gray-100 focus:ring-2 focus:ring-blue-500 focus:outline-none focus:ring-inset dark:hover:bg-gray-800"
+                        class="flex cursor-pointer items-center justify-between btn-ghost px-2 py-1 text-sm focus:ring-2 focus:ring-primary focus:outline-none focus:ring-inset"
                         onclick={(e) => scrollToFileClick(e, viewer.getIndex(value))}
                         use:focusFileDoubleClick={{ index: viewer.getIndex(value) }}
                         onkeydown={(e) => e.key === "Enter" && viewer.scrollToFile(viewer.getIndex(value))}
@@ -392,18 +360,18 @@
                             {@render fileSnippet(node.data.data as FileDetails)}
                         {:else}
                             <div
-                                class="flex cursor-pointer items-center justify-between px-2 py-1 text-sm hover:bg-gray-100 focus:ring-2 focus:ring-blue-500 focus:outline-none focus:ring-inset dark:hover:bg-gray-800"
+                                class="flex cursor-pointer items-center justify-between btn-ghost px-2 py-1 text-sm focus:ring-2 focus:ring-primary focus:outline-none focus:ring-inset"
                                 onclick={toggleCollapse}
                                 onkeydown={(e) => e.key === "Enter" && toggleCollapse()}
                                 role="button"
                                 tabindex="0"
                             >
-                                <span class="me-1 iconify size-4 shrink-0 text-blue-500 {folderIcon}"></span>
+                                <span class="me-1 iconify size-4 shrink-0 text-primary {folderIcon}"></span>
                                 <span class="grow overflow-hidden break-all">{node.data.data}</span>
                                 {#if collapsed}
-                                    <span class="iconify size-4 shrink-0 text-blue-500 octicon--chevron-right-16"></span>
+                                    <span class="iconify size-4 shrink-0 text-primary octicon--chevron-right-16"></span>
                                 {:else}
-                                    <span class="iconify size-4 shrink-0 text-blue-500 octicon--chevron-down-16"></span>
+                                    <span class="iconify size-4 shrink-0 text-primary octicon--chevron-down-16"></span>
                                 {/if}
                             </div>
                         {/if}
@@ -430,7 +398,7 @@
             {/if}
             <div class="ml-auto flex h-fit flex-row gap-2">
                 {@render mainDialog()}
-                {@render actionsDropdown()}
+                <ActionsPopover {viewer} />
                 {@render settingsPopover()}
             </div>
         </div>
@@ -472,7 +440,7 @@
                                     <div class="flex justify-center bg-neutral-2 p-4">
                                         <button
                                             type="button"
-                                            class=" flex flex-row items-center justify-center gap-1 rounded-md bg-blue-500 px-2 py-1 text-white hover:bg-blue-600"
+                                            class=" flex flex-row items-center justify-center gap-1 rounded-md btn-primary px-2 py-1"
                                             onclick={() => (image.load = true)}
                                         >
                                             <span class="iconify size-4 shrink-0 octicon--image-16"></span><span>Load image diff</span>
@@ -524,7 +492,7 @@
 
         background-color: rgba(255, 255, 255, 0.7);
 
-        border: dashed var(--color-blue-500);
+        border: dashed var(--color-primary);
         border-radius: inherit;
     }
 

@@ -45,7 +45,7 @@
             type="text"
             id="username"
             name="username"
-            class="w-full rounded border px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+            class="w-full rounded border px-3 py-2 focus:ring-2 focus:ring-primary focus:outline-none"
             bind:value={username}
         />
     </div>
@@ -55,14 +55,11 @@
             type="password"
             id="password"
             name="password"
-            class="w-full rounded border px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+            class="w-full rounded border px-3 py-2 focus:ring-2 focus:ring-primary focus:outline-none"
             bind:value={password}
         />
     </div>
-    <button
-        type="submit"
-        class="focus:shadow-outline flex w-full items-center justify-center gap-2 rounded bg-blue-500 px-4 py-2 font-bold text-white hover:bg-blue-700 focus:outline-none"
-    >
+    <button type="submit" class="focus:shadow-outline flex w-full items-center justify-center gap-2 rounded btn-primary px-4 py-2 font-bold focus:outline-none">
         {#if submitting}Logging in... <Spinner size={4} class="border-white" />{:else}Login{/if}
     </button>
 </form>

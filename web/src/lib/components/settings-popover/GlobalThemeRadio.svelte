@@ -11,14 +11,14 @@
     {@const itemId = useId()}
     <Label.Root id={labelId} for={itemId} class="flex cursor-pointer flex-row items-center gap-1 text-sm">
         <RadioGroup.Item
-            class="flex size-4 cursor-pointer items-center justify-center rounded-full border hover:bg-gray-100 dark:hover:bg-gray-800"
+            class="flex size-4 cursor-pointer items-center justify-center rounded-full border btn-ghost"
             value={theme}
             id={itemId}
             aria-labelledby={labelId}
         >
             {#snippet children({ checked })}
                 {#if checked}
-                    <span class="size-2.5 rounded-full bg-blue-500" aria-hidden="true"></span>
+                    <span class="size-2.5 rounded-full bg-primary" aria-hidden="true"></span>
                 {/if}
             {/snippet}
         </RadioGroup.Item>

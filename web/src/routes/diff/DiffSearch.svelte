@@ -55,7 +55,7 @@
         type="text"
         placeholder="Search diff content..."
         bind:value={viewer.searchQuery}
-        class="w-full rounded-md border py-0.5 ps-6 text-sm overflow-ellipsis focus:ring-2 focus:ring-blue-500 focus:outline-none"
+        class="w-full rounded-md border py-0.5 ps-6 text-sm overflow-ellipsis focus:ring-2 focus:ring-primary focus:outline-none"
         autocomplete="off"
         style="padding-inline-end: {0.5 + controlsWidth / 16}rem;"
     />
@@ -67,12 +67,12 @@
             {:then files}
                 <span class="text-sm">{`${currentMatchIdForDisplay()} / ${files.totalMatches}`}</span>
                 <button class="flex size-5 items-center justify-center" onclick={() => prevResult()} aria-label="previous match">
-                    <span class="flex size-4 items-center justify-center rounded-sm hover:bg-gray-100 dark:hover:bg-gray-800">
+                    <span class="flex size-4 items-center justify-center rounded-sm btn-ghost">
                         <span aria-hidden="true" class="iconify size-4 octicon--chevron-left-16"></span>
                     </span>
                 </button>
                 <button class="flex size-5 items-center justify-center" onclick={() => nextResult()} aria-label="next match">
-                    <span class="flex size-4 items-center justify-center rounded-sm hover:bg-gray-100 dark:hover:bg-gray-800">
+                    <span class="flex size-4 items-center justify-center rounded-sm btn-ghost">
                         <span aria-hidden="true" class="iconify size-4 octicon--chevron-right-16"></span>
                     </span>
                 </button>

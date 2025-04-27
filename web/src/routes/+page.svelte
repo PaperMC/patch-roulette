@@ -70,7 +70,7 @@
 
 {#snippet refreshButton()}
     <button
-        class="focus:shadow-outline me-2 flex items-center justify-center gap-2 rounded bg-blue-500 px-2 py-1 text-white hover:bg-blue-700 focus:outline-none"
+        class="me-2 flex items-center justify-center gap-2 rounded btn-primary px-2 py-1"
         onclick={() => instance.onVersionSelect(instance.selectedVersion)}
     >
         {#if instance.refreshing}
@@ -85,12 +85,8 @@
     <div class="flex gap-2">
         {#each views as view (view)}
             <button
-                class="flex items-center justify-center rounded-sm px-2 py-1 text-blue-500 hover:bg-gray-100 hover:shadow dark:hover:bg-gray-700"
-                class:bg-gray-200={currentView === view}
-                class:dark:bg-gray-800={currentView === view}
-                class:hover:bg-gray-200={currentView === view}
-                class:dark:hover:bg-gray-800={currentView === view}
-                class:shadow={currentView === view}
+                class="flex items-center justify-center rounded-sm btn-ghost px-2 py-1 text-primary data-[active=true]:btn-ghost-visible"
+                data-active={currentView === view}
                 onclick={() => (currentView = view)}
             >
                 {capitalizeFirstLetter(view)}
@@ -112,7 +108,7 @@
                 <button
                     id="logout-button"
                     type="button"
-                    class="focus:shadow-outline ms-4 rounded bg-gray-300 px-2 py-1 text-gray-800 hover:bg-gray-400 focus:outline-none"
+                    class="ms-4 rounded btn-primary px-2 py-1"
                     onclick={() => {
                         localStorage.removeItem("token");
                         token.value = null;
@@ -133,7 +129,7 @@
                     id="mcVersion"
                     bind:value={instance.selectedVersion}
                     onchange={handleVersionSelect}
-                    class="rounded border px-2 py-1 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                    class="rounded border px-2 py-1 focus:ring-2 focus:ring-primary focus:outline-none"
                 >
                     <option value="">Select a version...</option>
                     {#each minecraftVersions as version (version)}
@@ -147,7 +143,7 @@
             </div>
         </div>
 
-        <div id="patches-container" class="h-full w-full flex-col" class:hidden={!instance.selectedVersion} class:flex={instance.selectedVersion}>
+        <div id="patches-container" class="flex h-full w-full flex-col data-[visible=false]:hidden" data-visible={instance.selectedVersion ? true : false}>
             {#if currentView === "table"}
                 <div class="flex h-full">
                     <PatchesTable data={instance.patches} gridClass="ag-theme-quartz w-full"></PatchesTable>

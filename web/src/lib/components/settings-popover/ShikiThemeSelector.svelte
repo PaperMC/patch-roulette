@@ -22,7 +22,7 @@
     <Select.Trigger
         aria-labelledby={labelId}
         id={triggerId}
-        class="flex cursor-pointer items-center justify-between gap-1 px-2 py-1 hover:bg-gray-100 data-[state=open]:bg-gray-100 dark:hover:bg-gray-800 dark:data-[state=open]:hover:bg-gray-800"
+        class="flex cursor-pointer items-center justify-between gap-1 btn-ghost px-2 py-1 data-[state=open]:btn-ghost-hover data-[state=open]:active:btn-ghost-active"
     >
         <Label.Root id={labelId} for={triggerId} class="cursor-pointer text-sm">{capitalizeFirstLetter(mode)} theme</Label.Root>
         <div class="flex w-44 items-center gap-1 rounded-sm border bg-neutral px-1 py-0.5 text-sm select-none" bind:this={anchor}>
@@ -36,7 +36,7 @@
                     {value}
                 </div>
             </div>
-            <span aria-hidden="true" class="iconify size-4 shrink-0 text-base text-blue-500 octicon--single-select-16"></span>
+            <span aria-hidden="true" class="iconify size-4 shrink-0 text-base text-primary octicon--single-select-16"></span>
         </div>
     </Select.Trigger>
     <Select.Portal>
@@ -44,7 +44,7 @@
             {#each Object.keys(bundledThemes) as theme (theme)}
                 <Select.Item value={theme} class="data-highlighted:bg-blue-400 data-highlighted:text-white">
                     {#snippet children({ selected })}
-                        <div class="cursor-default px-2 py-1 text-sm" class:bg-blue-500={selected} class:text-white={selected}>
+                        <div class="cursor-default px-2 py-1 text-sm data-[selected=true]:bg-primary data-[selected=true]:text-white" data-selected={selected}>
                             {theme}
                         </div>
                     {/snippet}

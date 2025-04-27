@@ -18,6 +18,8 @@
 }
 
 @theme {
+    --color-primary: var(--color-blue-500);
+
     /* Text colors */
     --color-em-high-light: rgba(0, 0, 0, 0.87);
     --color-em-high-dark: rgba(255, 255, 255, 0.87);
@@ -68,6 +70,39 @@
     * {
         border-color: var(--color-edge);
     }
+}
+
+@utility btn-ghost-hover {
+    @apply bg-neutral-300/80 dark:bg-neutral-700/80;
+}
+@utility btn-ghost-active {
+    @apply bg-neutral-400/80 dark:bg-neutral-600/80;
+}
+@utility btn-ghost {
+    &:hover {
+        @apply btn-ghost-hover;
+    }
+    &:active {
+        @apply btn-ghost-active;
+    }
+    @apply transition-colors duration-100 ease-in-out;
+}
+@utility btn-ghost-visible {
+    @apply btn-ghost-hover;
+    &:active {
+        @apply btn-ghost-active;
+    }
+}
+
+@utility btn-primary {
+    @apply bg-primary text-white;
+    &:hover {
+        @apply bg-blue-600;
+    }
+    &:active {
+        @apply bg-blue-700;
+    }
+    @apply transition-colors duration-100 ease-in-out;
 }
 
 .png-bg {

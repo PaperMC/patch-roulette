@@ -23,6 +23,6 @@
 {/snippet}
 
 <div id={groupId} aria-labelledby={labelId} class="flex flex-col" role="group">
-    <Label.Root id={labelId} for={groupId} class="px-2 pt-2 font-semibold">{title}</Label.Root>
+    <Label.Root id={labelId} for={groupId} class="px-2 pt-4 pb-1 font-semibold">{title}</Label.Root>
     {@render renderChildren()}
 </div>

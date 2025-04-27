@@ -1,7 +1,8 @@
 <script lang="ts">
     import DiffStats from "$lib/components/diff/DiffStats.svelte";
+    import SettingsPopoverToggle from "$lib/components/settings-popover/SettingsPopoverToggle.svelte";
     import { type FileDetails, GlobalOptions, type MultiFileDiffViewerState } from "$lib/diff-viewer-multi-file.svelte";
-    import { Popover, Label, Separator } from "bits-ui";
+    import { Popover, Button } from "bits-ui";
     import { tick } from "svelte";
 
     interface Props {
@@ -36,7 +37,7 @@
     {:else}
         <span class="flex max-w-full flex-wrap items-center gap-0.5 overflow-hidden break-all">
             {value.fromFile}
-            <span class="iconify inline-block text-blue-500 octicon--arrow-right-16"></span>
+            <span class="iconify inline-block text-primary octicon--arrow-right-16"></span>
             {value.toFile}
         </span>
     {/if}
@@ -45,16 +46,16 @@
 {#snippet collapseToggle()}
     <button
         type="button"
-        class="flex size-6 items-center justify-center rounded-md p-0.5 text-blue-500 hover:bg-gray-100 hover:shadow-sm dark:hover:bg-gray-800"
+        class="flex size-6 items-center justify-center rounded-md btn-ghost p-0.5 text-primary"
         onclick={(e) => {
             viewer.toggleCollapse(index);
             e.stopPropagation();
         }}
     >
         {#if viewer.collapsed[index]}
-            <span aria-label="expand file" class="iconify size-4 shrink-0 text-blue-500 octicon--chevron-right-16"></span>
+            <span aria-label="expand file" class="iconify size-4 shrink-0 text-primary octicon--chevron-right-16"></span>
         {:else}
-            <span aria-label="collapse file" class="iconify size-4 shrink-0 text-blue-500 octicon--chevron-down-16"></span>
+            <span aria-label="collapse file" class="iconify size-4 shrink-0 text-primary octicon--chevron-down-16"></span>
         {/if}
     </button>
 {/snippet}
@@ -62,25 +63,15 @@
 {#snippet popover()}
     <Popover.Root bind:open={popoverOpen}>
         <Popover.Trigger
-            class="flex size-6 items-center justify-center rounded-md p-0.5 hover:bg-gray-100 hover:shadow-sm dark:hover:bg-gray-800"
+            class="flex size-6 items-center justify-center rounded-md btn-ghost p-0.5 data-[state=open]:btn-ghost-visible"
             onclick={(e) => e.stopPropagation()}
         >
-            <span class="iconify size-4 bg-blue-500 octicon--kebab-horizontal-16"></span>
+            <span class="iconify size-4 bg-primary octicon--kebab-horizontal-16"></span>
         </Popover.Trigger>
         <Popover.Portal>
-            <Popover.Content class="flex flex-col overflow-hidden rounded-sm border bg-neutral text-sm shadow-sm select-none">
-                <button onclick={showInFileTree} type="button" class="px-2 py-1 hover:bg-gray-100 dark:hover:bg-gray-800">Show in file tree</button>
-                <Separator.Root class="h-[1px] w-full bg-edge" />
-                <Label.Root class="flex w-full flex-row items-center justify-between gap-1 px-2 py-1 hover:bg-gray-100 dark:hover:bg-gray-800">
-                    File viewed
-                    <button class="flex items-center" type="button" onclick={() => viewer.toggleChecked(index)}>
-                        {#if viewer.checked[index]}
-                            <span aria-hidden="true" class="iconify size-4 shrink-0 text-blue-500 octicon--check-16"></span>
-                        {:else}
-                            <span aria-hidden="true" class="iconify size-4 shrink-0 text-em-med octicon--check-16"></span>
-                        {/if}
-                    </button>
-                </Label.Root>
+            <Popover.Content class="flex flex-col overflow-hidden rounded-sm border bg-neutral text-sm shadow-sm select-none" sideOffset={4}>
+                <Button.Root onclick={showInFileTree} class="btn-ghost px-2 py-1">Show in file tree</Button.Root>
+                <SettingsPopoverToggle labelText="File viewed" bind:checked={() => viewer.checked[index] ?? false, () => viewer.toggleChecked(index)} />
             </Popover.Content>
         </Popover.Portal>
     </Popover.Root>
@@ -88,7 +79,7 @@
 
 <div
     id="file-header-{index}"
-    class="sticky top-0 z-10 flex flex-row items-center gap-2 border-b bg-neutral px-2 py-1 text-sm shadow-sm focus:ring-2 focus:ring-blue-500 focus:outline-none focus:ring-inset"
+    class="sticky top-0 z-10 flex flex-row items-center gap-2 border-b bg-neutral px-2 py-1 text-sm shadow-sm focus:ring-2 focus:ring-primary focus:outline-none focus:ring-inset"
     tabindex={0}
     role="button"
     onclick={() => viewer.scrollToFile(index, { autoExpand: false, smooth: true })}
