@@ -226,7 +226,7 @@
                         <input
                             id="githubUrl"
                             type="text"
-                            class="grow rounded-md border px-2 py-1 overflow-ellipsis"
+                            class="grow rounded-md border px-2 py-1 overflow-ellipsis focus:ring-2 focus:ring-primary focus:outline-none"
                             bind:value={githubUrl}
                             onkeyup={(event) => {
                                 if (event.key === "Enter") {
