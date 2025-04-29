@@ -18,7 +18,7 @@
     let triggerId = useId();
 </script>
 
-<Select.Root type="single" bind:value>
+<Select.Root type="single" scrollAlignment="center" bind:value>
     <Select.Trigger
         aria-labelledby={labelId}
         id={triggerId}
@@ -40,7 +40,7 @@
         </div>
     </Select.Trigger>
     <Select.Portal>
-        <Select.Content class="z-100 max-h-64 overflow-y-auto rounded-lg border bg-neutral shadow-md" customAnchor={anchor}>
+        <Select.Content class="z-100 max-h-64 overflow-y-auto rounded-sm border bg-neutral shadow-md" customAnchor={anchor}>
             {#each Object.keys(bundledThemes) as theme (theme)}
                 <Select.Item value={theme} class="data-highlighted:bg-blue-400 data-highlighted:text-white">
                     {#snippet children({ selected })}

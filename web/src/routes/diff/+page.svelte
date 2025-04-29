@@ -23,7 +23,7 @@
     import DiffStats from "$lib/components/diff/DiffStats.svelte";
     import SettingsPopover, { globalThemeSetting } from "$lib/components/settings-popover/SettingsPopover.svelte";
     import SettingsPopoverGroup from "$lib/components/settings-popover/SettingsPopoverGroup.svelte";
-    import SettingsPopoverToggle from "$lib/components/settings-popover/SettingsPopoverToggle.svelte";
+    import LabeledCheckbox from "$lib/components/LabeledCheckbox.svelte";
     import ShikiThemeSelector from "$lib/components/settings-popover/ShikiThemeSelector.svelte";
     import DiffSearch from "./DiffSearch.svelte";
     import FileHeader from "./FileHeader.svelte";
@@ -282,14 +282,14 @@
     <SettingsPopover class="self-center">
         {@render globalThemeSetting()}
         <SettingsPopoverGroup title="Syntax Highlighting">
-            <SettingsPopoverToggle labelText="Enable" bind:checked={globalOptions.syntaxHighlighting} />
+            <LabeledCheckbox labelText="Enable" bind:checked={globalOptions.syntaxHighlighting} />
             <ShikiThemeSelector mode="light" bind:value={globalOptions.syntaxHighlightingThemeLight} />
             <ShikiThemeSelector mode="dark" bind:value={globalOptions.syntaxHighlightingThemeDark} />
         </SettingsPopoverGroup>
         <SettingsPopoverGroup title="Misc.">
-            <SettingsPopoverToggle labelText="Concise nested diffs" bind:checked={globalOptions.omitPatchHeaderOnlyHunks} />
-            <SettingsPopoverToggle labelText="Word diffs" bind:checked={globalOptions.wordDiffs} />
-            <SettingsPopoverToggle labelText="Line wrapping" bind:checked={globalOptions.lineWrap} />
+            <LabeledCheckbox labelText="Concise nested diffs" bind:checked={globalOptions.omitPatchHeaderOnlyHunks} />
+            <LabeledCheckbox labelText="Word diffs" bind:checked={globalOptions.wordDiffs} />
+            <LabeledCheckbox labelText="Line wrapping" bind:checked={globalOptions.lineWrap} />
         </SettingsPopoverGroup>
     </SettingsPopover>
 {/snippet}

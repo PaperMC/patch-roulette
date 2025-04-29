@@ -8,7 +8,7 @@
     import { capitalizeFirstLetter } from "$lib/util";
     import SettingsPopover, { globalThemeSetting } from "$lib/components/settings-popover/SettingsPopover.svelte";
     import SettingsPopoverGroup from "$lib/components/settings-popover/SettingsPopoverGroup.svelte";
-    import SettingsPopoverToggle from "$lib/components/settings-popover/SettingsPopoverToggle.svelte";
+    import LabeledCheckbox from "$lib/components/LabeledCheckbox.svelte";
     import Spinner from "$lib/components/Spinner.svelte";
 
     let instance = new PatchRouletteState();
@@ -63,7 +63,7 @@
     <SettingsPopover class="ms-2">
         {@render globalThemeSetting()}
         <SettingsPopoverGroup title="Misc.">
-            <SettingsPopoverToggle labelText="Auto refresh" bind:checked={instance.autoRefresh} />
+            <LabeledCheckbox labelText="Auto refresh" bind:checked={instance.autoRefresh} />
         </SettingsPopoverGroup>
     </SettingsPopover>
 {/snippet}
