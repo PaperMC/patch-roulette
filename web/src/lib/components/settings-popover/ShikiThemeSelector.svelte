@@ -40,14 +40,13 @@
         </div>
     </Select.Trigger>
     <Select.Portal>
-        <Select.Content class="z-100 max-h-64 overflow-y-auto rounded-sm border bg-neutral shadow-md" customAnchor={anchor}>
+        <Select.Content class="z-100 flex max-h-64 flex-col gap-1 overflow-y-auto rounded-sm border bg-neutral p-2 shadow-md" customAnchor={anchor}>
             {#each Object.keys(bundledThemes) as theme (theme)}
-                <Select.Item value={theme} class="data-highlighted:bg-blue-400 data-highlighted:text-white">
-                    {#snippet children({ selected })}
-                        <div class="cursor-default px-2 py-1 text-sm data-[selected=true]:bg-primary data-[selected=true]:text-white" data-selected={selected}>
-                            {theme}
-                        </div>
-                    {/snippet}
+                <Select.Item
+                    value={theme}
+                    class="cursor-default rounded-sm px-2 py-1 text-sm data-highlighted:bg-neutral-3 data-selected:bg-primary data-selected:text-white"
+                >
+                    {theme}
                 </Select.Item>
             {/each}
         </Select.Content>
