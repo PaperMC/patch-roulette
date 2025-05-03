@@ -16,8 +16,8 @@
         "lint": "prettier --check . && eslint ."
     },
     "devDependencies": {
-        "@eslint/compat": "^1.2.8",
-        "@eslint/js": "^9.25.1",
+        "@eslint/compat": "^1.2.9",
+        "@eslint/js": "^9.26.0",
         "@iconify-json/octicon": "^1.2.5",
         "@iconify/tailwind4": "^1.0.6",
         "@sveltejs/adapter-auto": "^6.0.0",
@@ -28,7 +28,7 @@
         "@types/chroma-js": "^3.1.1",
         "@types/diff": "^7.0.2",
         "@types/luxon": "^3.6.2",
-        "eslint": "^9.25.1",
+        "eslint": "^9.26.0",
         "eslint-config-prettier": "^10.1.2",
         "eslint-plugin-svelte": "^3.5.1",
         "globals": "^16.0.0",
@@ -37,7 +37,7 @@
         "prettier-plugin-tailwindcss": "^0.6.11",
         "svelte": "^5.28.2",
         "svelte-adapter-bun": "^0.5.2",
-        "svelte-check": "^4.1.6",
+        "svelte-check": "^4.1.7",
         "tailwindcss": "^4.1.5",
         "typescript": "^5.8.3",
         "typescript-eslint": "^8.31.1",
@@ -52,6 +52,7 @@
         "luxon": "^3.6.1",
         "runed": "^0.26.0",
         "shiki": "^3.3.0",
+        "svelte-toolbelt": "^0.7.1",
         "virtua": "^0.40.4"
     },
     "bunrc": {

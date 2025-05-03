@@ -4,6 +4,7 @@ import type { TreeNode } from "$lib/components/tree/index.svelte";
 import type { BundledLanguage, SpecialLanguage } from "shiki";
 import { onMount } from "svelte";
 import type { Action } from "svelte/action";
+import type { ReadableBox } from "svelte-toolbelt";
 
 export type Getter<T> = () => T;
 
@@ -346,4 +347,9 @@ export const resizeObserver: Action<HTMLElement, ResizeObserverCallback> = (node
             observer.disconnect();
         },
     };
+};
+
+// from bits-ui internals
+export type ReadableBoxedValues<T> = {
+    [K in keyof T]: ReadableBox<T[K]>;
 };

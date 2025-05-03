@@ -3,6 +3,7 @@
     import Spinner from "$lib/components/Spinner.svelte";
     import { getDimensions, type ImageDimensions } from "$lib/image";
     import AddedOrRemovedImageLabel from "$lib/components/diff/AddedOrRemovedImageLabel.svelte";
+    import { on } from "svelte/events";
 
     interface Props {
         fileA: string;
@@ -83,15 +84,15 @@
             dragging = false;
         }
 
-        node.addEventListener("mousedown", handleMouseDown);
-        window.addEventListener("mousemove", handleMouseMove);
-        window.addEventListener("mouseup", handleMouseUp);
+        const removeMouseDown = on(node, "mousedown", handleMouseDown);
+        const removeMouseMove = on(window, "mousemove", handleMouseMove);
+        const removeMouseUp = on(window, "mouseup", handleMouseUp);
 
         return {
             destroy() {
-                node.removeEventListener("mousedown", handleMouseDown);
-                window.removeEventListener("mousemove", handleMouseMove);
-                window.removeEventListener("mouseup", handleMouseUp);
+                removeMouseDown();
+                removeMouseMove();
+                removeMouseUp();
             },
         };
     }

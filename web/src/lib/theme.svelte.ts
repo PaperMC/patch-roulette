@@ -1,6 +1,7 @@
 import { browser } from "$app/environment";
 import { watchLocalStorage } from "$lib/util";
 import { MediaQuery } from "svelte/reactivity";
+import { colorSchemeDark, colorSchemeLight, themeQuartz } from "@ag-grid-community/theming";
 
 export type Theme = "dark" | "light" | "auto";
 
@@ -44,4 +45,15 @@ export function getEffectiveGlobalTheme(): "dark" | "light" {
         return prefersDark.current ? "dark" : "light";
     }
     return theme;
+}
+
+const agTheme = $derived.by(() => {
+    if (getEffectiveGlobalTheme() === "dark") {
+        return themeQuartz.withPart(colorSchemeDark);
+    }
+    return themeQuartz.withPart(colorSchemeLight);
+});
+
+export function getAgTheme() {
+    return agTheme;
 }

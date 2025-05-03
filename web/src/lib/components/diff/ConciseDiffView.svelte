@@ -1,6 +1,6 @@
 <script lang="ts" generics="K">
     import {
-        ConciseDiffViewCachedState,
+        type ConciseDiffViewProps,
         ConciseDiffViewState,
         getBaseColors,
         innerPatchLineTypeProps,
@@ -12,28 +12,12 @@
         type PatchLineTypeProps,
         patchLineTypeProps,
         type SearchSegment,
-    } from "$lib/components/diff/scripts/ConciseDiffView.svelte";
-    import { type BundledTheme } from "shiki";
+    } from "$lib/components/diff/concise-diff-view.svelte";
     import Spinner from "$lib/components/Spinner.svelte";
     import { type ParsedDiff } from "diff";
     import { onDestroy } from "svelte";
     import { type MutableValue } from "$lib/util";
-
-    interface Props {
-        rawPatchContent?: string;
-        patch?: Promise<ParsedDiff>;
-        syntaxHighlighting?: boolean;
-        syntaxHighlightingTheme?: BundledTheme;
-        omitPatchHeaderOnlyHunks?: boolean;
-        wordDiffs?: boolean;
-        lineWrap?: boolean;
-        searchQuery?: string;
-        searchMatchingLines?: () => Promise<number[][] | undefined>;
-        activeSearchResult?: number;
-
-        cache?: Map<K, ConciseDiffViewCachedState>;
-        cacheKey?: K;
-    }
+    import { box } from "svelte-toolbelt";
 
     let {
         rawPatchContent,
@@ -48,9 +32,8 @@
         activeSearchResult = -1,
         cache,
         cacheKey,
-    }: Props = $props();
+    }: ConciseDiffViewProps<K> = $props();
 
-    const view = new ConciseDiffViewState(cache, cacheKey);
     const parsedPatch: Promise<ParsedDiff> = $derived.by(async () => {
         if (rawPatchContent !== undefined) {
             return parseSinglePatch(rawPatchContent);
@@ -59,8 +42,16 @@
         }
         throw Error("Either rawPatchContent or patch must be provided");
     });
-    $effect(() => {
-        view.update(parsedPatch, syntaxHighlighting, syntaxHighlightingTheme, omitPatchHeaderOnlyHunks, wordDiffs);
+
+    const view = new ConciseDiffViewState({
+        patch: box.with(() => parsedPatch),
+        syntaxHighlighting: box.with(() => syntaxHighlighting),
+        syntaxHighlightingTheme: box.with(() => syntaxHighlightingTheme),
+        omitPatchHeaderOnlyHunks: box.with(() => omitPatchHeaderOnlyHunks),
+        wordDiffs: box.with(() => wordDiffs),
+
+        cache: box.with(() => cache),
+        cacheKey: box.with(() => cacheKey),
     });
 
     let baseColors: Promise<string> = $state(new Promise<string>(() => []));

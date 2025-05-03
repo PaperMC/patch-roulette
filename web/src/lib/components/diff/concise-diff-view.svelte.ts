@@ -10,10 +10,10 @@ import {
     type ThemeRegistration,
     bundledThemes,
 } from "shiki";
-import { guessLanguageFromExtension, type MutableValue } from "$lib/util";
+import { guessLanguageFromExtension, type MutableValue, type ReadableBoxedValues } from "$lib/util";
 import type { IRawThemeSetting } from "shiki/textmate";
 import chroma from "chroma-js";
-import { getEffectiveGlobalTheme } from "$lib/theme.svelte";
+import { getEffectiveGlobalTheme } from "$lib/theme.svelte.js";
 import { onDestroy } from "svelte";
 
 export const DEFAULT_THEME_LIGHT: BundledTheme = "github-light-default";
@@ -976,26 +976,20 @@ export class ConciseDiffViewCachedState {
     omitPatchHeaderOnlyHunks: boolean;
     wordDiffs: boolean;
 
-    constructor(
-        patchLines: Promise<PatchLine[][]>,
-        syntaxHighlighting: boolean,
-        syntaxHighlightingTheme: BundledTheme | undefined,
-        omitPatchHeaderOnlyHunks: boolean,
-        wordDiffs: boolean,
-    ) {
+    constructor(patchLines: Promise<PatchLine[][]>, props: ConciseDiffViewStateProps<unknown>) {
         this.patchLines = patchLines;
-        this.syntaxHighlighting = syntaxHighlighting;
-        this.syntaxHighlightingTheme = syntaxHighlightingTheme;
-        this.omitPatchHeaderOnlyHunks = omitPatchHeaderOnlyHunks;
-        this.wordDiffs = wordDiffs;
+        this.syntaxHighlighting = props.syntaxHighlighting.current;
+        this.syntaxHighlightingTheme = props.syntaxHighlightingTheme.current;
+        this.omitPatchHeaderOnlyHunks = props.omitPatchHeaderOnlyHunks.current;
+        this.wordDiffs = props.wordDiffs.current;
     }
 
-    compatible(syntaxHighlighting: boolean, syntaxHighlightingTheme: BundledTheme | undefined, omitPatchHeaderOnlyHunks: boolean, wordDiffs: boolean) {
+    compatible(props: ConciseDiffViewStateProps<unknown>): boolean {
         return (
-            this.syntaxHighlighting === syntaxHighlighting &&
-            this.syntaxHighlightingTheme === syntaxHighlightingTheme &&
-            this.omitPatchHeaderOnlyHunks === omitPatchHeaderOnlyHunks &&
-            this.wordDiffs === wordDiffs
+            this.syntaxHighlighting === props.syntaxHighlighting.current &&
+            this.syntaxHighlightingTheme === props.syntaxHighlightingTheme.current &&
+            this.omitPatchHeaderOnlyHunks === props.omitPatchHeaderOnlyHunks.current &&
+            this.wordDiffs === props.wordDiffs.current
         );
     }
 }
@@ -1008,50 +1002,83 @@ export function parseSinglePatch(rawPatchContent: string): ParsedDiff {
     return parsedPatches[0];
 }
 
+export interface ConciseDiffViewProps<K> {
+    rawPatchContent?: string;
+    patch?: Promise<ParsedDiff>;
+
+    syntaxHighlighting?: boolean;
+    syntaxHighlightingTheme?: BundledTheme;
+    omitPatchHeaderOnlyHunks?: boolean;
+    wordDiffs?: boolean;
+    lineWrap?: boolean;
+
+    searchQuery?: string;
+    searchMatchingLines?: () => Promise<number[][] | undefined>;
+    activeSearchResult?: number;
+
+    cache?: Map<K, ConciseDiffViewCachedState>;
+    cacheKey?: K;
+}
+
+export type ConciseDiffViewStateProps<K> = ReadableBoxedValues<{
+    patch: Promise<ParsedDiff>;
+
+    syntaxHighlighting: boolean;
+    syntaxHighlightingTheme: BundledTheme | undefined;
+    omitPatchHeaderOnlyHunks: boolean;
+    wordDiffs: boolean;
+
+    cache: Map<K, ConciseDiffViewCachedState> | undefined;
+    cacheKey: K | undefined;
+}>;
+
 export class ConciseDiffViewState<K> {
     patchLines: Promise<PatchLine[][]> = $state(new Promise<PatchLine[][]>(() => []));
     cachedState: ConciseDiffViewCachedState | undefined = undefined;
 
-    private readonly cache: Map<K, ConciseDiffViewCachedState> | undefined;
-    private readonly cacheKey: K | undefined;
+    private readonly props: ConciseDiffViewStateProps<K>;
 
-    constructor(cache: Map<K, ConciseDiffViewCachedState> | undefined, cacheKey: K | undefined) {
-        this.cache = cache;
-        this.cacheKey = cacheKey;
+    constructor(props: ConciseDiffViewStateProps<K>) {
+        this.props = props;
+
+        $effect(() => {
+            this.update();
+        });
+
         onDestroy(() => {
-            if (this.cache && this.cacheKey && this.cachedState) {
-                this.cache.set(this.cacheKey, this.cachedState);
+            if (this.props.cache.current !== undefined && this.props.cacheKey.current !== undefined && this.cachedState !== undefined) {
+                this.props.cache.current.set(this.props.cacheKey.current, this.cachedState);
             }
         });
     }
 
-    update(
-        patch: Promise<ParsedDiff>,
-        syntaxHighlighting: boolean,
-        syntaxHighlightingTheme: BundledTheme | undefined,
-        omitPatchHeaderOnlyHunks: boolean,
-        wordDiffs: boolean,
-    ) {
-        if (this.cache && this.cacheKey) {
-            if (this.cache.has(this.cacheKey)) {
-                const state = this.cache.get(this.cacheKey);
-                this.cache.delete(this.cacheKey);
-                if (state) {
+    update() {
+        if (this.props.cache.current && this.props.cacheKey.current) {
+            if (this.props.cache.current.has(this.props.cacheKey.current)) {
+                const state = this.props.cache.current.get(this.props.cacheKey.current);
+                this.props.cache.current.delete(this.props.cacheKey.current);
+                if (state !== undefined) {
                     this.restore(state);
-                    if (state.compatible(syntaxHighlighting, syntaxHighlightingTheme, omitPatchHeaderOnlyHunks, wordDiffs)) {
+                    const compatible: boolean = state.compatible(this.props);
+                    if (compatible) {
                         return;
                     }
                 }
             }
         }
 
-        // TODO: Cache this promise, so that even if we get destroyed before it completes, we don't waste work (usually when scrolling fast)
-        const promise = makeLines(patch, syntaxHighlighting, syntaxHighlightingTheme, omitPatchHeaderOnlyHunks, wordDiffs);
+        const promise = makeLines(
+            this.props.patch.current,
+            this.props.syntaxHighlighting.current,
+            this.props.syntaxHighlightingTheme.current,
+            this.props.omitPatchHeaderOnlyHunks.current,
+            this.props.wordDiffs.current,
+        );
+        this.cachedState = new ConciseDiffViewCachedState(promise, this.props);
         promise.then(
             () => {
                 // Don't replace a potentially completed promise with a pending one, wait until the replacement is ready for smooth transitions
                 this.patchLines = promise;
-                this.cachedState = new ConciseDiffViewCachedState(promise, syntaxHighlighting, syntaxHighlightingTheme, omitPatchHeaderOnlyHunks, wordDiffs);
             },
             () => {
                 // Propagate errors

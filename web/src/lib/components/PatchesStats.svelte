@@ -4,7 +4,7 @@
     import type { GridOptions } from "@ag-grid-community/core";
     import { ClientSideRowModelModule } from "@ag-grid-community/client-side-row-model";
     import { Duration } from "luxon";
-    import { getAgTheme } from "$lib/index.svelte";
+    import { getAgTheme } from "$lib/theme.svelte";
     import Spinner from "$lib/components/Spinner.svelte";
 
     interface Props {

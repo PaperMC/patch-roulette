@@ -4,7 +4,7 @@
     import { type GridOptions } from "@ag-grid-community/core";
     import type { PatchDetails } from "$lib/types";
     import { Duration, DateTime } from "luxon";
-    import { getAgTheme } from "$lib/index.svelte";
+    import { getAgTheme } from "$lib/theme.svelte";
 
     interface Props {
         data: PatchDetails[];
