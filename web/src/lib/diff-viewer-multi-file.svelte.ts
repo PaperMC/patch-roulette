@@ -7,7 +7,7 @@ import {
     getGithubToken,
     type GithubDiff,
 } from "./github.svelte";
-import { type ParsedDiff, parsePatch } from "diff";
+import { type StructuredPatch, parsePatch } from "diff";
 import {
     ConciseDiffViewCachedState,
     DEFAULT_THEME_DARK,
@@ -255,7 +255,7 @@ export class MultiFileDiffViewerState {
     checked: boolean[] = $state([]);
     fileDetails: FileDetails[] = $state([]);
     diffText: string[] = $state([]);
-    diffs: Promise<ParsedDiff>[] = $state([]);
+    diffs: Promise<StructuredPatch>[] = $state([]);
     diffViewCache: Map<FileDetails, ConciseDiffViewCachedState> = new Map();
     images: ImageDiffDetails[] = $state([]);
     vlist: VList<FileDetails> | undefined = $state();
