@@ -1,4 +1,4 @@
-import { diffArrays, type Hunk, type ParsedDiff, parsePatch } from "diff";
+import { diffArrays, type StructuredPatchHunk, type StructuredPatch, parsePatch } from "diff";
 import {
     codeToTokens,
     type BundledLanguage,
@@ -138,7 +138,7 @@ class LineProcessor {
     async process(
         fromFile: string | undefined,
         toFile: string | undefined,
-        hunk: Hunk,
+        hunk: StructuredPatchHunk,
         syntaxHighlighting: boolean,
         syntaxHighlightingTheme: BundledTheme | undefined,
         wordDiffs: boolean,
@@ -151,7 +151,7 @@ class LineProcessor {
     private initialize(
         fromFile: string | undefined,
         toFile: string | undefined,
-        hunk: Hunk,
+        hunk: StructuredPatchHunk,
         syntaxHighlighting: boolean,
         syntaxHighlightingTheme: BundledTheme | undefined,
         wordDiffs: boolean,
@@ -613,7 +613,7 @@ async function withLineProcessor<R>(fn: (proc: LineProcessor) => Promise<R>): Pr
 }
 
 export async function makeLines(
-    patchPromise: ParsedDiff | Promise<ParsedDiff>,
+    patchPromise: StructuredPatch | Promise<StructuredPatch>,
     syntaxHighlighting: boolean,
     syntaxHighlightingTheme: BundledTheme | undefined,
     omitPatchHeaderOnlyHunks: boolean,
@@ -632,8 +632,8 @@ export async function makeLines(
 }
 
 async function makeHunkLines(
-    patch: ParsedDiff,
-    hunk: Hunk,
+    patch: StructuredPatch,
+    hunk: StructuredPatchHunk,
     syntaxHighlighting: boolean,
     syntaxHighlightingTheme: BundledTheme | undefined,
     omitPatchHeaderOnlyHunks: boolean,
@@ -994,7 +994,7 @@ export class ConciseDiffViewCachedState {
     }
 }
 
-export function parseSinglePatch(rawPatchContent: string): ParsedDiff {
+export function parseSinglePatch(rawPatchContent: string): StructuredPatch {
     const parsedPatches = parsePatch(rawPatchContent);
     if (parsedPatches.length !== 1) {
         throw Error("Only single-file patches are supported here");
@@ -1004,7 +1004,7 @@ export function parseSinglePatch(rawPatchContent: string): ParsedDiff {
 
 export interface ConciseDiffViewProps<K> {
     rawPatchContent?: string;
-    patch?: Promise<ParsedDiff>;
+    patch?: Promise<StructuredPatch>;
 
     syntaxHighlighting?: boolean;
     syntaxHighlightingTheme?: BundledTheme;
@@ -1021,7 +1021,7 @@ export interface ConciseDiffViewProps<K> {
 }
 
 export type ConciseDiffViewStateProps<K> = ReadableBoxedValues<{
-    patch: Promise<ParsedDiff>;
+    patch: Promise<StructuredPatch>;
 
     syntaxHighlighting: boolean;
     syntaxHighlightingTheme: BundledTheme | undefined;
