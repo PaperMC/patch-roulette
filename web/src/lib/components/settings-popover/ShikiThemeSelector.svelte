@@ -19,13 +19,12 @@
 </script>
 
 <Select.Root type="single" scrollAlignment="center" bind:value>
-    <Select.Trigger
-        aria-labelledby={labelId}
-        id={triggerId}
-        class="flex cursor-pointer items-center justify-between gap-1 btn-ghost px-2 py-1 data-[state=open]:btn-ghost-hover data-[state=open]:active:btn-ghost-active"
-    >
+    <Select.Trigger aria-labelledby={labelId} id={triggerId} class="group flex cursor-pointer items-center justify-between gap-1 px-2 py-1">
         <Label.Root id={labelId} for={triggerId} class="cursor-pointer text-sm">{capitalizeFirstLetter(mode)} theme</Label.Root>
-        <div class="flex w-44 items-center gap-1 rounded-sm border bg-neutral px-1 py-0.5 text-sm select-none" bind:this={anchor}>
+        <div
+            class="flex w-44 items-center gap-1 rounded-sm border btn-ghost bg-neutral px-1 py-0.5 text-sm select-none group-hover:btn-ghost-hover group-active:btn-ghost-active"
+            bind:this={anchor}
+        >
             <div bind:clientWidth={triggerLabelContainerW} class="flex grow overflow-hidden" class:reveal-right={scrollDistance !== 0}>
                 <div
                     use:resizeObserver={(e) => (triggerLabelW = e[0].target.scrollWidth)}
@@ -40,7 +39,7 @@
         </div>
     </Select.Trigger>
     <Select.Portal>
-        <Select.Content class="z-100 flex max-h-64 flex-col gap-1 overflow-y-auto rounded-sm border bg-neutral p-2 shadow-md" customAnchor={anchor}>
+        <Select.Content class="z-100 mt-0.5 flex max-h-64 flex-col gap-1 overflow-y-auto rounded-sm border bg-neutral p-1.5 shadow-md" customAnchor={anchor}>
             {#each Object.keys(bundledThemes) as theme (theme)}
                 <Select.Item
                     value={theme}
