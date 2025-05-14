@@ -71,7 +71,16 @@
         <Popover.Portal>
             <Popover.Content class="flex flex-col overflow-hidden rounded-sm border bg-neutral text-sm shadow-sm select-none" sideOffset={4}>
                 <Button.Root onclick={showInFileTree} class="btn-ghost px-2 py-1">Show in file tree</Button.Root>
-                <LabeledCheckbox labelText="File viewed" bind:checked={() => viewer.checked[index] ?? false, () => viewer.toggleChecked(index)} />
+                <LabeledCheckbox
+                    labelText="File viewed"
+                    bind:checked={
+                        () => viewer.checked[index] ?? false,
+                        () => {
+                            viewer.toggleChecked(index);
+                            popoverOpen = false;
+                        }
+                    }
+                />
             </Popover.Content>
         </Popover.Portal>
     </Popover.Root>
