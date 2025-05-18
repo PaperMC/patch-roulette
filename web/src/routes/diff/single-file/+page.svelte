@@ -1,6 +1,6 @@
 <script lang="ts">
     import ConciseDiffView from "$lib/components/diff/ConciseDiffView.svelte";
-    import FileInput from "$lib/components/FileInput.svelte";
+    import FileInput from "$lib/components/files/FileInput.svelte";
 
     let data: { value: string } = $state({ value: "" });
     let fileName: string = $state("No File Selected");
