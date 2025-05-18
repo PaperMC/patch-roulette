@@ -1,19 +1,19 @@
 <script lang="ts">
     import DiffStats from "$lib/components/diff/DiffStats.svelte";
     import LabeledCheckbox from "$lib/components/LabeledCheckbox.svelte";
-    import { type FileDetails, GlobalOptions, type MultiFileDiffViewerState } from "$lib/diff-viewer-multi-file.svelte";
+    import { type FileDetails, GlobalOptions, MultiFileDiffViewerState } from "$lib/diff-viewer-multi-file.svelte";
     import { Popover, Button } from "bits-ui";
     import { tick } from "svelte";
 
     interface Props {
-        viewer: MultiFileDiffViewerState;
-        globalOptions: GlobalOptions;
         index: number;
         value: FileDetails;
         isImage: boolean;
     }
 
-    let { viewer, globalOptions, index, value, isImage }: Props = $props();
+    const viewer = MultiFileDiffViewerState.get();
+    const globalOptions = GlobalOptions.get();
+    let { index, value, isImage }: Props = $props();
 
     let popoverOpen = $state(false);
 

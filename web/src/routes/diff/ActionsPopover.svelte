@@ -1,12 +1,8 @@
 <script lang="ts">
-    import type { MultiFileDiffViewerState } from "$lib/diff-viewer-multi-file.svelte";
+    import { MultiFileDiffViewerState } from "$lib/diff-viewer-multi-file.svelte";
     import { Popover, Button } from "bits-ui";
 
-    interface Props {
-        viewer: MultiFileDiffViewerState;
-    }
-
-    let { viewer }: Props = $props();
+    const viewer = MultiFileDiffViewerState.get();
 
     let open = $state(false);
 </script>

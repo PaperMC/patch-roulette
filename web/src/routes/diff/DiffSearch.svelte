@@ -1,12 +1,8 @@
 <script lang="ts">
-    import { type MultiFileDiffViewerState } from "$lib/diff-viewer-multi-file.svelte";
+    import { MultiFileDiffViewerState } from "$lib/diff-viewer-multi-file.svelte";
     import Spinner from "$lib/components/Spinner.svelte";
 
-    interface Props {
-        viewer: MultiFileDiffViewerState;
-    }
-
-    let { viewer }: Props = $props();
+    const viewer = MultiFileDiffViewerState.get();
 
     let currentMatchIdx = $state(-1);
     let controlsWidth = $state(0);

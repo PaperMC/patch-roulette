@@ -23,12 +23,31 @@ import { countOccurrences, type FileTreeNodeData, isImageFile, makeFileTree, typ
 import { onDestroy } from "svelte";
 import { type TreeNode, TreeState } from "$lib/components/tree/index.svelte";
 import { VList } from "virtua/svelte";
-import { Debounced } from "runed";
+import { Context, Debounced } from "runed";
 import { MediaQuery } from "svelte/reactivity";
 
-const optionsKey = "diff-viewer-global-options";
-
 export class GlobalOptions {
+    private static readonly localStorageKey = "diff-viewer-global-options";
+    private static readonly context = new Context<GlobalOptions>(GlobalOptions.localStorageKey);
+
+    static init() {
+        const opts = new GlobalOptions();
+        if (!browser) {
+            GlobalOptions.context.set(opts);
+            return opts;
+        }
+        const serialized = localStorage.getItem(GlobalOptions.localStorageKey);
+        if (serialized !== null) {
+            opts.deserialize(serialized);
+        }
+        GlobalOptions.context.set(opts);
+        return opts;
+    }
+
+    static get() {
+        return GlobalOptions.context.get();
+    }
+
     syntaxHighlighting = $state(true);
     syntaxHighlightingThemeLight: BundledTheme = $state(DEFAULT_THEME_LIGHT);
     syntaxHighlightingThemeDark: BundledTheme = $state(DEFAULT_THEME_DARK);
@@ -41,14 +60,14 @@ export class GlobalOptions {
             this.save();
         });
 
-        watchLocalStorage(optionsKey, (newValue) => {
+        watchLocalStorage(GlobalOptions.localStorageKey, (newValue) => {
             if (newValue) {
                 this.deserialize(newValue);
             }
         });
     }
 
-    getSyntaxHighlightingTheme() {
+    get syntaxHighlightingTheme() {
         switch (getEffectiveGlobalTheme()) {
             case "dark":
                 return this.syntaxHighlightingThemeDark;
@@ -57,23 +76,11 @@ export class GlobalOptions {
         }
     }
 
-    static load() {
-        const opts = new GlobalOptions();
-        if (!browser) {
-            return opts;
-        }
-        const serialized = localStorage.getItem(optionsKey);
-        if (serialized !== null) {
-            opts.deserialize(serialized);
-        }
-        return opts;
-    }
-
     private save() {
         if (!browser) {
             return;
         }
-        localStorage.setItem(optionsKey, this.serialize());
+        localStorage.setItem(GlobalOptions.localStorageKey, this.serialize());
     }
 
     private serialize() {
@@ -230,6 +237,18 @@ export type DiffMetadata = {
 };
 
 export class MultiFileDiffViewerState {
+    private static readonly context = new Context<MultiFileDiffViewerState>("MultiFileDiffViewerState");
+
+    static init() {
+        const state = new MultiFileDiffViewerState();
+        MultiFileDiffViewerState.context.set(state);
+        return state;
+    }
+
+    static get() {
+        return MultiFileDiffViewerState.context.get();
+    }
+
     fileTreeFilter: string = $state("");
     searchQuery: string = $state("");
     collapsed: boolean[] = $state([]);
@@ -255,7 +274,7 @@ export class MultiFileDiffViewerState {
     readonly patchHeaderDiffOnly: boolean[] = $derived(findHeaderChangeOnlyPatches(this.diffText));
     readonly searchResults: Promise<SearchResults> = $derived(this.findSearchResults());
 
-    constructor() {
+    private constructor() {
         // Auto-check all patch header diff only diffs
         $effect(() => {
             for (let i = 0; i < this.patchHeaderDiffOnly.length; i++) {

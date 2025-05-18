@@ -28,8 +28,8 @@
     import ActionsPopover from "./ActionsPopover.svelte";
     import LoadDiffDialog from "./LoadDiffDialog.svelte";
 
-    const globalOptions: GlobalOptions = GlobalOptions.load();
-    const viewer = new MultiFileDiffViewerState();
+    const globalOptions = GlobalOptions.init();
+    const viewer = MultiFileDiffViewerState.init();
 
     function filterFileNode(file: TreeNode<FileTreeNodeData>): boolean {
         return file.data.type === "file" && viewer.filterFile(file.data.data as FileDetails);
@@ -221,8 +221,8 @@
                 <DiffTitle meta={viewer.diffMetadata} />
             {/if}
             <div class="ml-auto flex h-fit flex-row gap-2">
-                <LoadDiffDialog {viewer} />
-                <ActionsPopover {viewer} />
+                <LoadDiffDialog />
+                <ActionsPopover />
                 {@render settingsPopover()}
             </div>
         </div>
@@ -233,7 +233,7 @@
             {:then stats}
                 <DiffStats add={stats.addedLines} remove={stats.removedLines} />
             {/await}
-            <DiffSearch {viewer} />
+            <DiffSearch />
         </div>
         <div class="flex flex-1 flex-col border">
             <VList data={viewer.fileDetails} style="height: 100%;" getKey={(_, i) => i} bind:this={viewer.vlist} overscan={3}>
@@ -243,7 +243,7 @@
                     {@const patch = viewer.diffs[index]}
 
                     <div id={`file-${index}`}>
-                        <FileHeader {viewer} {globalOptions} {index} {value} isImage={image !== null && image !== undefined} />
+                        <FileHeader {index} {value} isImage={image !== null && image !== undefined} />
                         {#if !viewer.collapsed[index] && image !== null}
                             <div class="mb border-b text-sm">
                                 {#if image.load}
@@ -278,7 +278,7 @@
                                 <ConciseDiffView
                                     {patch}
                                     syntaxHighlighting={globalOptions.syntaxHighlighting}
-                                    syntaxHighlightingTheme={globalOptions.getSyntaxHighlightingTheme()}
+                                    syntaxHighlightingTheme={globalOptions.syntaxHighlightingTheme}
                                     omitPatchHeaderOnlyHunks={globalOptions.omitPatchHeaderOnlyHunks}
                                     wordDiffs={globalOptions.wordDiffs}
                                     lineWrap={globalOptions.lineWrap}

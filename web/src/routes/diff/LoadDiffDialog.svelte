@@ -4,15 +4,11 @@
     import InfoPopup from "./InfoPopup.svelte";
     import { page } from "$app/state";
     import { goto } from "$app/navigation";
-    import type { MultiFileDiffViewerState } from "$lib/diff-viewer-multi-file.svelte";
+    import { MultiFileDiffViewerState } from "$lib/diff-viewer-multi-file.svelte";
     import { splitMultiFilePatch } from "$lib/util";
     import { onMount } from "svelte";
 
-    interface Props {
-        viewer: MultiFileDiffViewerState;
-    }
-
-    let { viewer }: Props = $props();
+    const viewer = MultiFileDiffViewerState.get();
 
     let modalOpen = $state(false);
     let githubUrl = $state("https://github.com/");
@@ -190,11 +186,7 @@
                     From Files
                 </h3>
 
-                <label
-                    id="patchUploadLabel"
-                    for="patchUpload"
-                    class="flex w-fit items-center gap-2 rounded-md btn-primary px-2 py-1 has-focus-visible:outline-2"
-                >
+                <label id="patchUploadLabel" for="patchUpload" class="flex w-fit items-center gap-2 rounded-md btn-primary px-2 py-1">
                     <span class="iconify size-4 shrink-0 octicon--file-diff-16"></span>
                     Load Patch File
                     <input id="patchUpload" aria-labelledby="patchUploadLabel" type="file" class="sr-only" onchange={handleFileUpload} />
