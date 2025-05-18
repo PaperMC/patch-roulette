@@ -1,9 +1,7 @@
 <script lang="ts">
     import ConciseDiffView from "$lib/components/diff/ConciseDiffView.svelte";
-    import { type FileTreeNodeData, splitMultiFilePatch } from "$lib/util";
+    import { type FileTreeNodeData } from "$lib/util";
     import { VList } from "virtua/svelte";
-    import { getGithubUsername, GITHUB_URL_PARAM, installGithubApp, loginWithGithub, logoutGithub } from "$lib/github.svelte";
-    import { onMount } from "svelte";
     import {
         type FileDetails,
         getFileStatusProps,
@@ -15,10 +13,7 @@
     import Tree from "$lib/components/tree/Tree.svelte";
     import Spinner from "$lib/components/Spinner.svelte";
     import { type TreeNode } from "$lib/components/tree/index.svelte";
-    import { page } from "$app/state";
-    import { goto } from "$app/navigation";
     import ImageDiff from "$lib/components/diff/ImageDiff.svelte";
-    import { Dialog, Separator } from "bits-ui";
     import AddedOrRemovedImage from "$lib/components/diff/AddedOrRemovedImage.svelte";
     import DiffStats from "$lib/components/diff/DiffStats.svelte";
     import SettingsPopover, { globalThemeSetting } from "$lib/components/settings-popover/SettingsPopover.svelte";
@@ -31,101 +26,13 @@
     import { type Action } from "svelte/action";
     import { on } from "svelte/events";
     import ActionsPopover from "./ActionsPopover.svelte";
+    import LoadDiffDialog from "./LoadDiffDialog.svelte";
 
     const globalOptions: GlobalOptions = GlobalOptions.load();
     const viewer = new MultiFileDiffViewerState();
 
-    let modalOpen = $state(false);
-    let githubUrl = $state("");
-    let dragActive = $state(false);
-    onMount(async () => {
-        const url = page.url.searchParams.get(GITHUB_URL_PARAM);
-        if (url !== null) {
-            githubUrl = url;
-            await handleGithubUrl();
-        } else {
-            modalOpen = true;
-        }
-    });
-
     function filterFileNode(file: TreeNode<FileTreeNodeData>): boolean {
         return file.data.type === "file" && viewer.filterFile(file.data.data as FileDetails);
-    }
-
-    function loadFromFile(fileName: string, patchContent: string) {
-        const files = splitMultiFilePatch(patchContent);
-        if (files.length === 0) {
-            alert("No valid patches found in the file.");
-            modalOpen = true;
-            return;
-        }
-        viewer.loadPatches(files, { fileName });
-    }
-
-    async function handleFileUpload(event: Event) {
-        const input = event.target as HTMLInputElement;
-        const files = input.files;
-        if (!files || files.length === 0) {
-            return;
-        }
-        if (files.length > 1) {
-            alert("Only one file can be loaded at a time.");
-            return;
-        }
-        modalOpen = false;
-        const file = files[0];
-        loadFromFile(file.name, await file.text());
-    }
-
-    function handleDragOver(event: DragEvent) {
-        dragActive = true;
-        event.preventDefault();
-    }
-
-    function handleDragLeave(event: DragEvent) {
-        if (event.currentTarget === event.target) {
-            dragActive = false;
-        }
-        event.preventDefault();
-    }
-
-    async function handleFileDrop(event: DragEvent) {
-        dragActive = false;
-        event.preventDefault();
-        const files = event.dataTransfer?.files;
-        if (!files || files.length !== 1) {
-            alert("Only one file can be dropped at a time.");
-            return;
-        }
-        modalOpen = false;
-        const file = files[0];
-        loadFromFile(file.name, await file.text());
-    }
-
-    async function handleGithubUrl() {
-        modalOpen = false;
-        const url = new URL(githubUrl);
-        // exclude hash + query params
-        const test = url.protocol + "//" + url.hostname + url.pathname;
-
-        const regex = /^https:\/\/github\.com\/([^/]+)\/([^/]+)\/(commit|pull|compare)\/(.+)/;
-        const match = test.match(regex);
-
-        if (!match) {
-            alert("Invalid GitHub URL. Use: https://github.com/owner/repo/(commit|pull|compare)/(id|ref_a...ref_b)");
-            modalOpen = true;
-            return;
-        }
-
-        githubUrl = match[0];
-        const success = await viewer.loadFromGithubApi(match);
-        if (success) {
-            const newUrl = new URL(page.url);
-            newUrl.searchParams.set(GITHUB_URL_PARAM, githubUrl);
-            await goto(`?${newUrl.searchParams}`);
-            return;
-        }
-        modalOpen = true;
     }
 
     function scrollToFileClick(event: Event, index: number) {
@@ -193,89 +100,6 @@
             <span class="iconify size-4 shrink-0 octicon--sidebar-expand-16"></span>
         {/if}
     </button>
-{/snippet}
-
-{#snippet mainDialog()}
-    <Dialog.Root bind:open={modalOpen}>
-        <Dialog.Trigger class="h-fit rounded-md btn-primary px-2 py-0.5" onclick={() => (dragActive = false)}>Load another diff</Dialog.Trigger>
-        <Dialog.Portal>
-            <Dialog.Overlay class="fixed inset-0 z-50 bg-black/50 dark:bg-white/20" />
-            <Dialog.Content class="fixed top-1/2 left-1/2 z-50 w-full max-w-fit -translate-x-1/2 -translate-y-1/2 rounded-md bg-neutral p-4 shadow-md">
-                <!-- svelte-ignore a11y_no_static_element_interactions -->
-                <div
-                    class="file-drop-target flex flex-col"
-                    data-drag-active={dragActive}
-                    ondragover={handleDragOver}
-                    ondrop={handleFileDrop}
-                    ondragleavecapture={handleDragLeave}
-                >
-                    <div class="relative mb-4 flex flex-row items-center justify-center">
-                        <Dialog.Title class="text-lg font-semibold">Load a diff</Dialog.Title>
-                        <Dialog.Close class="absolute top-0 right-0 flex size-8 items-center justify-center rounded-md btn-ghost text-primary">
-                            <span class="iconify octicon--x-16"></span>
-                        </Dialog.Close>
-                    </div>
-                    <Separator.Root class="mb-2 h-[1px] w-full bg-edge" />
-
-                    <label for="githubUrl">
-                        <span>Load from GitHub URL</span>
-                        <br />
-                        <span class="text-sm text-em-med">Supports commit, PR, and comparison URLs</span>
-                    </label>
-                    <div class="mb-4 flex flex-row items-center gap-2">
-                        <input
-                            id="githubUrl"
-                            type="text"
-                            class="grow rounded-md border px-2 py-1 overflow-ellipsis focus:ring-2 focus:ring-primary focus:outline-none"
-                            bind:value={githubUrl}
-                            onkeyup={(event) => {
-                                if (event.key === "Enter") {
-                                    handleGithubUrl();
-                                }
-                            }}
-                            autocomplete="off"
-                        />
-                        <button type="button" onclick={handleGithubUrl} class="rounded-md btn-primary px-2 py-1">Go</button>
-                    </div>
-
-                    <div class="mb-2 flex flex-row items-center gap-2">
-                        <button
-                            aria-labelledby="loginToGitHubLabel"
-                            class="flex w-fit flex-row items-center justify-between gap-2 rounded-md btn-primary px-2 py-1"
-                            onclick={loginWithGithub}
-                            type="button"
-                        >
-                            <span class="iconify shrink-0 octicon--mark-github-16"></span>
-                            {#if getGithubUsername()}{getGithubUsername()}{:else}Login to GitHub{/if}
-                        </button>
-                        {#if getGithubUsername()}
-                            <button type="button" class="rounded-md bg-red-400 px-2 py-1 text-white hover:bg-red-500" onclick={logoutGithub}>Logout</button>
-                        {:else}
-                            <span id="loginToGitHubLabel">Login to GitHub for higher rate limits.</span>
-                        {/if}
-                    </div>
-                    <div class="mb-4 flex flex-row items-center gap-2">
-                        <button
-                            aria-labelledby="githubAppLabel"
-                            type="button"
-                            class="flex w-fit flex-row items-center gap-2 rounded-md btn-primary px-2 py-1"
-                            onclick={installGithubApp}
-                        >
-                            <span class="iconify shrink-0 octicon--mark-github-16"></span> Install/configure GitHub App
-                        </button>
-                        <span id="githubAppLabel">Install the GitHub App to view private repos.</span>
-                    </div>
-
-                    <div class="w-fit cursor-pointer rounded-md btn-primary px-2 py-1">
-                        <label for="patchUpload">
-                            Load Patch File
-                            <input id="patchUpload" type="file" class="hidden" onchange={handleFileUpload} />
-                        </label>
-                    </div>
-                </div>
-            </Dialog.Content>
-        </Dialog.Portal>
-    </Dialog.Root>
 {/snippet}
 
 {#snippet settingsPopover()}
@@ -397,7 +221,7 @@
                 <DiffTitle meta={viewer.diffMetadata} />
             {/if}
             <div class="ml-auto flex h-fit flex-row gap-2">
-                {@render mainDialog()}
+                <LoadDiffDialog {viewer} />
                 <ActionsPopover {viewer} />
                 {@render settingsPopover()}
             </div>
@@ -476,26 +300,6 @@
 </div>
 
 <style>
-    .file-drop-target[data-drag-active="true"]::before {
-        width: 100%;
-        height: 100%;
-        position: absolute;
-        top: 0;
-        left: 0;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-
-        content: "Drop file here";
-        font-size: var(--text-3xl);
-        color: var(--color-black);
-
-        background-color: rgba(255, 255, 255, 0.7);
-
-        border: dashed var(--color-primary);
-        border-radius: inherit;
-    }
-
     .dir-header {
         position: relative;
     }
