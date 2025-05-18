@@ -1,18 +1,24 @@
 <script lang="ts">
-    import { getGithubUsername, GITHUB_URL_PARAM, installGithubApp, loginWithGithub, logoutGithub } from "$lib/github.svelte";
+    import { type FileStatus, getGithubUsername, GITHUB_URL_PARAM, installGithubApp, loginWithGithub, logoutGithub } from "$lib/github.svelte";
     import { Button, Dialog, Separator } from "bits-ui";
     import InfoPopup from "./InfoPopup.svelte";
     import { page } from "$app/state";
     import { goto } from "$app/navigation";
-    import { MultiFileDiffViewerState } from "$lib/diff-viewer-multi-file.svelte";
+    import { type FileDetails, MultiFileDiffViewerState } from "$lib/diff-viewer-multi-file.svelte";
     import { splitMultiFilePatch } from "$lib/util";
     import { onMount } from "svelte";
+    import FileInput from "$lib/components/FileInput.svelte";
+    import SingleFileSelect from "$lib/components/SingleFileSelect.svelte";
+    import { createTwoFilesPatch } from "diff";
 
     const viewer = MultiFileDiffViewerState.get();
 
     let modalOpen = $state(false);
     let githubUrl = $state("https://github.com/");
     let dragActive = $state(false);
+
+    let fileA = $state<File | undefined>(undefined);
+    let fileB = $state<File | undefined>(undefined);
 
     onMount(async () => {
         const url = page.url.searchParams.get(GITHUB_URL_PARAM);
@@ -24,7 +30,37 @@
         }
     });
 
-    function loadFromFile(fileName: string, patchContent: string) {
+    async function compareFiles() {
+        if (!fileA || !fileB) {
+            alert("Both files must be selected to compare.");
+            return;
+        }
+
+        const [textA, textB] = await Promise.all([fileA.text(), fileB.text()]);
+        if (textA === textB) {
+            alert("The files are identical.");
+            return;
+        }
+
+        const diff = createTwoFilesPatch(fileA.name, fileB.name, textA, textB);
+        let status: FileStatus = "modified";
+        if (fileA.name !== fileB.name) {
+            status = "renamed_modified";
+        }
+
+        const fileDetails: FileDetails = {
+            content: diff,
+            fromFile: fileA.name,
+            toFile: fileB.name,
+            status,
+        };
+
+        viewer.loadPatches([fileDetails], { fileName: `${fileA.name}...${fileB.name}.patch` });
+
+        modalOpen = false;
+    }
+
+    function loadFromPatchFile(fileName: string, patchContent: string) {
         const files = splitMultiFilePatch(patchContent);
         if (files.length === 0) {
             alert("No valid patches found in the file.");
@@ -34,19 +70,12 @@
         viewer.loadPatches(files, { fileName });
     }
 
-    async function handleFileUpload(event: Event) {
-        const input = event.target as HTMLInputElement;
-        const files = input.files;
-        if (!files || files.length === 0) {
-            return;
-        }
-        if (files.length > 1) {
-            alert("Only one file can be loaded at a time.");
+    async function handlePatchFile(file?: File) {
+        if (!file) {
             return;
         }
         modalOpen = false;
-        const file = files[0];
-        loadFromFile(file.name, await file.text());
+        loadFromPatchFile(file.name, await file.text());
     }
 
     function handleDragOver(event: DragEvent) {
@@ -61,7 +90,7 @@
         event.preventDefault();
     }
 
-    async function handleFileDrop(event: DragEvent) {
+    async function handlePatchFileDrop(event: DragEvent) {
         dragActive = false;
         event.preventDefault();
         const files = event.dataTransfer?.files;
@@ -71,7 +100,7 @@
         }
         modalOpen = false;
         const file = files[0];
-        loadFromFile(file.name, await file.text());
+        loadFromPatchFile(file.name, await file.text());
     }
 
     async function handleGithubUrl() {
@@ -178,7 +207,7 @@
                 class="file-drop-target p-4"
                 data-drag-active={dragActive}
                 ondragover={handleDragOver}
-                ondrop={handleFileDrop}
+                ondrop={handlePatchFileDrop}
                 ondragleavecapture={handleDragLeave}
             >
                 <h3 class="mb-2 flex items-center gap-1 text-lg font-semibold">
@@ -186,11 +215,20 @@
                     From Files
                 </h3>
 
-                <label id="patchUploadLabel" for="patchUpload" class="flex w-fit items-center gap-2 rounded-md btn-primary px-2 py-1">
+                <FileInput class="mb-2 flex w-fit items-center gap-2 rounded-md btn-primary px-2 py-1" onChange={handlePatchFile}>
                     <span class="iconify size-4 shrink-0 octicon--file-diff-16"></span>
                     Load Patch File
-                    <input id="patchUpload" aria-labelledby="patchUploadLabel" type="file" class="sr-only" onchange={handleFileUpload} />
-                </label>
+                </FileInput>
+
+                <section>
+                    <h4 class="mb-2 font-semibold">Compare Files</h4>
+                    <div class="flex flex-row items-center gap-1">
+                        <SingleFileSelect bind:file={fileA} placeholder="File A" />
+                        <span class="iconify size-4 shrink-0 octicon--arrow-right-16"></span>
+                        <SingleFileSelect bind:file={fileB} placeholder="File B" />
+                        <Button.Root onclick={compareFiles} class="rounded-md btn-primary px-2 py-1">Go</Button.Root>
+                    </div>
+                </section>
             </section>
         </Dialog.Content>
     </Dialog.Portal>
@@ -210,7 +248,7 @@
         align-items: center;
         justify-content: center;
 
-        content: "Drop file here";
+        content: "Drop patch file here";
         font-size: var(--text-3xl);
         color: var(--color-black);
 
