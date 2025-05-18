@@ -7,9 +7,11 @@
     import { type FileDetails, MultiFileDiffViewerState } from "$lib/diff-viewer-multi-file.svelte";
     import { splitMultiFilePatch } from "$lib/util";
     import { onMount } from "svelte";
-    import FileInput from "$lib/components/FileInput.svelte";
-    import SingleFileSelect from "$lib/components/SingleFileSelect.svelte";
+    import FileInput from "$lib/components/files/FileInput.svelte";
+    import SingleFileSelect from "$lib/components/files/SingleFileSelect.svelte";
     import { createTwoFilesPatch } from "diff";
+    import DirectorySelect from "$lib/components/files/DirectorySelect.svelte";
+    import { type DirectoryEntry } from "$lib/components/files/index.svelte";
 
     const viewer = MultiFileDiffViewerState.get();
 
@@ -19,6 +21,8 @@
 
     let fileA = $state<File | undefined>(undefined);
     let fileB = $state<File | undefined>(undefined);
+    let dirA = $state<DirectoryEntry | undefined>(undefined);
+    let dirB = $state<DirectoryEntry | undefined>(undefined);
 
     onMount(async () => {
         const url = page.url.searchParams.get(GITHUB_URL_PARAM);
@@ -58,6 +62,15 @@
         viewer.loadPatches([fileDetails], { fileName: `${fileA.name}...${fileB.name}.patch` });
         await updateUrlParams();
         modalOpen = false;
+    }
+
+    async function compareDirs() {
+        if (!dirA || !dirB) {
+            alert("Both directories must be selected to compare.");
+            return;
+        }
+
+        // TODO: Make a list of FileEntries from the directories
     }
 
     async function loadFromPatchFile(fileName: string, patchContent: string) {
@@ -229,13 +242,23 @@
                     Load Patch File
                 </FileInput>
 
-                <section>
+                <section class="mb-2">
                     <h4 class="mb-2 font-semibold">Compare Files</h4>
                     <div class="flex flex-row items-center gap-1">
                         <SingleFileSelect bind:file={fileA} placeholder="File A" />
                         <span class="iconify size-4 shrink-0 octicon--arrow-right-16"></span>
                         <SingleFileSelect bind:file={fileB} placeholder="File B" />
                         <Button.Root onclick={compareFiles} class="rounded-md btn-primary px-2 py-1">Go</Button.Root>
+                    </div>
+                </section>
+
+                <section>
+                    <h4 class="mb-2 font-semibold">Compare Directories</h4>
+                    <div class="flex flex-row items-center gap-1">
+                        <DirectorySelect bind:directory={dirA} placeholder="Directory A" />
+                        <span class="iconify size-4 shrink-0 octicon--arrow-right-16"></span>
+                        <DirectorySelect bind:directory={dirB} placeholder="Directory B" />
+                        <Button.Root onclick={compareDirs} class="rounded-md btn-primary px-2 py-1">Go</Button.Root>
                     </div>
                 </section>
             </section>
