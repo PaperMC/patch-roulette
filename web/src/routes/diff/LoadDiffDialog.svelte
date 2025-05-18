@@ -56,11 +56,11 @@
         };
 
         viewer.loadPatches([fileDetails], { fileName: `${fileA.name}...${fileB.name}.patch` });
-
+        await updateUrlParams();
         modalOpen = false;
     }
 
-    function loadFromPatchFile(fileName: string, patchContent: string) {
+    async function loadFromPatchFile(fileName: string, patchContent: string) {
         const files = splitMultiFilePatch(patchContent);
         if (files.length === 0) {
             alert("No valid patches found in the file.");
@@ -68,6 +68,7 @@
             return;
         }
         viewer.loadPatches(files, { fileName });
+        await updateUrlParams();
     }
 
     async function handlePatchFile(file?: File) {
@@ -75,7 +76,7 @@
             return;
         }
         modalOpen = false;
-        loadFromPatchFile(file.name, await file.text());
+        await loadFromPatchFile(file.name, await file.text());
     }
 
     function handleDragOver(event: DragEvent) {
@@ -100,7 +101,7 @@
         }
         modalOpen = false;
         const file = files[0];
-        loadFromPatchFile(file.name, await file.text());
+        await loadFromPatchFile(file.name, await file.text());
     }
 
     async function handleGithubUrl() {
@@ -121,12 +122,20 @@
         githubUrl = match[0];
         const success = await viewer.loadFromGithubApi(match);
         if (success) {
-            const newUrl = new URL(page.url);
-            newUrl.searchParams.set(GITHUB_URL_PARAM, githubUrl);
-            await goto(`?${newUrl.searchParams}`);
+            await updateUrlParams({ githubUrl });
             return;
         }
         modalOpen = true;
+    }
+
+    async function updateUrlParams(opts: { githubUrl?: string } = {}) {
+        const newUrl = new URL(page.url);
+        if (opts.githubUrl) {
+            newUrl.searchParams.set(GITHUB_URL_PARAM, opts.githubUrl);
+        } else {
+            newUrl.searchParams.delete(GITHUB_URL_PARAM);
+        }
+        await goto(`?${newUrl.searchParams}`);
     }
 </script>
 
