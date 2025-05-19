@@ -2,18 +2,30 @@ export interface FileSystemEntry {
     fileName: string;
 }
 
-export interface DirectoryEntry extends FileSystemEntry {
+export class DirectoryEntry implements FileSystemEntry {
+    fileName: string;
     children: FileSystemEntry[];
+
+    constructor(fileName: string, children: FileSystemEntry[]) {
+        this.fileName = fileName;
+        this.children = children;
+    }
 }
 
-export interface FileEntry extends FileSystemEntry {
+export class FileEntry implements FileSystemEntry {
+    fileName: string;
     file: File;
+
+    constructor(fileName: string, file: File) {
+        this.fileName = fileName;
+        this.file = file;
+    }
 }
 
 export async function pickDirectory(): Promise<DirectoryEntry> {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     if (!(window as any).showDirectoryPicker) {
-        return pickDirectoryLegacy();
+        return await pickDirectoryLegacy();
     }
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -21,34 +33,39 @@ export async function pickDirectory(): Promise<DirectoryEntry> {
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     if (!(directoryHandle as any).entries) {
-        return pickDirectoryLegacy();
+        return await pickDirectoryLegacy();
     }
 
-    return handleToDirectoryEntry(directoryHandle);
+    return await handleToDirectoryEntry(directoryHandle);
 }
 
 async function handleToDirectoryEntry(directoryHandle: FileSystemDirectoryHandle): Promise<DirectoryEntry> {
-    const children: FileSystemEntry[] = [];
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any,@typescript-eslint/no-unused-vars
-    for await (const [name, handle] of (directoryHandle as any).entries()) {
-        if (handle.kind === "directory") {
-            children.push(await handleToDirectoryEntry(handle));
-        } else if (handle.kind === "file") {
-            children.push(await handleToFileEntry(handle));
+    const root = new DirectoryEntry(directoryHandle.name, []);
+
+    type StackEntry = [FileSystemDirectoryHandle, DirectoryEntry];
+    const stack: StackEntry[] = [[directoryHandle, root]];
+
+    while (stack.length > 0) {
+        const [dirHandle, dirEntry] = stack.shift()!;
+
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any,@typescript-eslint/no-unused-vars
+        for await (const [name, handle] of (dirHandle as any).entries()) {
+            if (handle.kind === "directory") {
+                const subDir = new DirectoryEntry(handle.name, []);
+                dirEntry.children.push(subDir);
+                stack.push([handle, subDir]);
+            } else if (handle.kind === "file") {
+                dirEntry.children.push(await handleToFileEntry(handle));
+            }
         }
     }
-    return {
-        fileName: directoryHandle.name,
-        children,
-    };
+
+    return root;
 }
 
 async function handleToFileEntry(fileHandle: FileSystemFileHandle): Promise<FileEntry> {
     const file = await fileHandle.getFile();
-    return {
-        fileName: fileHandle.name,
-        file,
-    };
+    return new FileEntry(fileHandle.name, file);
 }
 
 async function pickDirectoryLegacy(): Promise<DirectoryEntry> {
@@ -88,27 +105,20 @@ function filesToDirectory(files: FileList): DirectoryEntry {
             let part = parts[i];
 
             if (current === null) {
-                current = {
-                    fileName: part,
-                    children: [],
-                };
-                ret = current;
+                current = ret;
+                if (current === null) {
+                    current = new DirectoryEntry(part, []);
+                    ret = current;
+                }
                 continue;
             }
 
             if (i === parts.length - 1) {
-                const fileEntry: FileEntry = {
-                    fileName: part,
-                    file: file,
-                };
-                current.children.push(fileEntry);
+                current.children.push(new FileEntry(part, file));
             } else {
                 let dirEntry = current.children.find((entry) => entry.fileName === part) as DirectoryEntry;
                 if (!dirEntry) {
-                    dirEntry = {
-                        fileName: part,
-                        children: [],
-                    };
+                    dirEntry = new DirectoryEntry(part, []);
                     current.children.push(dirEntry);
                 }
                 current = dirEntry;

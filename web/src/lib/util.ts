@@ -23,6 +23,39 @@ export function trimCommitHash(hash: string): string {
     return hash;
 }
 
+export async function isBinaryFile(file: File): Promise<boolean> {
+    const sampleSize = Math.min(file.size, 1024);
+    const buffer = await file.slice(0, sampleSize).arrayBuffer();
+    const decoder = new TextDecoder("utf-8", { fatal: true });
+    try {
+        decoder.decode(buffer);
+        return false; // Valid UTF-8, likely text
+    } catch {
+        return true; // Invalid UTF-8, likely binary
+    }
+}
+
+export function binaryFileDummyDetails(fromFile: string, toFile: string, status: FileStatus): FileDetails {
+    let fakeContent: string;
+    switch (status) {
+        case "added":
+            fakeContent = `diff --git /dev/null b/${toFile}\n--- /dev/null\n+++ b/${toFile}\n@@ -0,0 +1,1 @@\n+Cannot show binary file`;
+            break;
+        case "removed":
+            fakeContent = `diff --git a/${fromFile} /dev/null\n--- a/${fromFile}\n+++ /dev/null\n@@ -1,1 +0,0 @@\n-Cannot show binary file`;
+            break;
+        default:
+            fakeContent = `diff --git a/${fromFile} b/${toFile}\n--- a/${fromFile}\n+++ b/${toFile}\n@@ -1,1 +1,1 @@\n-Cannot show binary file\n+Cannot show binary file`;
+            break;
+    }
+    return {
+        content: fakeContent,
+        fromFile: fromFile,
+        toFile: toFile,
+        status,
+    };
+}
+
 const fileRegex = /diff --git a\/(\S+) b\/(\S+)\r?\n(?:.+\r?\n)*?(?=diff --git|$)/g;
 
 export function splitMultiFilePatch(patchContent: string): FileDetails[] {
@@ -56,8 +89,7 @@ export function splitMultiFilePatch(patchContent: string): FileDetails[] {
                 if (thirdNewlineIndex !== -1) {
                     const line3 = fullFileMatch.substring(secondNewlineIndex + 1, thirdNewlineIndex);
                     if (line3.match(/^Binary/)) {
-                        const fakeContent = `diff --git a/${fromFile} b/${toFile}\n--- a/${fromFile}\n+++ b/${toFile}\n@@ -1,1 +1,1 @@\n-Cannot show binary file\n+Cannot show binary file`;
-                        patches.push({ content: fakeContent, fromFile: fromFile, toFile: toFile, status });
+                        patches.push(binaryFileDummyDetails(fromFile, toFile, status));
                         continue;
                     }
                 }
