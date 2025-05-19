@@ -369,6 +369,11 @@
                         <span class="iconify size-4 shrink-0 octicon--arrow-right-16"></span>
                         <DirectorySelect bind:directory={dirB} placeholder="Directory B" />
                         <Button.Root onclick={compareDirs} class="rounded-md btn-primary px-2 py-1">Go</Button.Root>
+                        <InfoPopup>
+                            Compares the entire contents of the directories, including subdirectories. Does not attempt to detect renames. When possible,
+                            preparing a unified diff (<code class="rounded-sm bg-neutral-2 px-1 py-0.5">.patch</code> file) using Git or another tool, and loading
+                            it with the above button should be preferred.
+                        </InfoPopup>
                     </div>
                 </section>
             </section>
