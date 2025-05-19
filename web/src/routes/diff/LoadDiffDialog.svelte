@@ -40,6 +40,13 @@
             return;
         }
 
+        const [aBinary, bBinary] = await Promise.all([isBinaryFile(fileA), isBinaryFile(fileB)]);
+        if (aBinary || bBinary) {
+            // TODO we can handle images
+            alert("Cannot compare binary files.");
+            return;
+        }
+
         const [textA, textB] = await Promise.all([fileA.text(), fileB.text()]);
         if (textA === textB) {
             alert("The files are identical.");
