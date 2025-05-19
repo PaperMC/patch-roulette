@@ -5,13 +5,13 @@
     import { page } from "$app/state";
     import { goto } from "$app/navigation";
     import { type FileDetails, MultiFileDiffViewerState } from "$lib/diff-viewer-multi-file.svelte";
-    import { splitMultiFilePatch } from "$lib/util";
+    import { binaryFileDummyDetails, isBinaryFile, splitMultiFilePatch } from "$lib/util";
     import { onMount } from "svelte";
     import FileInput from "$lib/components/files/FileInput.svelte";
     import SingleFileSelect from "$lib/components/files/SingleFileSelect.svelte";
     import { createTwoFilesPatch } from "diff";
     import DirectorySelect from "$lib/components/files/DirectorySelect.svelte";
-    import { type DirectoryEntry } from "$lib/components/files/index.svelte";
+    import { DirectoryEntry, FileEntry } from "$lib/components/files/index.svelte";
 
     const viewer = MultiFileDiffViewerState.get();
 
@@ -64,13 +64,116 @@
         modalOpen = false;
     }
 
+    type ProtoFileDetails = {
+        path: string;
+        file: File;
+    };
+
+    // TODO: option to respect gitignore?
     async function compareDirs() {
         if (!dirA || !dirB) {
             alert("Both directories must be selected to compare.");
             return;
         }
 
-        // TODO: Make a list of FileEntries from the directories
+        const entriesA: ProtoFileDetails[] = flatten(dirA);
+        const entriesB: ProtoFileDetails[] = flatten(dirB);
+
+        const fileDetails: FileDetails[] = [];
+
+        for (const entry of entriesA) {
+            const entryB = entriesB.find((e) => e.path === entry.path);
+            if (entryB) {
+                // File exists in both directories
+                const [aBinary, bBinary] = await Promise.all([isBinaryFile(entry.file), isBinaryFile(entryB.file)]);
+
+                if (aBinary || bBinary) {
+                    const [bytesA, bytesB] = await Promise.all([entry.file.arrayBuffer(), entryB.file.arrayBuffer()]);
+                    if (bytesA.byteLength === bytesB.byteLength) {
+                        const viewA = new Uint8Array(bytesA);
+                        const viewB = new Uint8Array(bytesB);
+                        if (viewA.every((byte, index) => byte === viewB[index])) {
+                            // Files are identical
+                            continue;
+                        }
+                    }
+                    fileDetails.push(binaryFileDummyDetails(entry.path, entryB.path, "modified"));
+                } else {
+                    const [textA, textB] = await Promise.all([entry.file.text(), entryB.file.text()]);
+                    if (textA === textB) {
+                        // Files are identical
+                        continue;
+                    }
+                    fileDetails.push({
+                        content: createTwoFilesPatch(entry.path, entryB.path, textA, textB),
+                        fromFile: entry.path,
+                        toFile: entryB.path,
+                        status: "modified",
+                    });
+                }
+            } else if (await isBinaryFile(entry.file)) {
+                // Binary file removed
+                fileDetails.push(binaryFileDummyDetails(entry.path, entry.path, "removed"));
+            } else {
+                // Text file removed
+                fileDetails.push({
+                    content: createTwoFilesPatch(entry.path, "", await entry.file.text(), ""),
+                    fromFile: entry.path,
+                    toFile: entry.path,
+                    status: "removed",
+                });
+            }
+        }
+
+        // Check for added files
+        for (const entry of entriesB) {
+            const entryA = entriesA.find((e) => e.path === entry.path);
+            if (!entryA) {
+                if (await isBinaryFile(entry.file)) {
+                    fileDetails.push(binaryFileDummyDetails(entry.path, entry.path, "added"));
+                } else {
+                    fileDetails.push({
+                        content: createTwoFilesPatch("", entry.path, "", await entry.file.text()),
+                        fromFile: entry.path,
+                        toFile: entry.path,
+                        status: "added",
+                    });
+                }
+            }
+        }
+
+        viewer.loadPatches(fileDetails, { fileName: `${dirA.fileName}...${dirB.fileName}.patch` });
+        await updateUrlParams();
+        modalOpen = false;
+    }
+
+    function flatten(dir: DirectoryEntry): ProtoFileDetails[] {
+        type StackEntry = {
+            directory: DirectoryEntry;
+            prefix: string;
+        };
+        const into: ProtoFileDetails[] = [];
+        const stack: StackEntry[] = [{ directory: dir, prefix: "" }];
+
+        while (stack.length > 0) {
+            const { directory, prefix: currentPrefix } = stack.pop()!;
+
+            for (const entry of directory.children) {
+                if (entry instanceof DirectoryEntry) {
+                    stack.push({
+                        directory: entry,
+                        prefix: currentPrefix + entry.fileName + "/",
+                    });
+                } else if (entry instanceof FileEntry) {
+                    into.push({
+                        path: currentPrefix + entry.fileName,
+                        file: entry.file,
+                    });
+                }
+            }
+        }
+
+        return into;
     }
 
     async function loadFromPatchFile(fileName: string, patchContent: string) {
