@@ -92,7 +92,7 @@ async function pickDirectoryLegacy(): Promise<DirectoryEntry> {
 function filesToDirectory(files: FileList): DirectoryEntry {
     let ret: DirectoryEntry | null = null;
 
-    for (let file of files) {
+    for (const file of files) {
         const parts = file.webkitRelativePath.split("/");
 
         if (parts.length === 1) {
@@ -102,7 +102,7 @@ function filesToDirectory(files: FileList): DirectoryEntry {
         let current: DirectoryEntry | null = null;
 
         for (let i = 0; i < parts.length; i++) {
-            let part = parts[i];
+            const part = parts[i];
 
             if (current === null) {
                 current = ret;
