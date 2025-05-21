@@ -35,6 +35,25 @@ export async function isBinaryFile(file: File): Promise<boolean> {
     }
 }
 
+export async function bytesEqual(a: File, b: File): Promise<Boolean> {
+    if (a.size !== b.size) {
+        return false;
+    }
+    if (a.size === 0) {
+        return true;
+    }
+    const [bytesA, bytesB] = await Promise.all([a.arrayBuffer(), b.arrayBuffer()]);
+    if (bytesA.byteLength === bytesB.byteLength) {
+        const viewA = new Uint8Array(bytesA);
+        const viewB = new Uint8Array(bytesB);
+        if (viewA.every((byte, index) => byte === viewB[index])) {
+            // Files are identical
+            return true;
+        }
+    }
+    return false;
+}
+
 export function binaryFileDummyDetails(fromFile: string, toFile: string, status: FileStatus): FileDetails {
     let fakeContent: string;
     switch (status) {

@@ -5,7 +5,7 @@
     import { page } from "$app/state";
     import { goto } from "$app/navigation";
     import { type FileDetails, MultiFileDiffViewerState } from "$lib/diff-viewer-multi-file.svelte";
-    import { binaryFileDummyDetails, isBinaryFile, splitMultiFilePatch } from "$lib/util";
+    import { binaryFileDummyDetails, bytesEqual, isBinaryFile, isImageFile, splitMultiFilePatch } from "$lib/util";
     import { onMount } from "svelte";
     import FileInput from "$lib/components/files/FileInput.svelte";
     import SingleFileSelect from "$lib/components/files/SingleFileSelect.svelte";
@@ -40,33 +40,58 @@
             return;
         }
 
+        const isImageDiff = isImageFile(fileA.name) && isImageFile(fileB.name);
         const [aBinary, bBinary] = await Promise.all([isBinaryFile(fileA), isBinaryFile(fileB)]);
         if (aBinary || bBinary) {
-            // TODO we can handle images
-            alert("Cannot compare binary files.");
-            return;
+            if (!isImageDiff) {
+                alert("Cannot compare binary files.");
+                return;
+            }
         }
 
-        const [textA, textB] = await Promise.all([fileA.text(), fileB.text()]);
-        if (textA === textB) {
-            alert("The files are identical.");
-            return;
+        const fileDetails: FileDetails[] = [];
+
+        if (isImageDiff) {
+            if (await bytesEqual(fileA, fileB)) {
+                alert("The files are identical.");
+                return;
+            }
+
+            let status: FileStatus = "modified";
+            if (fileA.name !== fileB.name) {
+                status = "renamed_modified";
+            }
+
+            fileDetails.push({
+                content: "",
+                fromFile: fileA.name,
+                toFile: fileB.name,
+                fromBlob: fileA,
+                toBlob: fileB,
+                status,
+            });
+        } else {
+            const [textA, textB] = await Promise.all([fileA.text(), fileB.text()]);
+            if (textA === textB) {
+                alert("The files are identical.");
+                return;
+            }
+
+            const diff = createTwoFilesPatch(fileA.name, fileB.name, textA, textB);
+            let status: FileStatus = "modified";
+            if (fileA.name !== fileB.name) {
+                status = "renamed_modified";
+            }
+
+            fileDetails.push({
+                content: diff,
+                fromFile: fileA.name,
+                toFile: fileB.name,
+                status,
+            });
         }
 
-        const diff = createTwoFilesPatch(fileA.name, fileB.name, textA, textB);
-        let status: FileStatus = "modified";
-        if (fileA.name !== fileB.name) {
-            status = "renamed_modified";
-        }
-
-        const fileDetails: FileDetails = {
-            content: diff,
-            fromFile: fileA.name,
-            toFile: fileB.name,
-            status,
-        };
-
-        viewer.loadPatches([fileDetails], { fileName: `${fileA.name}...${fileB.name}.patch` });
+        viewer.loadPatches(fileDetails, { fileName: `${fileA.name}...${fileB.name}.patch` });
         await updateUrlParams();
         modalOpen = false;
     }
@@ -95,16 +120,22 @@
                 const [aBinary, bBinary] = await Promise.all([isBinaryFile(entry.file), isBinaryFile(entryB.file)]);
 
                 if (aBinary || bBinary) {
-                    const [bytesA, bytesB] = await Promise.all([entry.file.arrayBuffer(), entryB.file.arrayBuffer()]);
-                    if (bytesA.byteLength === bytesB.byteLength) {
-                        const viewA = new Uint8Array(bytesA);
-                        const viewB = new Uint8Array(bytesB);
-                        if (viewA.every((byte, index) => byte === viewB[index])) {
-                            // Files are identical
-                            continue;
-                        }
+                    if (await bytesEqual(entry.file, entryB.file)) {
+                        // Files are identical
+                        continue;
                     }
-                    fileDetails.push(binaryFileDummyDetails(entry.path, entryB.path, "modified"));
+                    if (isImageFile(entry.file.name) && isImageFile(entryB.file.name)) {
+                        fileDetails.push({
+                            content: "",
+                            fromFile: entry.path,
+                            toFile: entryB.path,
+                            fromBlob: entry.file,
+                            toBlob: entryB.file,
+                            status: "modified",
+                        });
+                    } else {
+                        fileDetails.push(binaryFileDummyDetails(entry.path, entryB.path, "modified"));
+                    }
                 } else {
                     const [textA, textB] = await Promise.all([entry.file.text(), entryB.file.text()]);
                     if (textA === textB) {
@@ -118,6 +149,16 @@
                         status: "modified",
                     });
                 }
+            } else if (isImageFile(entry.file.name)) {
+                // Image file removed
+                fileDetails.push({
+                    content: "",
+                    fromFile: entry.path,
+                    toFile: entry.path,
+                    fromBlob: entry.file,
+                    toBlob: entry.file,
+                    status: "removed",
+                });
             } else if (await isBinaryFile(entry.file)) {
                 // Binary file removed
                 fileDetails.push(binaryFileDummyDetails(entry.path, entry.path, "removed"));
@@ -136,7 +177,16 @@
         for (const entry of entriesB) {
             const entryA = entriesA.find((e) => e.path === entry.path);
             if (!entryA) {
-                if (await isBinaryFile(entry.file)) {
+                if (isImageFile(entry.file.name)) {
+                    fileDetails.push({
+                        content: "",
+                        fromFile: entry.path,
+                        toFile: entry.path,
+                        fromBlob: entry.file,
+                        toBlob: entry.file,
+                        status: "added",
+                    });
+                } else if (await isBinaryFile(entry.file)) {
                     fileDetails.push(binaryFileDummyDetails(entry.path, entry.path, "added"));
                 } else {
                     fileDetails.push({

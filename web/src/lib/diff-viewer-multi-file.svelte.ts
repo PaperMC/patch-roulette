@@ -135,6 +135,8 @@ export type FileDetails = {
     content: string;
     fromFile: string;
     toFile: string;
+    fromBlob?: Blob;
+    toBlob?: Blob;
     status: FileStatus;
 };
 
@@ -452,13 +454,12 @@ export class MultiFileDiffViewerState {
         for (let i = 0; i < patches.length; i++) {
             const patch = patches[i];
 
-            if (meta.githubDetails && isImageFile(patch.fromFile) && isImageFile(patch.toFile)) {
+            const isImageDiff = isImageFile(patch.fromFile) && isImageFile(patch.toFile);
+            if (isImageDiff && meta.githubDetails) {
                 const githubDetailsCopy = meta.githubDetails;
 
-                let fileA: LazyPromise<string> | null;
-                if (patch.status === "added") {
-                    fileA = null;
-                } else {
+                let fileA: LazyPromise<string> | null = null;
+                if (patch.status !== "added") {
                     fileA = lazyPromise(async () =>
                         URL.createObjectURL(
                             await fetchGithubFile(getGithubToken(), githubDetailsCopy.owner, githubDetailsCopy.repo, patch.fromFile, githubDetailsCopy.base),
@@ -466,15 +467,29 @@ export class MultiFileDiffViewerState {
                     );
                 }
 
-                let fileB: LazyPromise<string> | null;
-                if (patch.status === "removed") {
-                    fileB = null;
-                } else {
+                let fileB: LazyPromise<string> | null = null;
+                if (patch.status !== "removed") {
                     fileB = lazyPromise(async () =>
                         URL.createObjectURL(
                             await fetchGithubFile(getGithubToken(), githubDetailsCopy.owner, githubDetailsCopy.repo, patch.toFile, githubDetailsCopy.head),
                         ),
                     );
+                }
+
+                this.images[i] = { fileA, fileB, load: false };
+                continue;
+            }
+            const fromBlob = patch.fromBlob;
+            const toBlob = patch.toBlob;
+            if (isImageDiff && fromBlob && toBlob) {
+                let fileA: LazyPromise<string> | null = null;
+                if (patch.status !== "added") {
+                    fileA = lazyPromise(async () => URL.createObjectURL(fromBlob));
+                }
+
+                let fileB: LazyPromise<string> | null = null;
+                if (patch.status !== "removed") {
+                    fileB = lazyPromise(async () => URL.createObjectURL(toBlob));
                 }
 
                 this.images[i] = { fileA, fileB, load: false };
