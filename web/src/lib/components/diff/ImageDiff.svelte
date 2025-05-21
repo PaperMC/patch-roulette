@@ -102,14 +102,14 @@
     {#snippet modeButton(forMode: Mode, iconClass: string)}
         <button
             type="button"
-            class="flex items-center justify-center rounded-sm btn-ghost p-1.5 text-primary data-[active=true]:btn-ghost-visible"
+            class="flex items-center justify-center rounded-sm btn-ghost px-2 py-1 text-primary data-[active=true]:btn-ghost-visible"
             onclick={() => (mode = forMode)}
             data-active={mode === forMode}
         >
             <span class="iconify {iconClass} me-1 size-4" aria-hidden="true"></span>{forMode}
         </button>
     {/snippet}
-    <div class="mb-4 flex flex-row gap-2 rounded-lg bg-neutral p-2 shadow-sm">
+    <div class="mb-4 flex flex-row gap-1 rounded-lg bg-neutral p-1.5 shadow-sm">
         {@render modeButton("slide", "octicon--image-16")}
         {@render modeButton("side-by-side", "octicon--columns-16")}
         {@render modeButton("fade", "octicon--image-16")}
@@ -171,10 +171,12 @@
         </div>
         <AddedOrRemovedImageLabel mode="add" dims={dims.b} />
     </div>
-    <div class="mt-4 flex w-full max-w-[280px] items-center">
+    <div class="mt-4 flex w-full max-w-[280px] items-center rounded-lg bg-neutral p-2.5 shadow-sm">
         <Slider.Root type="single" bind:value={fadePercent} class="relative flex w-full touch-none items-center select-none">
-            <span class="relative h-0.5 w-full grow cursor-pointer overflow-hidden rounded-full bg-primary"> </span>
-            <Slider.Thumb index={0} class="block size-4 cursor-pointer rounded-full bg-neutral shadow-sm transition-colors hover:border active:scale-[0.98]" />
+            <span class="relative h-0.5 w-full grow cursor-pointer overflow-hidden rounded-full bg-em-disabled">
+                <Slider.Range class="absolute h-full bg-primary" />
+            </span>
+            <Slider.Thumb index={0} class="block size-4 cursor-pointer rounded-full border bg-neutral shadow-sm transition-colors" />
         </Slider.Root>
     </div>
 {/snippet}
