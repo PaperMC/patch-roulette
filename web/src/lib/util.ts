@@ -35,7 +35,7 @@ export async function isBinaryFile(file: File): Promise<boolean> {
     }
 }
 
-export async function bytesEqual(a: File, b: File): Promise<Boolean> {
+export async function bytesEqual(a: File, b: File): Promise<boolean> {
     if (a.size !== b.size) {
         return false;
     }
