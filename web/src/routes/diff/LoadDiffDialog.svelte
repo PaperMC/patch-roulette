@@ -5,11 +5,13 @@
     import { page } from "$app/state";
     import { goto } from "$app/navigation";
     import { type FileDetails, MultiFileDiffViewerState } from "$lib/diff-viewer-multi-file.svelte";
-    import { splitMultiFilePatch } from "$lib/util";
+    import { binaryFileDummyDetails, bytesEqual, isBinaryFile, isImageFile, splitMultiFilePatch } from "$lib/util";
     import { onMount } from "svelte";
-    import FileInput from "$lib/components/FileInput.svelte";
-    import SingleFileSelect from "$lib/components/SingleFileSelect.svelte";
+    import FileInput from "$lib/components/files/FileInput.svelte";
+    import SingleFileSelect from "$lib/components/files/SingleFileSelect.svelte";
     import { createTwoFilesPatch } from "diff";
+    import DirectorySelect from "$lib/components/files/DirectorySelect.svelte";
+    import { DirectoryEntry, FileEntry } from "$lib/components/files/index.svelte";
 
     const viewer = MultiFileDiffViewerState.get();
 
@@ -19,6 +21,8 @@
 
     let fileA = $state<File | undefined>(undefined);
     let fileB = $state<File | undefined>(undefined);
+    let dirA = $state<DirectoryEntry | undefined>(undefined);
+    let dirB = $state<DirectoryEntry | undefined>(undefined);
 
     onMount(async () => {
         const url = page.url.searchParams.get(GITHUB_URL_PARAM);
@@ -36,28 +40,197 @@
             return;
         }
 
-        const [textA, textB] = await Promise.all([fileA.text(), fileB.text()]);
-        if (textA === textB) {
-            alert("The files are identical.");
+        const isImageDiff = isImageFile(fileA.name) && isImageFile(fileB.name);
+        const [aBinary, bBinary] = await Promise.all([isBinaryFile(fileA), isBinaryFile(fileB)]);
+        if (aBinary || bBinary) {
+            if (!isImageDiff) {
+                alert("Cannot compare binary files.");
+                return;
+            }
+        }
+
+        const fileDetails: FileDetails[] = [];
+
+        if (isImageDiff) {
+            if (await bytesEqual(fileA, fileB)) {
+                alert("The files are identical.");
+                return;
+            }
+
+            let status: FileStatus = "modified";
+            if (fileA.name !== fileB.name) {
+                status = "renamed_modified";
+            }
+
+            fileDetails.push({
+                content: "",
+                fromFile: fileA.name,
+                toFile: fileB.name,
+                fromBlob: fileA,
+                toBlob: fileB,
+                status,
+            });
+        } else {
+            const [textA, textB] = await Promise.all([fileA.text(), fileB.text()]);
+            if (textA === textB) {
+                alert("The files are identical.");
+                return;
+            }
+
+            const diff = createTwoFilesPatch(fileA.name, fileB.name, textA, textB);
+            let status: FileStatus = "modified";
+            if (fileA.name !== fileB.name) {
+                status = "renamed_modified";
+            }
+
+            fileDetails.push({
+                content: diff,
+                fromFile: fileA.name,
+                toFile: fileB.name,
+                status,
+            });
+        }
+
+        viewer.loadPatches(fileDetails, { fileName: `${fileA.name}...${fileB.name}.patch` });
+        await updateUrlParams();
+        modalOpen = false;
+    }
+
+    type ProtoFileDetails = {
+        path: string;
+        file: File;
+    };
+
+    // TODO: option to respect gitignore?
+    async function compareDirs() {
+        if (!dirA || !dirB) {
+            alert("Both directories must be selected to compare.");
             return;
         }
 
-        const diff = createTwoFilesPatch(fileA.name, fileB.name, textA, textB);
-        let status: FileStatus = "modified";
-        if (fileA.name !== fileB.name) {
-            status = "renamed_modified";
+        const entriesA: ProtoFileDetails[] = flatten(dirA);
+        const entriesB: ProtoFileDetails[] = flatten(dirB);
+
+        const fileDetails: FileDetails[] = [];
+
+        for (const entry of entriesA) {
+            const entryB = entriesB.find((e) => e.path === entry.path);
+            if (entryB) {
+                // File exists in both directories
+                const [aBinary, bBinary] = await Promise.all([isBinaryFile(entry.file), isBinaryFile(entryB.file)]);
+
+                if (aBinary || bBinary) {
+                    if (await bytesEqual(entry.file, entryB.file)) {
+                        // Files are identical
+                        continue;
+                    }
+                    if (isImageFile(entry.file.name) && isImageFile(entryB.file.name)) {
+                        fileDetails.push({
+                            content: "",
+                            fromFile: entry.path,
+                            toFile: entryB.path,
+                            fromBlob: entry.file,
+                            toBlob: entryB.file,
+                            status: "modified",
+                        });
+                    } else {
+                        fileDetails.push(binaryFileDummyDetails(entry.path, entryB.path, "modified"));
+                    }
+                } else {
+                    const [textA, textB] = await Promise.all([entry.file.text(), entryB.file.text()]);
+                    if (textA === textB) {
+                        // Files are identical
+                        continue;
+                    }
+                    fileDetails.push({
+                        content: createTwoFilesPatch(entry.path, entryB.path, textA, textB),
+                        fromFile: entry.path,
+                        toFile: entryB.path,
+                        status: "modified",
+                    });
+                }
+            } else if (isImageFile(entry.file.name)) {
+                // Image file removed
+                fileDetails.push({
+                    content: "",
+                    fromFile: entry.path,
+                    toFile: entry.path,
+                    fromBlob: entry.file,
+                    toBlob: entry.file,
+                    status: "removed",
+                });
+            } else if (await isBinaryFile(entry.file)) {
+                // Binary file removed
+                fileDetails.push(binaryFileDummyDetails(entry.path, entry.path, "removed"));
+            } else {
+                // Text file removed
+                fileDetails.push({
+                    content: createTwoFilesPatch(entry.path, "", await entry.file.text(), ""),
+                    fromFile: entry.path,
+                    toFile: entry.path,
+                    status: "removed",
+                });
+            }
         }
 
-        const fileDetails: FileDetails = {
-            content: diff,
-            fromFile: fileA.name,
-            toFile: fileB.name,
-            status,
-        };
+        // Check for added files
+        for (const entry of entriesB) {
+            const entryA = entriesA.find((e) => e.path === entry.path);
+            if (!entryA) {
+                if (isImageFile(entry.file.name)) {
+                    fileDetails.push({
+                        content: "",
+                        fromFile: entry.path,
+                        toFile: entry.path,
+                        fromBlob: entry.file,
+                        toBlob: entry.file,
+                        status: "added",
+                    });
+                } else if (await isBinaryFile(entry.file)) {
+                    fileDetails.push(binaryFileDummyDetails(entry.path, entry.path, "added"));
+                } else {
+                    fileDetails.push({
+                        content: createTwoFilesPatch("", entry.path, "", await entry.file.text()),
+                        fromFile: entry.path,
+                        toFile: entry.path,
+                        status: "added",
+                    });
+                }
+            }
+        }
 
-        viewer.loadPatches([fileDetails], { fileName: `${fileA.name}...${fileB.name}.patch` });
+        viewer.loadPatches(fileDetails, { fileName: `${dirA.fileName}...${dirB.fileName}.patch` });
         await updateUrlParams();
         modalOpen = false;
+    }
+
+    function flatten(dir: DirectoryEntry): ProtoFileDetails[] {
+        type StackEntry = {
+            directory: DirectoryEntry;
+            prefix: string;
+        };
+        const into: ProtoFileDetails[] = [];
+        const stack: StackEntry[] = [{ directory: dir, prefix: "" }];
+
+        while (stack.length > 0) {
+            const { directory, prefix: currentPrefix } = stack.pop()!;
+
+            for (const entry of directory.children) {
+                if (entry instanceof DirectoryEntry) {
+                    stack.push({
+                        directory: entry,
+                        prefix: currentPrefix + entry.fileName + "/",
+                    });
+                } else if (entry instanceof FileEntry) {
+                    into.push({
+                        path: currentPrefix + entry.fileName,
+                        file: entry.file,
+                    });
+                }
+            }
+        }
+
+        return into;
     }
 
     async function loadFromPatchFile(fileName: string, patchContent: string) {
@@ -229,13 +402,28 @@
                     Load Patch File
                 </FileInput>
 
-                <section>
+                <section class="mb-2">
                     <h4 class="mb-2 font-semibold">Compare Files</h4>
                     <div class="flex flex-row items-center gap-1">
                         <SingleFileSelect bind:file={fileA} placeholder="File A" />
                         <span class="iconify size-4 shrink-0 octicon--arrow-right-16"></span>
                         <SingleFileSelect bind:file={fileB} placeholder="File B" />
                         <Button.Root onclick={compareFiles} class="rounded-md btn-primary px-2 py-1">Go</Button.Root>
+                    </div>
+                </section>
+
+                <section>
+                    <h4 class="mb-2 font-semibold">Compare Directories</h4>
+                    <div class="flex flex-row items-center gap-1">
+                        <DirectorySelect bind:directory={dirA} placeholder="Directory A" />
+                        <span class="iconify size-4 shrink-0 octicon--arrow-right-16"></span>
+                        <DirectorySelect bind:directory={dirB} placeholder="Directory B" />
+                        <Button.Root onclick={compareDirs} class="rounded-md btn-primary px-2 py-1">Go</Button.Root>
+                        <InfoPopup>
+                            Compares the entire contents of the directories, including subdirectories. Does not attempt to detect renames. When possible,
+                            preparing a unified diff (<code class="rounded-sm bg-neutral-2 px-1 py-0.5">.patch</code> file) using Git or another tool, and loading
+                            it with the above button should be preferred.
+                        </InfoPopup>
                     </div>
                 </section>
             </section>

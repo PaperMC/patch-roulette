@@ -135,8 +135,50 @@ export type FileDetails = {
     content: string;
     fromFile: string;
     toFile: string;
+    fromBlob?: Blob;
+    toBlob?: Blob;
     status: FileStatus;
 };
+
+// Sort such that when displayed as a file tree, directories come before files and each level is sorted by name
+function compareFileDetails(a: FileDetails, b: FileDetails): number {
+    const aName = a.toFile;
+    const bName = b.toFile;
+
+    // Split paths into components
+    const aParts = aName.split("/");
+    const bParts = bName.split("/");
+
+    // Compare component by component
+    const minLength = Math.min(aParts.length, bParts.length);
+
+    for (let i = 0; i < minLength; i++) {
+        // If we're not at the last component of both paths
+        if (i < aParts.length - 1 && i < bParts.length - 1) {
+            const comparison = aParts[i].localeCompare(bParts[i]);
+            if (comparison !== 0) {
+                return comparison;
+            }
+            continue;
+        }
+
+        // If one path is longer at this position (has subdirectories)
+        if (i === bParts.length - 1 && i < aParts.length - 1) {
+            // a has subdirectories, so it should come first
+            return -1;
+        }
+        if (i === aParts.length - 1 && i < bParts.length - 1) {
+            // b has subdirectories, so it should come first
+            return 1;
+        }
+
+        // Both are at their final component, compare them
+        return aParts[i].localeCompare(bParts[i]);
+    }
+
+    // If one path is a prefix of the other, shorter path comes first
+    return aParts.length - bParts.length;
+}
 
 export type FileStatusProps = {
     iconClasses: string;
@@ -406,17 +448,18 @@ export class MultiFileDiffViewerState {
             this.diffMetadata = null;
         }
 
+        patches.sort(compareFileDetails);
+
         // Load new state
         for (let i = 0; i < patches.length; i++) {
             const patch = patches[i];
 
-            if (meta.githubDetails && isImageFile(patch.fromFile) && isImageFile(patch.toFile)) {
+            const isImageDiff = isImageFile(patch.fromFile) && isImageFile(patch.toFile);
+            if (isImageDiff && meta.githubDetails) {
                 const githubDetailsCopy = meta.githubDetails;
 
-                let fileA: LazyPromise<string> | null;
-                if (patch.status === "added") {
-                    fileA = null;
-                } else {
+                let fileA: LazyPromise<string> | null = null;
+                if (patch.status !== "added") {
                     fileA = lazyPromise(async () =>
                         URL.createObjectURL(
                             await fetchGithubFile(getGithubToken(), githubDetailsCopy.owner, githubDetailsCopy.repo, patch.fromFile, githubDetailsCopy.base),
@@ -424,15 +467,29 @@ export class MultiFileDiffViewerState {
                     );
                 }
 
-                let fileB: LazyPromise<string> | null;
-                if (patch.status === "removed") {
-                    fileB = null;
-                } else {
+                let fileB: LazyPromise<string> | null = null;
+                if (patch.status !== "removed") {
                     fileB = lazyPromise(async () =>
                         URL.createObjectURL(
                             await fetchGithubFile(getGithubToken(), githubDetailsCopy.owner, githubDetailsCopy.repo, patch.toFile, githubDetailsCopy.head),
                         ),
                     );
+                }
+
+                this.images[i] = { fileA, fileB, load: false };
+                continue;
+            }
+            const fromBlob = patch.fromBlob;
+            const toBlob = patch.toBlob;
+            if (isImageDiff && fromBlob && toBlob) {
+                let fileA: LazyPromise<string> | null = null;
+                if (patch.status !== "added") {
+                    fileA = lazyPromise(async () => URL.createObjectURL(fromBlob));
+                }
+
+                let fileB: LazyPromise<string> | null = null;
+                if (patch.status !== "removed") {
+                    fileB = lazyPromise(async () => URL.createObjectURL(toBlob));
                 }
 
                 this.images[i] = { fileA, fileB, load: false };
@@ -449,6 +506,7 @@ export class MultiFileDiffViewerState {
         this.fileDetails.push(...patches);
     }
 
+    // TODO fails for initial commit?
     // handle matched github url
     async loadFromGithubApi(match: Array<string>): Promise<boolean> {
         const [url, owner, repo, type, id] = match;
