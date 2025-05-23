@@ -55,6 +55,9 @@
         "svelte-toolbelt": "^0.7.1",
         "virtua": "^0.41.2"
     },
+    "overrides": {
+        "svelte": "^5.30.2"
+    },
     "bunrc": {
         "run": {
             "bun": true
