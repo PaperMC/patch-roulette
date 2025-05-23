@@ -26,5 +26,6 @@ jobs:
       - uses: oven-sh/setup-bun@v2
       - run: cd web && bun install
       - run: cd web && bun run lint
+      - run: cd web && bun run check
       - run: cd web-extension && bun install
       - run: cd web-extension && bun run lint

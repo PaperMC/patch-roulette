@@ -1,5 +1,6 @@
 // Let typescript know about the ...restProps pattern
-export type RestProps = Record<PropertyKey, unknown>;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export type RestProps = Record<PropertyKey, any>;
 
 export type PatchStatus = "WIP" | "AVAILABLE" | "DONE";
 
