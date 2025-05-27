@@ -172,11 +172,11 @@
         <AddedOrRemovedImageLabel mode="add" dims={dims.b} />
     </div>
     <div class="mt-4 flex w-full max-w-[280px] items-center rounded-lg bg-neutral p-2.5 shadow-sm">
-        <Slider.Root type="single" bind:value={fadePercent} class="relative flex w-full touch-none items-center select-none">
+        <Slider.Root type="single" thumbPositioning="exact" bind:value={fadePercent} class="relative flex w-full touch-none items-center select-none">
             <span class="relative h-0.5 w-full grow cursor-pointer overflow-hidden rounded-full bg-em-disabled">
                 <Slider.Range class="absolute h-full bg-primary" />
             </span>
-            <Slider.Thumb index={0} class="block size-4 cursor-pointer rounded-full border bg-neutral shadow-sm transition-colors" />
+            <Slider.Thumb index={0} class="block size-4 cursor-pointer rounded-full border bg-neutral shadow-sm transition-colors data-active:scale-[0.95]" />
         </Slider.Root>
     </div>
 {/snippet}
