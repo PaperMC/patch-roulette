@@ -3,7 +3,7 @@
     import Spinner from "$lib/components/Spinner.svelte";
     import { getDimensions, type ImageDimensions } from "$lib/image";
     import AddedOrRemovedImageLabel from "$lib/components/diff/AddedOrRemovedImageLabel.svelte";
-    import { on } from "svelte/events";
+    import { ElementSize } from "runed";
 
     interface Props {
         fileA: string;
@@ -16,86 +16,43 @@
     type DimensionData = {
         a: ImageDimensions;
         b: ImageDimensions;
-        widest: string;
-        narrowerMaxW: string;
     };
 
-    let dimensions: Promise<DimensionData> = $derived.by(async () => {
+    let imageDimensions: Promise<DimensionData> = $derived.by(async () => {
         const [a, b] = await Promise.all([getDimensions(fileA), getDimensions(fileB)]);
-        const widest = a.width > b.width ? "a" : "b";
-        const widerDims = widest === "a" ? a : b;
-        const narrowerDims = widest === "a" ? b : a;
-        const narrowerMaxW = (narrowerDims.width / widerDims.width) * 100;
-        return { a, b, widest, narrowerMaxW: `max-width: ${narrowerMaxW}%;` };
+        return { a, b };
     });
     let mode: Mode = $state("side-by-side");
-    let percentShown: number = $state(50);
-    let percentDragged: number = $state(50);
-    let dragging: boolean = $state(false);
+    let slidePercent: number = $state(50);
     let fadePercent: number = $state(50);
 
-    function getMaxW(img: string, dims: DimensionData): string {
-        if (img === "a") {
-            if (dims.widest === "b") {
-                return dims.narrowerMaxW;
+    function getStyle(side: "a" | "b", dims: DimensionData): string {
+        let style = "";
+        if (side === "a") {
+            if (dims.b.width > dims.a.width) {
+                const scale = dims.a.width / dims.b.width;
+                style += `max-width: ${scale * 100}%;`;
             }
-        } else if (img === "b") {
-            if (dims.widest === "a") {
-                return dims.narrowerMaxW;
+        } else {
+            if (dims.a.width > dims.b.width) {
+                const scale = dims.b.width / dims.a.width;
+                style += `max-width: ${scale * 100}%;`;
             }
+        }
+        return style;
+    }
+
+    let overlayImgA: HTMLDivElement | undefined = $state();
+    let overlayImgASize = new ElementSize(() => overlayImgA);
+    let overlayImgB: HTMLImageElement | undefined = $state();
+    let overlayImgBSize = new ElementSize(() => overlayImgB);
+    let overlayContainerStyle = $derived.by(() => {
+        if (overlayImgASize.height < overlayImgBSize.height) {
+            // pad image A's height to match B's height
+            return `height: ${overlayImgBSize.height}px;`;
         }
         return "";
-    }
-
-    let overlayImgB: HTMLImageElement;
-
-    function dragSlider(node: HTMLElement) {
-        let containerWidth: number;
-        let containerLeft: number;
-        let imgBWidth: number;
-        let imgBLeft: number;
-
-        function handleMouseDown(event: MouseEvent) {
-            if (event.button !== 0) {
-                return;
-            }
-
-            if (node.parentElement && overlayImgB) {
-                const parentRect = node.parentElement.getBoundingClientRect();
-                containerWidth = parentRect.width;
-                containerLeft = parentRect.left;
-
-                const imgBRect = overlayImgB.getBoundingClientRect();
-                imgBWidth = imgBRect.width;
-                imgBLeft = imgBRect.left;
-
-                dragging = true;
-            }
-        }
-
-        function handleMouseMove(event: MouseEvent) {
-            if (dragging) {
-                percentDragged = Math.max(0, Math.min(100, ((event.clientX - containerLeft) / containerWidth) * 100));
-                percentShown = Math.max(0, Math.min(100, ((event.clientX - imgBLeft) / imgBWidth) * 100));
-            }
-        }
-
-        function handleMouseUp() {
-            dragging = false;
-        }
-
-        const removeMouseDown = on(node, "mousedown", handleMouseDown);
-        const removeMouseMove = on(window, "mousemove", handleMouseMove);
-        const removeMouseUp = on(window, "mouseup", handleMouseUp);
-
-        return {
-            destroy() {
-                removeMouseDown();
-                removeMouseMove();
-                removeMouseUp();
-            },
-        };
-    }
+    });
 </script>
 
 {#snippet modeSelector()}
@@ -119,11 +76,11 @@
 {#snippet sideBySide(dims: DimensionData)}
     <div class="grid w-full grid-cols-1 gap-4 sm:grid-cols-2">
         <div class="flex flex-col items-center justify-center gap-4">
-            <img src={fileA} alt="A" class="png-bg h-auto border-2 border-red-600 shadow-md" style={getMaxW("a", dims)} />
+            <img src={fileA} alt="A" class="png-bg h-auto border-2 border-red-600 shadow-md" style={getStyle("a", dims)} />
             <AddedOrRemovedImageLabel mode="remove" dims={dims.a} />
         </div>
         <div class="flex flex-col items-center justify-center gap-4">
-            <img src={fileB} alt="B" class="png-bg h-auto border-2 border-green-600 shadow-md" style={getMaxW("b", dims)} />
+            <img src={fileB} alt="B" class="png-bg h-auto border-2 border-green-600 shadow-md" style={getStyle("b", dims)} />
             <AddedOrRemovedImageLabel mode="add" dims={dims.b} />
         </div>
     </div>
@@ -132,23 +89,38 @@
 {#snippet slide(dims: DimensionData)}
     <div class="flex flex-row items-center gap-4">
         <AddedOrRemovedImageLabel mode="remove" dims={dims.a} />
-        <div class="relative grid grid-cols-1 gap-4">
-            <img src={fileA} alt="A" class="png-bg h-auto w-full border-2 border-red-600 shadow-md" draggable="false" style={getMaxW("a", dims)} />
+        <div class="relative grid grid-cols-1 gap-4" style={overlayContainerStyle}>
             <img
-                bind:this={overlayImgB}
-                src={fileB}
-                alt="B"
-                class="png-bg absolute h-auto max-w-full place-self-center border-2 border-green-600 shadow-md"
+                bind:this={overlayImgA}
+                src={fileA}
+                alt="A"
+                class="png-bg h-auto w-full place-self-center border-2 border-red-600 shadow-md"
                 draggable="false"
-                style="clip-path: inset(0 0 0 {percentShown}%); {getMaxW('b', dims)}"
+                style={getStyle("a", dims)}
             />
-            <div class="absolute top-1/2 h-full w-0.5 -translate-x-1/2 -translate-y-1/2 bg-gray-600" style="left: calc({percentDragged}%);"></div>
-            <div
-                use:dragSlider
-                class="absolute top-1/2 flex -translate-x-1/2 -translate-y-1/2 cursor-col-resize items-center justify-center rounded-sm bg-neutral px-0.5 py-1 shadow-sm select-none"
-                style="left: calc({percentDragged}%);"
-            >
-                <span class="iconify size-4 octicon--grabber-16"></span>
+            <div class="absolute flex size-full">
+                <Slider.Root
+                    type="single"
+                    thumbPositioning="exact"
+                    bind:value={slidePercent}
+                    class="relative m-auto flex size-fit touch-none select-none"
+                    style={getStyle("b", dims)}
+                >
+                    <img
+                        bind:this={overlayImgB}
+                        src={fileB}
+                        alt="B"
+                        class="png-bg size-full border-2 border-green-600 shadow-md"
+                        draggable="false"
+                        style="clip-path: inset(0 0 0 {slidePercent}%);"
+                    />
+                    <span class="absolute h-full w-0.5 -translate-x-1/2 bg-em-disabled/80" style="left: calc({slidePercent}%);"></span>
+                    <Slider.Thumb index={0} class="group absolute flex h-full cursor-col-resize select-none">
+                        <div class="flex place-self-center rounded-sm bg-neutral px-0.5 py-1 shadow-sm group-data-active:scale-[0.95]">
+                            <span class="iconify size-4 place-self-center octicon--grabber-16"></span>
+                        </div>
+                    </Slider.Thumb>
+                </Slider.Root>
             </div>
         </div>
         <AddedOrRemovedImageLabel mode="add" dims={dims.b} />
@@ -158,15 +130,22 @@
 {#snippet fade(dims: DimensionData)}
     <div class="flex flex-row items-center gap-4">
         <AddedOrRemovedImageLabel mode="remove" dims={dims.a} />
-        <div class="relative grid grid-cols-1 gap-4">
-            <img src={fileA} alt="A" class="png-bg h-auto w-full border-2 border-red-600 shadow-md" draggable="false" style={getMaxW("a", dims)} />
+        <div class="relative grid grid-cols-1 gap-4" style={overlayContainerStyle}>
+            <img
+                bind:this={overlayImgA}
+                src={fileA}
+                alt="A"
+                class="png-bg h-auto w-full place-self-center border-2 border-red-600 shadow-md"
+                draggable="false"
+                style={getStyle("a", dims)}
+            />
             <img
                 bind:this={overlayImgB}
                 src={fileB}
                 alt="B"
                 class="png-bg absolute h-auto max-w-full place-self-center border-2 border-green-600 shadow-md"
                 draggable="false"
-                style="opacity: {fadePercent}%; {getMaxW('b', dims)}"
+                style="opacity: {fadePercent}%; {getStyle('b', dims)}"
             />
         </div>
         <AddedOrRemovedImageLabel mode="add" dims={dims.b} />
@@ -183,7 +162,7 @@
 
 <div class="flex flex-col items-center justify-center bg-neutral-2 p-4">
     {@render modeSelector()}
-    {#await dimensions}
+    {#await imageDimensions}
         <Spinner />
     {:then dims}
         {#if mode === "side-by-side"}
