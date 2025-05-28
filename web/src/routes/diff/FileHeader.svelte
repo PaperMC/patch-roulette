@@ -37,7 +37,7 @@
     {:else}
         <span class="flex max-w-full flex-wrap items-center gap-0.5 overflow-hidden break-all">
             {value.fromFile}
-            <span class="iconify inline-block text-primary octicon--arrow-right-16"></span>
+            <span class="iconify inline-block text-primary octicon--arrow-right-16" aria-label="renamed to"></span>
             {value.toFile}
         </span>
     {/if}
@@ -45,6 +45,7 @@
 
 {#snippet collapseToggle()}
     <button
+        title={viewer.collapsed[index] ? "Expand file" : "Collapse file"}
         type="button"
         class="flex size-6 items-center justify-center rounded-md btn-ghost p-0.5 text-primary"
         onclick={(e) => {
@@ -53,20 +54,21 @@
         }}
     >
         {#if viewer.collapsed[index]}
-            <span aria-label="expand file" class="iconify size-4 shrink-0 text-primary octicon--chevron-right-16"></span>
+            <span aria-label="expand file" class="iconify size-4 shrink-0 text-primary octicon--chevron-right-16" aria-hidden="true"></span>
         {:else}
-            <span aria-label="collapse file" class="iconify size-4 shrink-0 text-primary octicon--chevron-down-16"></span>
+            <span aria-label="collapse file" class="iconify size-4 shrink-0 text-primary octicon--chevron-down-16" aria-hidden="true"></span>
         {/if}
     </button>
 {/snippet}
 
-{#snippet popover()}
+{#snippet actionsPopover()}
     <Popover.Root bind:open={popoverOpen}>
         <Popover.Trigger
+            title="Actions"
             class="flex size-6 items-center justify-center rounded-md btn-ghost p-0.5 data-[state=open]:btn-ghost-visible"
             onclick={(e) => e.stopPropagation()}
         >
-            <span class="iconify size-4 bg-primary octicon--kebab-horizontal-16"></span>
+            <span class="iconify size-4 bg-primary octicon--kebab-horizontal-16" aria-hidden="true"></span>
         </Popover.Trigger>
         <Popover.Portal>
             <Popover.Content class="flex flex-col overflow-hidden rounded-sm border bg-neutral text-sm shadow-sm select-none" sideOffset={4}>
@@ -107,7 +109,7 @@
         {#if viewer.patchHeaderDiffOnly[index]}
             <span class="rounded-sm bg-neutral-3 px-1.5">Patch-header-only diff</span>
         {/if}
-        {@render popover()}
+        {@render actionsPopover()}
         {#if !viewer.patchHeaderDiffOnly[index] || !globalOptions.omitPatchHeaderOnlyHunks || isImage}
             {@render collapseToggle()}
         {/if}

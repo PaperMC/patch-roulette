@@ -150,7 +150,7 @@
         </div>
         <AddedOrRemovedImageLabel mode="add" dims={dims.b} />
     </div>
-    <div class="mt-4 flex w-full max-w-[280px] items-center rounded-lg bg-neutral p-2.5 shadow-sm">
+    <div class="sticky bottom-4 mt-4 flex w-full max-w-[280px] items-center rounded-lg bg-neutral p-2.5 shadow-sm">
         <Slider.Root type="single" thumbPositioning="exact" bind:value={fadePercent} class="relative flex w-full touch-none items-center select-none">
             <span class="relative h-0.5 w-full grow cursor-pointer overflow-hidden rounded-full bg-em-disabled">
                 <Slider.Range class="absolute h-full bg-primary" />
@@ -160,7 +160,7 @@
     </div>
 {/snippet}
 
-<div class="flex flex-col items-center justify-center bg-neutral-2 p-4">
+<div class="relative flex flex-col items-center justify-center bg-neutral-2 p-4">
     {@render modeSelector()}
     {#await imageDimensions}
         <Spinner />
