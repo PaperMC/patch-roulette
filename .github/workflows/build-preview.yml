@@ -1,0 +1,25 @@
+name: "Build Preview Deployment"
+
+on:
+    pull_request:
+        types: [opened, synchronize]
+
+jobs:
+    build-preview:
+        runs-on: "ubuntu-latest"
+        name: "Build Preview Site and Upload Build Artifact"
+        steps:
+            - name: "checkout"
+              uses: "actions/checkout@v4"
+              with:
+                  fetch-depth: 0
+                  ref: ${{ github.event.pull_request.head.ref }}
+                  repository: ${{ github.event.pull_request.head.repo.full_name }}
+            - uses: oven-sh/setup-bun@v2
+            - run: cd web && bun install
+            - run: cd web && bun run buildPreview
+            - name: "upload build artifact"
+              uses: "actions/upload-artifact@v4"
+              with:
+                  name: "preview-build"
+                  path: "web/.svelte-kit/cloudflare"
