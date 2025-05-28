@@ -1,6 +1,6 @@
 <script lang="ts">
     import { type FileStatus, getGithubUsername, GITHUB_URL_PARAM, installGithubApp, loginWithGithub, logoutGithub } from "$lib/github.svelte";
-    import { Button, Dialog, Separator } from "bits-ui";
+    import { Button, Dialog, Separator, Popover } from "bits-ui";
     import InfoPopup from "./InfoPopup.svelte";
     import { page } from "$app/state";
     import { goto } from "$app/navigation";
@@ -12,6 +12,7 @@
     import { createTwoFilesPatch } from "diff";
     import DirectorySelect from "$lib/components/files/DirectorySelect.svelte";
     import { DirectoryEntry, FileEntry } from "$lib/components/files/index.svelte";
+    import { SvelteSet } from "svelte/reactivity";
 
     const viewer = MultiFileDiffViewerState.get();
 
@@ -23,6 +24,20 @@
     let fileB = $state<File | undefined>(undefined);
     let dirA = $state<DirectoryEntry | undefined>(undefined);
     let dirB = $state<DirectoryEntry | undefined>(undefined);
+    let dirBlacklistInput = $state<string>("");
+    const defaultDirBlacklist = [".git/"];
+    let dirBlacklist = new SvelteSet(defaultDirBlacklist);
+    let dirBlacklistRegexes = $derived.by(() => {
+        return Array.from(dirBlacklist).map((pattern) => new RegExp(pattern));
+    });
+
+    function addBlacklistEntry() {
+        if (dirBlacklistInput === "") {
+            return;
+        }
+        dirBlacklist.add(dirBlacklistInput);
+        dirBlacklistInput = "";
+    }
 
     onMount(async () => {
         const url = page.url.searchParams.get(GITHUB_URL_PARAM);
@@ -101,15 +116,17 @@
         file: File;
     };
 
-    // TODO: option to respect gitignore?
     async function compareDirs() {
         if (!dirA || !dirB) {
             alert("Both directories must be selected to compare.");
             return;
         }
 
-        const entriesA: ProtoFileDetails[] = flatten(dirA);
-        const entriesB: ProtoFileDetails[] = flatten(dirB);
+        const blacklist = (entry: ProtoFileDetails) => {
+            return !dirBlacklistRegexes.some((pattern) => pattern.test(entry.path));
+        };
+        const entriesA: ProtoFileDetails[] = flatten(dirA).filter(blacklist);
+        const entriesB: ProtoFileDetails[] = flatten(dirB).filter(blacklist);
 
         const fileDetails: FileDetails[] = [];
 
@@ -312,6 +329,63 @@
     }
 </script>
 
+{#snippet blacklistPopoverContent()}
+    <div class="mb-2 flex bg-neutral-2 py-2 ps-2 pe-6">
+        <span class="me-1 text-lg font-semibold">Blacklist patterns</span>
+        <InfoPopup>Regex patterns for directories and files to ignore.</InfoPopup>
+    </div>
+    <div class="flex items-center gap-1 px-2">
+        <div class="flex">
+            <input
+                bind:value={dirBlacklistInput}
+                onkeydown={(e) => {
+                    if (e.key === "Enter") {
+                        addBlacklistEntry();
+                    }
+                }}
+                type="text"
+                class="w-full rounded-l-md border-t border-b border-l px-2 py-1"
+            />
+            <Button.Root title="Add blacklist entry" class="flex rounded-r-md btn-primary px-2 py-1" onclick={addBlacklistEntry}>
+                <span class="iconify size-4 shrink-0 place-self-center octicon--plus-16" aria-hidden="true"></span>
+            </Button.Root>
+        </div>
+        <Button.Root
+            title="Reset blacklist to defaults"
+            class="flex rounded-md btn-danger p-1"
+            onclick={() => {
+                dirBlacklist.clear();
+                defaultDirBlacklist.forEach((entry) => {
+                    dirBlacklist.add(entry);
+                });
+            }}
+        >
+            <span class="iconify size-4 shrink-0 place-self-center octicon--undo-16" aria-hidden="true"></span>
+        </Button.Root>
+    </div>
+    <ul class="m-2 max-h-96 overflow-y-auto rounded-md border">
+        {#each dirBlacklist as entry (entry)}
+            <li class="flex">
+                <span class="grow border-b px-2 py-1">{entry}</span>
+                <div class="border-b p-1 ps-0">
+                    <Button.Root
+                        title="Delete blacklist entry"
+                        class="flex rounded-md btn-danger p-1"
+                        onclick={() => {
+                            dirBlacklist.delete(entry);
+                        }}
+                    >
+                        <span class="iconify size-4 shrink-0 place-self-center octicon--trash-16" aria-hidden="true"></span>
+                    </Button.Root>
+                </div>
+            </li>
+        {/each}
+        {#if dirBlacklist.size === 0}
+            <li class="px-2 py-1 text-em-med">No patterns added</li>
+        {/if}
+    </ul>
+{/snippet}
+
 <Dialog.Root bind:open={modalOpen}>
     <Dialog.Trigger class="h-fit rounded-md btn-primary px-2 py-0.5" onclick={() => (dragActive = false)}>Load another diff</Dialog.Trigger>
     <Dialog.Portal>
@@ -319,8 +393,8 @@
         <Dialog.Content class="fixed top-1/2 left-1/2 z-50 w-192 max-w-[95%] -translate-x-1/2 -translate-y-1/2 rounded-md bg-neutral shadow-md">
             <header class="relative flex flex-row items-center justify-between rounded-t-md bg-neutral-2 p-4">
                 <Dialog.Title class="text-xl font-semibold">Load a diff</Dialog.Title>
-                <Dialog.Close class="flex size-6 items-center justify-center rounded-md btn-ghost text-primary">
-                    <span class="iconify octicon--x-16"></span>
+                <Dialog.Close title="Close dialog" class="flex size-6 items-center justify-center rounded-md btn-ghost text-primary">
+                    <span class="iconify octicon--x-16" aria-hidden="true"></span>
                 </Dialog.Close>
             </header>
 
@@ -354,7 +428,7 @@
                             <span class="iconify shrink-0 octicon--person-16"></span>
                             {getGithubUsername()}
                         </div>
-                        <Button.Root class="flex items-center gap-2 rounded-md bg-red-400 px-2 py-1 text-white hover:bg-red-500" onclick={logoutGithub}>
+                        <Button.Root class="flex items-center gap-2 rounded-md btn-danger px-2 py-1" onclick={logoutGithub}>
                             <span class="iconify shrink-0 octicon--sign-out-16"></span>
                             Sign out
                         </Button.Root>
@@ -413,17 +487,32 @@
                 </section>
 
                 <section>
-                    <h4 class="mb-2 font-semibold">Compare Directories</h4>
-                    <div class="flex flex-row items-center gap-1">
-                        <DirectorySelect bind:directory={dirA} placeholder="Directory A" />
-                        <span class="iconify size-4 shrink-0 octicon--arrow-right-16"></span>
-                        <DirectorySelect bind:directory={dirB} placeholder="Directory B" />
-                        <Button.Root onclick={compareDirs} class="rounded-md btn-primary px-2 py-1">Go</Button.Root>
+                    <div class="mb-2 flex items-center">
+                        <h4 class="me-1 font-semibold">Compare Directories</h4>
                         <InfoPopup>
                             Compares the entire contents of the directories, including subdirectories. Does not attempt to detect renames. When possible,
                             preparing a unified diff (<code class="rounded-sm bg-neutral-2 px-1 py-0.5">.patch</code> file) using Git or another tool and loading
                             it with the above button should be preferred.
                         </InfoPopup>
+                    </div>
+                    <div class="flex items-center gap-1">
+                        <DirectorySelect bind:directory={dirA} placeholder="Directory A" />
+                        <span class="iconify size-4 shrink-0 octicon--arrow-right-16"></span>
+                        <DirectorySelect bind:directory={dirB} placeholder="Directory B" />
+                        <div class="flex">
+                            <Button.Root onclick={compareDirs} class="relative rounded-l-md btn-primary">
+                                <div class="px-2 py-1">Go</div>
+                                <div class="absolute top-0 right-0 h-full w-px bg-neutral-3/20"></div>
+                            </Button.Root>
+                            <Popover.Root>
+                                <Popover.Trigger title="Edit filters" class="flex rounded-r-md btn-primary p-2 data-[state=open]:btn-primary-hover">
+                                    <span class="iconify size-4 shrink-0 place-self-center octicon--filter-16" aria-hidden="true"></span>
+                                </Popover.Trigger>
+                                <Popover.Content side="top" class="overflow-hidden rounded-md border bg-neutral">
+                                    {@render blacklistPopoverContent()}
+                                </Popover.Content>
+                            </Popover.Root>
+                        </div>
                     </div>
                 </section>
             </section>
