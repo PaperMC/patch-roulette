@@ -17,9 +17,9 @@
         const authReferrer = localStorage.getItem("authReferrer");
         if (authReferrer) {
             localStorage.removeItem("authReferrer");
-            await goto(authReferrer);
+            await goto(authReferrer, { replaceState: true });
         } else {
-            await goto("/");
+            await goto("/", { replaceState: true });
         }
     }
 
