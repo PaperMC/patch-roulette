@@ -33,4 +33,4 @@ jobs:
                   accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
                   githubToken: ${{ secrets.GITHUB_TOKEN }}
                   projectName: "patch-roulette"
-                  directory: ${{ steps.preview-build-artifact.outputs.download-path }}
+                  directory: "${{ steps.preview-build-artifact.outputs.download-path }}/cloudflare"
