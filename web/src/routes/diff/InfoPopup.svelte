@@ -6,7 +6,7 @@
 
 <Popover.Root>
     <Popover.Trigger
-        aria-label="Actions"
+        title="Information"
         class="flex size-6 items-center justify-center self-center rounded-md btn-ghost p-0.5 data-[state=open]:btn-ghost-visible"
     >
         <span aria-hidden="true" class="iconify size-4 bg-primary octicon--info-16"></span>

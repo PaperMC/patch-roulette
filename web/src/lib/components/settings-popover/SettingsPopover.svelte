@@ -11,6 +11,7 @@
     let { children, ...restProps }: WithChildren<RestProps> = $props();
 
     const defTriggerProps = {
+        title: "Settings",
         class: "size-6 rounded-md flex items-center justify-center text-primary btn-ghost data-[state=open]:btn-ghost-visible",
     };
 
