@@ -10,7 +10,7 @@ if (process.env.NODE_ENV === "development") {
     adapter = bunAdapter();
 }
 if (process.env.PREVIEW === "true") {
-    adapter = cloudflareAdapter()
+    adapter = cloudflareAdapter();
 }
 
 /** @type {import('@sveltejs/kit').Config} */
