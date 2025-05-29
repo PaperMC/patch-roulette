@@ -390,8 +390,10 @@
     <Dialog.Trigger class="h-fit rounded-md btn-primary px-2 py-0.5" onclick={() => (dragActive = false)}>Load another diff</Dialog.Trigger>
     <Dialog.Portal>
         <Dialog.Overlay class="fixed inset-0 z-50 bg-black/50 dark:bg-white/20" />
-        <Dialog.Content class="fixed top-1/2 left-1/2 z-50 w-192 max-w-[95%] -translate-x-1/2 -translate-y-1/2 rounded-md bg-neutral shadow-md">
-            <header class="relative flex flex-row items-center justify-between rounded-t-md bg-neutral-2 p-4">
+        <Dialog.Content
+            class="fixed top-1/2 left-1/2 z-50 max-h-svh w-192 max-w-[95%] -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-md bg-neutral shadow-md"
+        >
+            <header class="sticky top-0 z-10 flex flex-row items-center justify-between rounded-t-md bg-neutral-2 p-4">
                 <Dialog.Title class="text-xl font-semibold">Load a diff</Dialog.Title>
                 <Dialog.Close title="Close dialog" class="flex size-6 items-center justify-center rounded-md btn-ghost text-primary">
                     <span class="iconify octicon--x-16" aria-hidden="true"></span>
@@ -478,7 +480,7 @@
 
                 <section class="mb-2">
                     <h4 class="mb-2 font-semibold">Compare Files</h4>
-                    <div class="flex flex-row items-center gap-1">
+                    <div class="flex flex-wrap items-center gap-1">
                         <SingleFileSelect bind:file={fileA} placeholder="File A" />
                         <span class="iconify size-4 shrink-0 octicon--arrow-right-16"></span>
                         <SingleFileSelect bind:file={fileB} placeholder="File B" />
@@ -495,7 +497,7 @@
                             it with the above button should be preferred.
                         </InfoPopup>
                     </div>
-                    <div class="flex items-center gap-1">
+                    <div class="flex flex-wrap items-center gap-1">
                         <DirectorySelect bind:directory={dirA} placeholder="Directory A" />
                         <span class="iconify size-4 shrink-0 octicon--arrow-right-16"></span>
                         <DirectorySelect bind:directory={dirB} placeholder="Directory B" />
@@ -508,7 +510,7 @@
                                 <Popover.Trigger title="Edit filters" class="flex rounded-r-md btn-primary p-2 data-[state=open]:btn-primary-hover">
                                     <span class="iconify size-4 shrink-0 place-self-center octicon--filter-16" aria-hidden="true"></span>
                                 </Popover.Trigger>
-                                <Popover.Content side="top" class="overflow-hidden rounded-md border bg-neutral">
+                                <Popover.Content side="top" class="z-10 overflow-hidden rounded-md border bg-neutral">
                                     {@render blacklistPopoverContent()}
                                 </Popover.Content>
                             </Popover.Root>
