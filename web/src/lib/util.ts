@@ -58,10 +58,10 @@ export function binaryFileDummyDetails(fromFile: string, toFile: string, status:
     let fakeContent: string;
     switch (status) {
         case "added":
-            fakeContent = `diff --git /dev/null b/${toFile}\n--- /dev/null\n+++ b/${toFile}\n@@ -0,0 +1,1 @@\n+Cannot show binary file`;
+            fakeContent = `diff --git a/${toFile} b/${toFile}\n--- /dev/null\n+++ b/${toFile}\n@@ -0,0 +1,1 @@\n+Cannot show binary file`;
             break;
         case "removed":
-            fakeContent = `diff --git a/${fromFile} /dev/null\n--- a/${fromFile}\n+++ /dev/null\n@@ -1,1 +0,0 @@\n-Cannot show binary file`;
+            fakeContent = `diff --git a/${fromFile} b/${fromFile}\n--- a/${fromFile}\n+++ /dev/null\n@@ -1,1 +0,0 @@\n-Cannot show binary file`;
             break;
         default:
             fakeContent = `diff --git a/${fromFile} b/${toFile}\n--- a/${fromFile}\n+++ b/${toFile}\n@@ -1,1 +1,1 @@\n-Cannot show binary file\n+Cannot show binary file`;
