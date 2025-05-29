@@ -35,6 +35,12 @@
         if (dirBlacklistInput === "") {
             return;
         }
+        try {
+            new RegExp(dirBlacklistInput); // Validate regex
+        } catch (e) {
+            alert("'" + dirBlacklistInput + "' is not a valid regex pattern. Error: " + e);
+            return;
+        }
         dirBlacklist.add(dirBlacklistInput);
         dirBlacklistInput = "";
     }
