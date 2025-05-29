@@ -132,12 +132,13 @@
             return !dirBlacklistRegexes.some((pattern) => pattern.test(entry.path));
         };
         const entriesA: ProtoFileDetails[] = flatten(dirA).filter(blacklist);
+        const entriesAMap = new Map(entriesA.map((entry) => [entry.path, entry]));
         const entriesB: ProtoFileDetails[] = flatten(dirB).filter(blacklist);
+        const entriesBMap = new Map(entriesB.map((entry) => [entry.path, entry]));
 
         const fileDetails: FileDetails[] = [];
-
         for (const entry of entriesA) {
-            const entryB = entriesB.find((e) => e.path === entry.path);
+            const entryB = entriesBMap.get(entry.path);
             if (entryB) {
                 // File exists in both directories
                 const [aBinary, bBinary] = await Promise.all([isBinaryFile(entry.file), isBinaryFile(entryB.file)]);
@@ -198,7 +199,7 @@
 
         // Check for added files
         for (const entry of entriesB) {
-            const entryA = entriesA.find((e) => e.path === entry.path);
+            const entryA = entriesAMap.get(entry.path);
             if (!entryA) {
                 if (isImageFile(entry.file.name)) {
                     fileDetails.push({
