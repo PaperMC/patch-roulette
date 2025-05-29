@@ -35,23 +35,48 @@ export async function isBinaryFile(file: File): Promise<boolean> {
     }
 }
 
-export async function bytesEqual(a: File, b: File): Promise<boolean> {
+export async function bytesEqual(
+    a: File,
+    b: File,
+    chunkingThreshold: number = 4 * 1024 * 1024, // 4MB
+    chunkSize: number = chunkingThreshold,
+): Promise<boolean> {
     if (a.size !== b.size) {
         return false;
     }
     if (a.size === 0) {
         return true;
     }
-    const [bytesA, bytesB] = await Promise.all([a.arrayBuffer(), b.arrayBuffer()]);
-    if (bytesA.byteLength === bytesB.byteLength) {
+
+    if (a.size <= chunkingThreshold) {
+        // Process small files in one go
+        const [bytesA, bytesB] = await Promise.all([a.arrayBuffer(), b.arrayBuffer()]);
+        if (bytesA.byteLength === bytesB.byteLength) {
+            const viewA = new Uint8Array(bytesA);
+            const viewB = new Uint8Array(bytesB);
+            return viewA.every((byte, index) => byte === viewB[index]);
+        }
+        return false;
+    }
+
+    // Process large files in chunks
+    for (let offset = 0; offset < a.size; offset += chunkSize) {
+        const sliceA = a.slice(offset, offset + chunkSize);
+        const sliceB = b.slice(offset, offset + chunkSize);
+        const [bytesA, bytesB] = await Promise.all([sliceA.arrayBuffer(), sliceB.arrayBuffer()]);
+
+        if (bytesA.byteLength !== bytesB.byteLength) {
+            return false;
+        }
+
         const viewA = new Uint8Array(bytesA);
         const viewB = new Uint8Array(bytesB);
-        if (viewA.every((byte, index) => byte === viewB[index])) {
-            // Files are identical
-            return true;
+        if (!viewA.every((byte, index) => byte === viewB[index])) {
+            return false;
         }
     }
-    return false;
+
+    return true;
 }
 
 export function binaryFileDummyDetails(fromFile: string, toFile: string, status: FileStatus): FileDetails {
