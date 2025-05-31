@@ -23,16 +23,13 @@ export class FileEntry implements FileSystemEntry {
 }
 
 export async function pickDirectory(): Promise<DirectoryEntry> {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    if (!(window as any).showDirectoryPicker) {
+    if (!window.showDirectoryPicker) {
         return await pickDirectoryLegacy();
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const directoryHandle: FileSystemDirectoryHandle = await (window as any).showDirectoryPicker();
+    const directoryHandle: FileSystemDirectoryHandle = await window.showDirectoryPicker();
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    if (!(directoryHandle as any).entries) {
+    if (!directoryHandle.entries) {
         return await pickDirectoryLegacy();
     }
 
@@ -48,8 +45,7 @@ async function handleToDirectoryEntry(directoryHandle: FileSystemDirectoryHandle
     while (stack.length > 0) {
         const [dirHandle, dirEntry] = stack.shift()!;
 
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any,@typescript-eslint/no-unused-vars
-        for await (const [name, handle] of (dirHandle as any).entries()) {
+        for await (const [, handle] of dirHandle.entries()) {
             if (handle.kind === "directory") {
                 const subDir = new DirectoryEntry(handle.name, []);
                 dirEntry.children.push(subDir);
