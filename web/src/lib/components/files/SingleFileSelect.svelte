@@ -1,5 +1,5 @@
 <script lang="ts">
-    import FileInput from "$lib/components/FileInput.svelte";
+    import FileInput from "$lib/components/files/FileInput.svelte";
 
     interface Props {
         placeholder: string;

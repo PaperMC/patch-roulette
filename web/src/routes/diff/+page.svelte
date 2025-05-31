@@ -90,14 +90,15 @@
 
 {#snippet sidebarToggle()}
     <button
+        title={viewer.sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
         type="button"
         class="flex size-6 items-center justify-center rounded-md btn-ghost text-primary"
         onclick={() => (viewer.sidebarCollapsed = !viewer.sidebarCollapsed)}
     >
         {#if viewer.sidebarCollapsed}
-            <span class="iconify size-4 shrink-0 octicon--sidebar-collapse-16"></span>
+            <span class="iconify size-4 shrink-0 octicon--sidebar-collapse-16" aria-hidden="true"></span>
         {:else}
-            <span class="iconify size-4 shrink-0 octicon--sidebar-expand-16"></span>
+            <span class="iconify size-4 shrink-0 octicon--sidebar-expand-16" aria-hidden="true"></span>
         {/if}
     </button>
 {/snippet}

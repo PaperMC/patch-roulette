@@ -1,15 +1,18 @@
 <script lang="ts">
     import { type FileStatus, getGithubUsername, GITHUB_URL_PARAM, installGithubApp, loginWithGithub, logoutGithub } from "$lib/github.svelte";
-    import { Button, Dialog, Separator } from "bits-ui";
+    import { Button, Dialog, Separator, Popover } from "bits-ui";
     import InfoPopup from "./InfoPopup.svelte";
     import { page } from "$app/state";
     import { goto } from "$app/navigation";
     import { type FileDetails, MultiFileDiffViewerState } from "$lib/diff-viewer-multi-file.svelte";
-    import { splitMultiFilePatch } from "$lib/util";
+    import { binaryFileDummyDetails, bytesEqual, isBinaryFile, isImageFile, splitMultiFilePatch } from "$lib/util";
     import { onMount } from "svelte";
-    import FileInput from "$lib/components/FileInput.svelte";
-    import SingleFileSelect from "$lib/components/SingleFileSelect.svelte";
+    import FileInput from "$lib/components/files/FileInput.svelte";
+    import SingleFileSelect from "$lib/components/files/SingleFileSelect.svelte";
     import { createTwoFilesPatch } from "diff";
+    import DirectorySelect from "$lib/components/files/DirectorySelect.svelte";
+    import { DirectoryEntry, FileEntry } from "$lib/components/files/index.svelte";
+    import { SvelteSet } from "svelte/reactivity";
 
     const viewer = MultiFileDiffViewerState.get();
 
@@ -19,6 +22,28 @@
 
     let fileA = $state<File | undefined>(undefined);
     let fileB = $state<File | undefined>(undefined);
+    let dirA = $state<DirectoryEntry | undefined>(undefined);
+    let dirB = $state<DirectoryEntry | undefined>(undefined);
+    let dirBlacklistInput = $state<string>("");
+    const defaultDirBlacklist = [".git/"];
+    let dirBlacklist = new SvelteSet(defaultDirBlacklist);
+    let dirBlacklistRegexes = $derived.by(() => {
+        return Array.from(dirBlacklist).map((pattern) => new RegExp(pattern));
+    });
+
+    function addBlacklistEntry() {
+        if (dirBlacklistInput === "") {
+            return;
+        }
+        try {
+            new RegExp(dirBlacklistInput); // Validate regex
+        } catch (e) {
+            alert("'" + dirBlacklistInput + "' is not a valid regex pattern. Error: " + e);
+            return;
+        }
+        dirBlacklist.add(dirBlacklistInput);
+        dirBlacklistInput = "";
+    }
 
     onMount(async () => {
         const url = page.url.searchParams.get(GITHUB_URL_PARAM);
@@ -36,28 +61,200 @@
             return;
         }
 
-        const [textA, textB] = await Promise.all([fileA.text(), fileB.text()]);
-        if (textA === textB) {
-            alert("The files are identical.");
+        const isImageDiff = isImageFile(fileA.name) && isImageFile(fileB.name);
+        const [aBinary, bBinary] = await Promise.all([isBinaryFile(fileA), isBinaryFile(fileB)]);
+        if (aBinary || bBinary) {
+            if (!isImageDiff) {
+                alert("Cannot compare binary files.");
+                return;
+            }
+        }
+
+        const fileDetails: FileDetails[] = [];
+
+        if (isImageDiff) {
+            if (await bytesEqual(fileA, fileB)) {
+                alert("The files are identical.");
+                return;
+            }
+
+            let status: FileStatus = "modified";
+            if (fileA.name !== fileB.name) {
+                status = "renamed_modified";
+            }
+
+            fileDetails.push({
+                content: "",
+                fromFile: fileA.name,
+                toFile: fileB.name,
+                fromBlob: fileA,
+                toBlob: fileB,
+                status,
+            });
+        } else {
+            const [textA, textB] = await Promise.all([fileA.text(), fileB.text()]);
+            if (textA === textB) {
+                alert("The files are identical.");
+                return;
+            }
+
+            const diff = createTwoFilesPatch(fileA.name, fileB.name, textA, textB);
+            let status: FileStatus = "modified";
+            if (fileA.name !== fileB.name) {
+                status = "renamed_modified";
+            }
+
+            fileDetails.push({
+                content: diff,
+                fromFile: fileA.name,
+                toFile: fileB.name,
+                status,
+            });
+        }
+
+        viewer.loadPatches(fileDetails, { fileName: `${fileA.name}...${fileB.name}.patch` });
+        await updateUrlParams();
+        modalOpen = false;
+    }
+
+    type ProtoFileDetails = {
+        path: string;
+        file: File;
+    };
+
+    async function compareDirs() {
+        if (!dirA || !dirB) {
+            alert("Both directories must be selected to compare.");
             return;
         }
 
-        const diff = createTwoFilesPatch(fileA.name, fileB.name, textA, textB);
-        let status: FileStatus = "modified";
-        if (fileA.name !== fileB.name) {
-            status = "renamed_modified";
+        const blacklist = (entry: ProtoFileDetails) => {
+            return !dirBlacklistRegexes.some((pattern) => pattern.test(entry.path));
+        };
+        const entriesA: ProtoFileDetails[] = flatten(dirA).filter(blacklist);
+        const entriesAMap = new Map(entriesA.map((entry) => [entry.path, entry]));
+        const entriesB: ProtoFileDetails[] = flatten(dirB).filter(blacklist);
+        const entriesBMap = new Map(entriesB.map((entry) => [entry.path, entry]));
+
+        const fileDetails: FileDetails[] = [];
+        for (const entry of entriesA) {
+            const entryB = entriesBMap.get(entry.path);
+            if (entryB) {
+                // File exists in both directories
+                const [aBinary, bBinary] = await Promise.all([isBinaryFile(entry.file), isBinaryFile(entryB.file)]);
+
+                if (aBinary || bBinary) {
+                    if (await bytesEqual(entry.file, entryB.file)) {
+                        // Files are identical
+                        continue;
+                    }
+                    if (isImageFile(entry.file.name) && isImageFile(entryB.file.name)) {
+                        fileDetails.push({
+                            content: "",
+                            fromFile: entry.path,
+                            toFile: entryB.path,
+                            fromBlob: entry.file,
+                            toBlob: entryB.file,
+                            status: "modified",
+                        });
+                    } else {
+                        fileDetails.push(binaryFileDummyDetails(entry.path, entryB.path, "modified"));
+                    }
+                } else {
+                    const [textA, textB] = await Promise.all([entry.file.text(), entryB.file.text()]);
+                    if (textA === textB) {
+                        // Files are identical
+                        continue;
+                    }
+                    fileDetails.push({
+                        content: createTwoFilesPatch(entry.path, entryB.path, textA, textB),
+                        fromFile: entry.path,
+                        toFile: entryB.path,
+                        status: "modified",
+                    });
+                }
+            } else if (isImageFile(entry.file.name)) {
+                // Image file removed
+                fileDetails.push({
+                    content: "",
+                    fromFile: entry.path,
+                    toFile: entry.path,
+                    fromBlob: entry.file,
+                    toBlob: entry.file,
+                    status: "removed",
+                });
+            } else if (await isBinaryFile(entry.file)) {
+                // Binary file removed
+                fileDetails.push(binaryFileDummyDetails(entry.path, entry.path, "removed"));
+            } else {
+                // Text file removed
+                fileDetails.push({
+                    content: createTwoFilesPatch(entry.path, "", await entry.file.text(), ""),
+                    fromFile: entry.path,
+                    toFile: entry.path,
+                    status: "removed",
+                });
+            }
         }
 
-        const fileDetails: FileDetails = {
-            content: diff,
-            fromFile: fileA.name,
-            toFile: fileB.name,
-            status,
-        };
+        // Check for added files
+        for (const entry of entriesB) {
+            const entryA = entriesAMap.get(entry.path);
+            if (!entryA) {
+                if (isImageFile(entry.file.name)) {
+                    fileDetails.push({
+                        content: "",
+                        fromFile: entry.path,
+                        toFile: entry.path,
+                        fromBlob: entry.file,
+                        toBlob: entry.file,
+                        status: "added",
+                    });
+                } else if (await isBinaryFile(entry.file)) {
+                    fileDetails.push(binaryFileDummyDetails(entry.path, entry.path, "added"));
+                } else {
+                    fileDetails.push({
+                        content: createTwoFilesPatch("", entry.path, "", await entry.file.text()),
+                        fromFile: entry.path,
+                        toFile: entry.path,
+                        status: "added",
+                    });
+                }
+            }
+        }
 
-        viewer.loadPatches([fileDetails], { fileName: `${fileA.name}...${fileB.name}.patch` });
+        viewer.loadPatches(fileDetails, { fileName: `${dirA.fileName}...${dirB.fileName}.patch` });
         await updateUrlParams();
         modalOpen = false;
+    }
+
+    function flatten(dir: DirectoryEntry): ProtoFileDetails[] {
+        type StackEntry = {
+            directory: DirectoryEntry;
+            prefix: string;
+        };
+        const into: ProtoFileDetails[] = [];
+        const stack: StackEntry[] = [{ directory: dir, prefix: "" }];
+
+        while (stack.length > 0) {
+            const { directory, prefix: currentPrefix } = stack.pop()!;
+
+            for (const entry of directory.children) {
+                if (entry instanceof DirectoryEntry) {
+                    stack.push({
+                        directory: entry,
+                        prefix: currentPrefix + entry.fileName + "/",
+                    });
+                } else if (entry instanceof FileEntry) {
+                    into.push({
+                        path: currentPrefix + entry.fileName,
+                        file: entry.file,
+                    });
+                }
+            }
+        }
+
+        return into;
     }
 
     async function loadFromPatchFile(fileName: string, patchContent: string) {
@@ -139,15 +336,74 @@
     }
 </script>
 
+{#snippet blacklistPopoverContent()}
+    <div class="mb-2 flex bg-neutral-2 py-2 ps-2 pe-6">
+        <span class="me-1 text-lg font-semibold">Blacklist patterns</span>
+        <InfoPopup>Regex patterns for directories and files to ignore.</InfoPopup>
+    </div>
+    <div class="flex items-center gap-1 px-2">
+        <div class="flex">
+            <input
+                bind:value={dirBlacklistInput}
+                onkeydown={(e) => {
+                    if (e.key === "Enter") {
+                        addBlacklistEntry();
+                    }
+                }}
+                type="text"
+                class="w-full rounded-l-md border-t border-b border-l px-2 py-1"
+            />
+            <Button.Root title="Add blacklist entry" class="flex rounded-r-md btn-primary px-2 py-1" onclick={addBlacklistEntry}>
+                <span class="iconify size-4 shrink-0 place-self-center octicon--plus-16" aria-hidden="true"></span>
+            </Button.Root>
+        </div>
+        <Button.Root
+            title="Reset blacklist to defaults"
+            class="flex rounded-md btn-danger p-1"
+            onclick={() => {
+                dirBlacklist.clear();
+                defaultDirBlacklist.forEach((entry) => {
+                    dirBlacklist.add(entry);
+                });
+            }}
+        >
+            <span class="iconify size-4 shrink-0 place-self-center octicon--undo-16" aria-hidden="true"></span>
+        </Button.Root>
+    </div>
+    <ul class="m-2 max-h-96 overflow-y-auto rounded-md border">
+        {#each dirBlacklist as entry (entry)}
+            <li class="flex">
+                <span class="grow border-b px-2 py-1">{entry}</span>
+                <div class="border-b p-1 ps-0">
+                    <Button.Root
+                        title="Delete blacklist entry"
+                        class="flex rounded-md btn-danger p-1"
+                        onclick={() => {
+                            dirBlacklist.delete(entry);
+                        }}
+                    >
+                        <span class="iconify size-4 shrink-0 place-self-center octicon--trash-16" aria-hidden="true"></span>
+                    </Button.Root>
+                </div>
+            </li>
+        {/each}
+        {#if dirBlacklist.size === 0}
+            <li class="px-2 py-1 text-em-med">No patterns added</li>
+        {/if}
+    </ul>
+{/snippet}
+
 <Dialog.Root bind:open={modalOpen}>
     <Dialog.Trigger class="h-fit rounded-md btn-primary px-2 py-0.5" onclick={() => (dragActive = false)}>Load another diff</Dialog.Trigger>
     <Dialog.Portal>
         <Dialog.Overlay class="fixed inset-0 z-50 bg-black/50 dark:bg-white/20" />
-        <Dialog.Content class="fixed top-1/2 left-1/2 z-50 w-192 max-w-[95%] -translate-x-1/2 -translate-y-1/2 rounded-md bg-neutral shadow-md">
-            <header class="relative flex flex-row items-center justify-between rounded-t-md bg-neutral-2 p-4">
+        <Dialog.Content
+            class="fixed top-1/2 left-1/2 z-50 max-h-svh w-192 max-w-[95%] -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-md bg-neutral shadow-md"
+        >
+            <header class="sticky top-0 z-10 flex flex-row items-center justify-between rounded-t-md bg-neutral-2 p-4">
                 <Dialog.Title class="text-xl font-semibold">Load a diff</Dialog.Title>
-                <Dialog.Close class="flex size-6 items-center justify-center rounded-md btn-ghost text-primary">
-                    <span class="iconify octicon--x-16"></span>
+                <Dialog.Close title="Close dialog" class="flex size-6 items-center justify-center rounded-md btn-ghost text-primary">
+                    <span class="iconify octicon--x-16" aria-hidden="true"></span>
                 </Dialog.Close>
             </header>
 
@@ -181,7 +437,7 @@
                             <span class="iconify shrink-0 octicon--person-16"></span>
                             {getGithubUsername()}
                         </div>
-                        <Button.Root class="flex items-center gap-2 rounded-md bg-red-400 px-2 py-1 text-white hover:bg-red-500" onclick={logoutGithub}>
+                        <Button.Root class="flex items-center gap-2 rounded-md btn-danger px-2 py-1" onclick={logoutGithub}>
                             <span class="iconify shrink-0 octicon--sign-out-16"></span>
                             Sign out
                         </Button.Root>
@@ -229,13 +485,43 @@
                     Load Patch File
                 </FileInput>
 
-                <section>
+                <section class="mb-2">
                     <h4 class="mb-2 font-semibold">Compare Files</h4>
-                    <div class="flex flex-row items-center gap-1">
+                    <div class="flex flex-wrap items-center gap-1">
                         <SingleFileSelect bind:file={fileA} placeholder="File A" />
                         <span class="iconify size-4 shrink-0 octicon--arrow-right-16"></span>
                         <SingleFileSelect bind:file={fileB} placeholder="File B" />
                         <Button.Root onclick={compareFiles} class="rounded-md btn-primary px-2 py-1">Go</Button.Root>
+                    </div>
+                </section>
+
+                <section>
+                    <div class="mb-2 flex items-center">
+                        <h4 class="me-1 font-semibold">Compare Directories</h4>
+                        <InfoPopup>
+                            Compares the entire contents of the directories, including subdirectories. Does not attempt to detect renames. When possible,
+                            preparing a unified diff (<code class="rounded-sm bg-neutral-2 px-1 py-0.5">.patch</code> file) using Git or another tool and loading
+                            it with the above button should be preferred.
+                        </InfoPopup>
+                    </div>
+                    <div class="flex flex-wrap items-center gap-1">
+                        <DirectorySelect bind:directory={dirA} placeholder="Directory A" />
+                        <span class="iconify size-4 shrink-0 octicon--arrow-right-16"></span>
+                        <DirectorySelect bind:directory={dirB} placeholder="Directory B" />
+                        <div class="flex">
+                            <Button.Root onclick={compareDirs} class="relative rounded-l-md btn-primary">
+                                <div class="px-2 py-1">Go</div>
+                                <div class="absolute top-0 right-0 h-full w-px bg-neutral-3/20"></div>
+                            </Button.Root>
+                            <Popover.Root>
+                                <Popover.Trigger title="Edit filters" class="flex rounded-r-md btn-primary p-2 data-[state=open]:btn-primary-hover">
+                                    <span class="iconify size-4 shrink-0 place-self-center octicon--filter-16" aria-hidden="true"></span>
+                                </Popover.Trigger>
+                                <Popover.Content side="top" class="z-10 overflow-hidden rounded-md border bg-neutral">
+                                    {@render blacklistPopoverContent()}
+                                </Popover.Content>
+                            </Popover.Root>
+                        </div>
                     </div>
                 </section>
             </section>
