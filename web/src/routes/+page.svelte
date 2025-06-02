@@ -45,7 +45,7 @@
         token.value = localStorage.getItem("token");
 
         if (token.value === null) {
-            await goto("/login");
+            await goto("/login", { replaceState: true });
             return;
         }
 
@@ -112,7 +112,7 @@
                     onclick={() => {
                         localStorage.removeItem("token");
                         token.value = null;
-                        goto("/login");
+                        goto("/login", { replaceState: true });
                     }}
                 >
                     Logout

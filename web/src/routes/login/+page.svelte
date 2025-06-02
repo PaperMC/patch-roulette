@@ -11,7 +11,7 @@
     });
 
     function onLogin() {
-        goto("/");
+        goto("/", { replaceState: true });
     }
 </script>
 
