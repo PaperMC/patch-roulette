@@ -1,7 +1,5 @@
 application:
   users: []
-  github-client-id: Iv23lio9NNdLLYjZ363a
-  github-client-secret: secret
 management:
   server:
     port: 8081
