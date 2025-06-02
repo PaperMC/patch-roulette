@@ -13,7 +13,7 @@ import {
 import { guessLanguageFromExtension, type MutableValue, type ReadableBoxedValues } from "$lib/util";
 import type { IRawThemeSetting } from "shiki/textmate";
 import chroma from "chroma-js";
-import { getEffectiveGlobalTheme } from "$lib/theme.svelte.js";
+import { getEffectiveGlobalTheme } from "$lib/theme.svelte";
 import { onDestroy } from "svelte";
 
 export const DEFAULT_THEME_LIGHT: BundledTheme = "github-light-default";

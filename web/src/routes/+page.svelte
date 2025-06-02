@@ -1,158 +1,318 @@
 <script lang="ts">
-    import { getUsername, PatchRouletteState, token } from "$lib/index.svelte";
-    import { onMount } from "svelte";
-    import { goto } from "$app/navigation";
-    import { fetchApi } from "$lib/api";
-    import PatchesTable from "$lib/components/PatchesTable.svelte";
-    import PatchesStats from "$lib/components/PatchesStats.svelte";
-    import { capitalizeFirstLetter } from "$lib/util";
+    import ConciseDiffView from "$lib/components/diff/ConciseDiffView.svelte";
+    import { type FileTreeNodeData } from "$lib/util";
+    import { VList } from "virtua/svelte";
+    import {
+        type FileDetails,
+        getFileStatusProps,
+        GlobalOptions,
+        MultiFileDiffViewerState,
+        requireEitherImage,
+        staticSidebar,
+    } from "$lib/diff-viewer-multi-file.svelte";
+    import Tree from "$lib/components/tree/Tree.svelte";
+    import Spinner from "$lib/components/Spinner.svelte";
+    import { type TreeNode } from "$lib/components/tree/index.svelte";
+    import ImageDiff from "$lib/components/diff/ImageDiff.svelte";
+    import AddedOrRemovedImage from "$lib/components/diff/AddedOrRemovedImage.svelte";
+    import DiffStats from "$lib/components/diff/DiffStats.svelte";
     import SettingsPopover, { globalThemeSetting } from "$lib/components/settings-popover/SettingsPopover.svelte";
     import SettingsPopoverGroup from "$lib/components/settings-popover/SettingsPopoverGroup.svelte";
     import LabeledCheckbox from "$lib/components/LabeledCheckbox.svelte";
-    import Spinner from "$lib/components/Spinner.svelte";
+    import ShikiThemeSelector from "$lib/components/settings-popover/ShikiThemeSelector.svelte";
+    import DiffSearch from "./DiffSearch.svelte";
+    import FileHeader from "./FileHeader.svelte";
+    import DiffTitle from "./DiffTitle.svelte";
+    import { type Action } from "svelte/action";
+    import { on } from "svelte/events";
+    import ActionsPopover from "./ActionsPopover.svelte";
+    import LoadDiffDialog from "./LoadDiffDialog.svelte";
 
-    let instance = new PatchRouletteState();
+    const globalOptions = GlobalOptions.init();
+    const viewer = MultiFileDiffViewerState.init();
 
-    const views = ["table", "stats"] as const;
-    type View = (typeof views)[number];
-    let currentView: View = $state("stats");
+    function filterFileNode(file: TreeNode<FileTreeNodeData>): boolean {
+        return file.data.type === "file" && viewer.filterFile(file.data.data as FileDetails);
+    }
 
-    let minecraftVersions: string[] = $state([]);
+    function scrollToFileClick(event: Event, index: number) {
+        const element: HTMLElement = event.target as HTMLElement;
+        // Don't scroll if we clicked the inner checkbox
+        if (element.tagName.toLowerCase() !== "input") {
+            viewer.scrollToFile(index);
+        }
+    }
 
-    async function loadMinecraftVersions() {
-        const response = await fetchApi("/get-minecraft-versions", {
-            method: "GET",
-            token: token.value!,
+    const focusFileDoubleClick: Action<HTMLDivElement, { index: number }> = (div, { index }) => {
+        const destroyDblclick = on(div, "dblclick", (event) => {
+            const element: HTMLElement = event.target as HTMLElement;
+            if (element.tagName.toLowerCase() !== "input") {
+                viewer.scrollToFile(index, { focus: true });
+                if (!staticSidebar.current) {
+                    viewer.sidebarCollapsed = true;
+                }
+            }
         });
+        const destoryMousedown = on(div, "mousedown", (event) => {
+            const element: HTMLElement = event.target as HTMLElement;
+            if (element.tagName.toLowerCase() !== "input" && event.detail === 2) {
+                // Don't select text on double click
+                event.preventDefault();
+            }
+        });
+        return {
+            destroy() {
+                destroyDblclick();
+                destoryMousedown();
+            },
+        };
+    };
 
-        if (response.ok) {
-            minecraftVersions = await response.json();
-        } else {
-            console.error("Failed to fetch Minecraft versions");
+    function getPageTitle() {
+        if (viewer.diffMetadata) {
+            const meta = viewer.diffMetadata;
+            if (meta.type === "github" && meta.githubDetails) {
+                return `${meta.githubDetails.description} - GitHub/${meta.githubDetails.owner}/${meta.githubDetails.repo} - Patch Roulette Diff Viewer`;
+            } else if (meta.type === "file" && meta.fileName) {
+                return `${meta.fileName} - Patch Roulette Diff Viewer`;
+            }
         }
+        return "Patch Roulette Diff Viewer";
     }
 
-    async function handleVersionSelect(event: Event) {
-        instance.selectedVersion = (event.target as HTMLSelectElement).value;
-        if (instance.selectedVersion === "" || instance.selectedVersion === null) {
-            return;
-        } else if (instance.selectedVersion) {
-            await instance.onVersionSelect((event.target as HTMLSelectElement).value);
-        }
-    }
-
-    onMount(async () => {
-        token.value = localStorage.getItem("token");
-
-        if (token.value === null) {
-            await goto("/login");
-            return;
-        }
-
-        await loadMinecraftVersions();
-
-        if (minecraftVersions.length > 0) {
-            // Auto select latest version
-            instance.selectedVersion = minecraftVersions[minecraftVersions.length - 1];
-            await instance.onVersionSelect(instance.selectedVersion);
-        }
-    });
+    let pageTitle = $derived(getPageTitle());
 </script>
 
-{#snippet settingsPopover()}
-    <SettingsPopover class="ms-2">
-        {@render globalThemeSetting()}
-        <SettingsPopoverGroup title="Misc.">
-            <LabeledCheckbox labelText="Auto refresh" bind:checked={instance.autoRefresh} />
-        </SettingsPopoverGroup>
-    </SettingsPopover>
-{/snippet}
+<svelte:head>
+    <title>{pageTitle}</title>
+    <meta name="description" content="Multi-file rich diff viewer for GitHub and diff/patch files" />
+</svelte:head>
 
-{#snippet refreshButton()}
+{#snippet sidebarToggle()}
     <button
-        class="me-2 flex items-center justify-center gap-2 rounded btn-primary px-2 py-1"
-        onclick={() => instance.onVersionSelect(instance.selectedVersion)}
+        title={viewer.sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+        type="button"
+        class="flex size-6 items-center justify-center rounded-md btn-ghost text-primary"
+        onclick={() => (viewer.sidebarCollapsed = !viewer.sidebarCollapsed)}
     >
-        {#if instance.refreshing}
-            Refreshing...<Spinner size={4} class="border-white" />
+        {#if viewer.sidebarCollapsed}
+            <span class="iconify size-4 shrink-0 octicon--sidebar-collapse-16" aria-hidden="true"></span>
         {:else}
-            Refresh
+            <span class="iconify size-4 shrink-0 octicon--sidebar-expand-16" aria-hidden="true"></span>
         {/if}
     </button>
 {/snippet}
 
-{#snippet viewSelector()}
-    <div class="flex gap-2">
-        {#each views as view (view)}
-            <button
-                class="flex items-center justify-center rounded-sm btn-ghost px-2 py-1 text-primary data-[active=true]:btn-ghost-visible"
-                data-active={currentView === view}
-                onclick={() => (currentView = view)}
-            >
-                {capitalizeFirstLetter(view)}
-            </button>
-        {/each}
-    </div>
+{#snippet settingsPopover()}
+    <SettingsPopover class="self-center">
+        {@render globalThemeSetting()}
+        <SettingsPopoverGroup title="Syntax Highlighting">
+            <LabeledCheckbox labelText="Enable" bind:checked={globalOptions.syntaxHighlighting} />
+            <ShikiThemeSelector mode="light" bind:value={globalOptions.syntaxHighlightingThemeLight} />
+            <ShikiThemeSelector mode="dark" bind:value={globalOptions.syntaxHighlightingThemeDark} />
+        </SettingsPopoverGroup>
+        <SettingsPopoverGroup title="Misc.">
+            <LabeledCheckbox labelText="Concise nested diffs" bind:checked={globalOptions.omitPatchHeaderOnlyHunks} />
+            <LabeledCheckbox labelText="Word diffs" bind:checked={globalOptions.wordDiffs} />
+            <LabeledCheckbox labelText="Line wrapping" bind:checked={globalOptions.lineWrap} />
+        </SettingsPopoverGroup>
+    </SettingsPopover>
 {/snippet}
 
-<div class="flex min-h-screen flex-row justify-center px-2">
-    <div class="flex min-h-[500px] max-w-7xl grow flex-col p-3 md:p-6">
-        <div class="mb-2 flex flex-row items-start justify-between">
-            <h2 class="flex text-2xl font-bold">Patch Roulette</h2>
-
-            <div class="mb-2 flex items-center">
-                <p id="user-info" class="text-sm">
-                    Logged in as: <span id="logged-user" class="font-medium">{token.value === null ? "" : getUsername()}</span>
-                </p>
-
-                <button
-                    id="logout-button"
-                    type="button"
-                    class="ms-4 rounded btn-primary px-2 py-1"
-                    onclick={() => {
-                        localStorage.removeItem("token");
-                        token.value = null;
-                        goto("/login");
-                    }}
-                >
-                    Logout
-                </button>
-
+<div class="relative flex min-h-screen flex-row justify-center">
+    <div
+        class="absolute top-0 left-0 z-10 flex h-full w-full flex-col border-e bg-neutral data-[collapsed=true]:hidden md:w-[350px] md:shadow-md lg:static lg:h-auto lg:shadow-none"
+        data-collapsed={viewer.sidebarCollapsed}
+    >
+        <div class="m-2 flex flex-row items-center gap-2">
+            <div class="relative grow">
+                <input
+                    type="text"
+                    placeholder="Filter file tree..."
+                    bind:value={viewer.fileTreeFilter}
+                    class="w-full rounded-md border px-8 py-1 overflow-ellipsis focus:ring-2 focus:ring-primary focus:outline-none"
+                    autocomplete="off"
+                />
+                <span aria-hidden="true" class="absolute top-1/2 left-2 iconify size-4 -translate-y-1/2 text-em-med octicon--filter-16"></span>
+                {#if viewer.fileTreeFilterDebounced.current}
+                    <button
+                        class="absolute top-1/2 right-2 iconify size-4 -translate-y-1/2 text-gray-500 octicon--x-16 hover:text-gray-700"
+                        onclick={() => viewer.clearSearch()}
+                        aria-label="clear filter"
+                    ></button>
+                {/if}
+            </div>
+            <div class="flex items-center lg:hidden">
+                {@render sidebarToggle()}
+            </div>
+        </div>
+        {#if viewer.filteredFileDetails.length !== viewer.fileDetails.length}
+            <div class="ms-2 mb-2 text-sm text-gray-600">
+                Showing {viewer.filteredFileDetails.length} of {viewer.fileDetails.length} files
+            </div>
+        {/if}
+        <div class="flex h-full flex-col overflow-y-auto border-t">
+            <div class="h-100">
+                {#snippet fileSnippet(value: FileDetails)}
+                    <div
+                        class="flex cursor-pointer items-center justify-between btn-ghost px-2 py-1 text-sm focus:ring-2 focus:ring-primary focus:outline-none focus:ring-inset"
+                        onclick={(e) => scrollToFileClick(e, viewer.getIndex(value))}
+                        use:focusFileDoubleClick={{ index: viewer.getIndex(value) }}
+                        onkeydown={(e) => e.key === "Enter" && viewer.scrollToFile(viewer.getIndex(value))}
+                        role="button"
+                        tabindex="0"
+                        id={"file-tree-file-" + viewer.getIndex(value)}
+                    >
+                        <span
+                            class="{getFileStatusProps(value.status).iconClasses} me-1 flex size-4 shrink-0 items-center justify-center"
+                            aria-label={getFileStatusProps(value.status).title}
+                        ></span>
+                        <span class="grow overflow-hidden break-all">{value.toFile.substring(value.toFile.lastIndexOf("/") + 1)}</span>
+                        <input
+                            type="checkbox"
+                            class="ms-1 size-4 shrink-0 rounded-sm border"
+                            autocomplete="off"
+                            aria-label="File viewed"
+                            onchange={() => viewer.toggleChecked(viewer.getIndex(value))}
+                            checked={viewer.checked[viewer.getIndex(value)]}
+                        />
+                    </div>
+                {/snippet}
+                <Tree roots={viewer.fileTreeRoots} filter={filterFileNode} bind:instance={viewer.tree}>
+                    {#snippet nodeRenderer({ node, collapsed, toggleCollapse })}
+                        {@const folderIcon = collapsed ? "octicon--file-directory-fill-16" : "octicon--file-directory-open-fill-16"}
+                        {#if node.data.type === "file"}
+                            {@render fileSnippet(node.data.data as FileDetails)}
+                        {:else}
+                            <div
+                                class="flex cursor-pointer items-center justify-between btn-ghost px-2 py-1 text-sm focus:ring-2 focus:ring-primary focus:outline-none focus:ring-inset"
+                                onclick={toggleCollapse}
+                                onkeydown={(e) => e.key === "Enter" && toggleCollapse()}
+                                role="button"
+                                tabindex="0"
+                            >
+                                <span class="me-1 iconify size-4 shrink-0 text-primary {folderIcon}"></span>
+                                <span class="grow overflow-hidden break-all">{node.data.data}</span>
+                                {#if collapsed}
+                                    <span class="iconify size-4 shrink-0 text-primary octicon--chevron-right-16"></span>
+                                {:else}
+                                    <span class="iconify size-4 shrink-0 text-primary octicon--chevron-down-16"></span>
+                                {/if}
+                            </div>
+                        {/if}
+                    {/snippet}
+                    {#snippet childWrapper({ node, collapsed, children })}
+                        <div
+                            class={{
+                                hidden: collapsed || node.visibleChildren.length <= 0,
+                                "dir-header": node.data.type === "directory" && !collapsed,
+                                "ps-4": true,
+                            }}
+                        >
+                            {@render children({ node })}
+                        </div>
+                    {/snippet}
+                </Tree>
+            </div>
+        </div>
+    </div>
+    <div class="flex grow flex-col p-3">
+        <div class="mb-2 flex flex-wrap items-center gap-2">
+            {#if viewer.diffMetadata !== null}
+                <DiffTitle meta={viewer.diffMetadata} />
+            {/if}
+            <div class="ml-auto flex h-fit flex-row gap-2">
+                <LoadDiffDialog />
+                <ActionsPopover />
                 {@render settingsPopover()}
             </div>
         </div>
-
-        <div class="mb-2 flex flex-wrap items-center">
-            <div class="me-2 flex items-center">
-                <label for="mcVersion" class="me-2 block text-sm font-bold">Minecraft Version</label>
-                <select
-                    id="mcVersion"
-                    bind:value={instance.selectedVersion}
-                    onchange={handleVersionSelect}
-                    class="rounded border px-2 py-1 focus:ring-2 focus:ring-primary focus:outline-none"
-                >
-                    <option value="">Select a version...</option>
-                    {#each minecraftVersions as version (version)}
-                        <option value={version}>{version}</option>
-                    {/each}
-                </select>
-            </div>
-            <div class="me-2 flex flex-row items-center">
-                {@render refreshButton()}
-                {@render viewSelector()}
-            </div>
+        <div class="mb-1 flex flex-row items-center gap-2">
+            {@render sidebarToggle()}
+            {#await viewer.stats}
+                <DiffStats />
+            {:then stats}
+                <DiffStats add={stats.addedLines} remove={stats.removedLines} />
+            {/await}
+            <DiffSearch />
         </div>
+        <div class="flex flex-1 flex-col border">
+            <VList data={viewer.fileDetails} style="height: 100%;" getKey={(_, i) => i} bind:this={viewer.vlist} overscan={3}>
+                {#snippet children(value, index)}
+                    {@const lines = viewer.diffText[index] !== undefined ? viewer.diffText[index] : null}
+                    {@const image = viewer.images[index] !== undefined ? viewer.images[index] : null}
+                    {@const patch = viewer.diffs[index]}
 
-        <div id="patches-container" class="flex h-full w-full flex-col data-[visible=false]:hidden" data-visible={instance.selectedVersion ? true : false}>
-            {#if currentView === "table"}
-                <div class="flex h-full">
-                    <PatchesTable data={instance.patches} gridClass="ag-theme-quartz w-full"></PatchesTable>
-                </div>
-            {:else if currentView === "stats"}
-                <div class="flex h-full">
-                    <PatchesStats data={instance.stats} gridClass="ag-theme-quartz w-full"></PatchesStats>
-                </div>
-            {/if}
+                    <div id={`file-${index}`}>
+                        <FileHeader {index} {value} isImage={image !== null && image !== undefined} />
+                        {#if !viewer.collapsed[index] && image !== null}
+                            <div class="mb border-b text-sm">
+                                {#if image.load}
+                                    {#if image.fileA !== null && image.fileB !== null}
+                                        {#await Promise.all([image.fileA.getValue(), image.fileB.getValue()])}
+                                            <div class="flex items-center justify-center bg-neutral-2 p-4"><Spinner /></div>
+                                        {:then images}
+                                            <ImageDiff fileA={images[0]} fileB={images[1]} />
+                                        {/await}
+                                    {:else}
+                                        {#await requireEitherImage(image).getValue()}
+                                            <div class="flex items-center justify-center bg-neutral-2 p-4"><Spinner /></div>
+                                        {:then file}
+                                            <AddedOrRemovedImage {file} mode={image.fileA === null ? "add" : "remove"} />
+                                        {/await}
+                                    {/if}
+                                {:else}
+                                    <div class="flex justify-center bg-neutral-2 p-4">
+                                        <button
+                                            type="button"
+                                            class=" flex flex-row items-center justify-center gap-1 rounded-md btn-primary px-2 py-1"
+                                            onclick={() => (image.load = true)}
+                                        >
+                                            <span class="iconify size-4 shrink-0 octicon--image-16"></span><span>Load image diff</span>
+                                        </button>
+                                    </div>
+                                {/if}
+                            </div>
+                        {/if}
+                        {#if !viewer.collapsed[index] && lines !== null && (!viewer.patchHeaderDiffOnly[index] || !globalOptions.omitPatchHeaderOnlyHunks)}
+                            <div class="mb border-b">
+                                <ConciseDiffView
+                                    {patch}
+                                    syntaxHighlighting={globalOptions.syntaxHighlighting}
+                                    syntaxHighlightingTheme={globalOptions.syntaxHighlightingTheme}
+                                    omitPatchHeaderOnlyHunks={globalOptions.omitPatchHeaderOnlyHunks}
+                                    wordDiffs={globalOptions.wordDiffs}
+                                    lineWrap={globalOptions.lineWrap}
+                                    searchQuery={viewer.searchQueryDebounced.current}
+                                    searchMatchingLines={() => viewer.searchResults.then((r) => r.lines.get(value))}
+                                    activeSearchResult={viewer.activeSearchResult && viewer.activeSearchResult.file === value
+                                        ? viewer.activeSearchResult.idx
+                                        : undefined}
+                                    cache={viewer.diffViewCache}
+                                    cacheKey={value}
+                                />
+                            </div>
+                        {/if}
+                    </div>
+                {/snippet}
+            </VList>
         </div>
     </div>
 </div>
+
+<style>
+    .dir-header {
+        position: relative;
+    }
+    .dir-header::before {
+        content: "";
+        position: absolute;
+        height: 100%;
+        width: 1px;
+        top: 0;
+        left: 1rem;
+        background-color: var(--color-gray-500);
+        z-index: 50;
+        display: block;
+    }
+</style>

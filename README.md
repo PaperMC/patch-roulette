@@ -19,14 +19,14 @@ Powered by Spring Boot, backend for the web interface and `paperweight`. Routes 
 
 SvelteKit frontend using tailwindcss for styling. Hosted as static files by the Spring Boot server.
 
-#### Authenticated Pages
-
-- `/login`: Login page
-- `/`: Dashboard
-
 #### Public Pages
 
-- [`/diff`](https://patch-roulette.papermc.io/diff): Multi-file concise diff viewer
+- [`/`](https://patch-roulette.papermc.io): Multi-file concise diff viewer
+
+#### Authenticated Pages
+
+- `/roulette/login`: Login page
+- `/roulette`: Management dashboard
 
 ### Web Extension
 

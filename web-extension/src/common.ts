@@ -1,4 +1,4 @@
-export const defaultViewerUrl = "https://patch-roulette.papermc.io/diff";
+export const defaultViewerUrl = "https://patch-roulette.papermc.io/";
 
 export async function getViewerUrl() {
     let url = defaultViewerUrl;
