@@ -1,5 +1,5 @@
 import { onMount } from "svelte";
-import type { Action } from "svelte/action";
+import { on } from "svelte/events";
 
 export function capitalizeFirstLetter(val: string): string {
     return val.charAt(0).toUpperCase() + val.slice(1);
@@ -14,21 +14,7 @@ export function watchLocalStorage(key: string, callback: (newValue: string | nul
             }
         }
 
-        window.addEventListener("storage", storageChanged);
-        return {
-            destroy() {
-                window.removeEventListener("storage", storageChanged);
-            },
-        };
+        const destroy = on(window, "storage", storageChanged);
+        return { destroy };
     });
 }
-
-export const resizeObserver: Action<HTMLElement, ResizeObserverCallback> = (node, callback) => {
-    const observer = new ResizeObserver(callback);
-    observer.observe(node);
-    return {
-        destroy() {
-            observer.disconnect();
-        },
-    };
-};
