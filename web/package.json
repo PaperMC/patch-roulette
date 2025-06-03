@@ -26,9 +26,7 @@
         "@sveltejs/kit": "^2.21.1",
         "@sveltejs/vite-plugin-svelte": "^5.0.3",
         "@tailwindcss/vite": "^4.1.7",
-        "@types/chroma-js": "^3.1.1",
         "@types/luxon": "^3.6.2",
-        "@types/wicg-file-system-access": "^2023.10.6",
         "eslint": "^9.27.0",
         "eslint-config-prettier": "^10.1.5",
         "eslint-plugin-svelte": "^3.9.0",
@@ -45,16 +43,11 @@
         "vite": "^6.3.5"
     },
     "dependencies": {
-        "@octokit/openapi-types": "^25.1.0",
         "ag-grid-svelte5-extended": "^0.0.13",
         "bits-ui": "^2.2.0",
-        "chroma-js": "^3.1.2",
-        "diff": "^8.0.2",
         "luxon": "^3.6.1",
         "runed": "^0.28.0",
-        "shiki": "^3.4.2",
-        "svelte-toolbelt": "^0.9.1",
-        "virtua": "^0.41.2"
+        "svelte-toolbelt": "^0.9.1"
     },
     "bunrc": {
         "run": {

@@ -1,9 +1,9 @@
 # Patch Roulette
 
-REST API and web interface for managing Paper updates and dealing with patches.
+REST API and web interface for managing Paper updates.
 
 > [!NOTE]  
-> This project is intended for internal use and does not guarantee stability, compatibility, support, or follow semantic versioning. External users will likely only find the diff viewer useful.
+> This project is intended for internal use and does not guarantee stability, compatibility, support, or follow semantic versioning.
 
 ## Overview
 
@@ -19,20 +19,10 @@ Powered by Spring Boot, backend for the web interface and `paperweight`. Routes 
 
 SvelteKit frontend using tailwindcss for styling. Hosted as static files by the Spring Boot server.
 
-#### Public Pages
+#### Pages
 
-- [`/`](https://patch-roulette.papermc.io): Multi-file concise diff viewer
-
-#### Authenticated Pages
-
-- `/roulette/login`: Login page
-- `/roulette`: Management dashboard
-
-### Web Extension
-
-Web extension that streamlines opening diffs in the viewer.
-- [Firefox](https://addons.mozilla.org/en-US/firefox/addon/patch-roulette/)
-- [Chrome](https://chromewebstore.google.com/detail/patch-roulette/feaaoepdocmiibjilhoahgldkaajfnhb)
+- [`/`](https://patch-roulette.papermc.io/login): Management dashboard
+- [`/login`](https://patch-roulette.papermc.io/login) : Login page
 
 ## Development
 

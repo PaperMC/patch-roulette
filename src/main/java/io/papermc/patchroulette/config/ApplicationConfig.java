@@ -5,9 +5,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 
 @ConfigurationProperties("application")
 public record ApplicationConfig(
-    List<UserConfig> users,
-    String githubClientId,
-    String githubClientSecret
+    List<UserConfig> users
 ) {
     public record UserConfig(String username, String password) {}
 }
