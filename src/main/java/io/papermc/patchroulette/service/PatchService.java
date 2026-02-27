@@ -68,7 +68,7 @@ public class PatchService {
     @Transactional
     public void cancelWorkOnPatch(final PatchId patchId) {
         final Patch patch = this.patchRepository.getReferenceById(patchId);
-        if (patch.getStatus() != Status.WIP) {
+        if (patch.getStatus() != Status.WIP && patch.getStatus() != Status.DONE) {
             throw new IllegalStateException("Patch " + patchId + " is not WIP");
         }
         patch.setStatus(Status.AVAILABLE);
