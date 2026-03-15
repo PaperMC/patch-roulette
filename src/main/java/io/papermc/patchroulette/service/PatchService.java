@@ -73,7 +73,7 @@ public class PatchService {
         }
         patch.setStatus(Status.AVAILABLE);
         patch.setResponsibleUser(null);
-        patch.updateDuration();
+        patch.setDuration(null);
         patch.setLastUpdated(LocalDateTime.now());
         this.patchRepository.save(patch);
     }
