@@ -47,7 +47,7 @@
         "bits-ui": "^2.2.0",
         "luxon": "^3.6.1",
         "runed": "^0.28.0",
-        "svelte-toolbelt": "^0.9.1"
+        "svelte-toolbelt": "^0.10.0"
     },
     "bunrc": {
         "run": {
