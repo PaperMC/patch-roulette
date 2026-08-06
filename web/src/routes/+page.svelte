@@ -2,6 +2,7 @@
     import { getUsername, PatchRouletteState, token } from "$lib/index.svelte";
     import { onMount } from "svelte";
     import { goto } from "$app/navigation";
+    import { resolve } from "$app/paths";
     import { fetchApi } from "$lib/api";
     import PatchesTable from "$lib/components/PatchesTable.svelte";
     import PatchesStats from "$lib/components/PatchesStats.svelte";
@@ -45,7 +46,7 @@
         token.value = localStorage.getItem("token");
 
         if (token.value === null) {
-            await goto("/login");
+            await goto(resolve("/login"));
             return;
         }
 
@@ -116,7 +117,7 @@
                     onclick={() => {
                         localStorage.removeItem("token");
                         token.value = null;
-                        goto("/login");
+                        goto(resolve("/login"));
                     }}
                 >
                     Logout
