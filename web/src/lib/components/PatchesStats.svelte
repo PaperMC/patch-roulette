@@ -73,7 +73,7 @@
 </script>
 
 <div class="flex w-full flex-1 flex-col">
-    {#if !data?.total}
+    {#if !data}
         <div class="flex h-full flex-col items-center justify-center">
             <span class="mb-2">Loading statistics...</span>
             <Spinner />
@@ -111,8 +111,15 @@
                     Time Spent: {Duration.fromISO(data.timeSpent).toHuman()}
                 </span>
             </div>
-            <div class="h-4 w-full overflow-hidden rounded-full shadow">
-                <div class="flex h-full w-full bg-gray-200 dark:dark:bg-white/20">
+            <div
+                class="h-4 w-full overflow-hidden rounded-full shadow"
+                role="progressbar"
+                aria-label="Patch progress"
+                aria-valuemin={0}
+                aria-valuemax={data.total}
+                aria-valuenow={data.done}
+            >
+                <div class="flex h-full w-full bg-gray-200 dark:bg-white/20">
                     <div class="h-full bg-green-500 dark:bg-green-800" style="width: {getProgressPercentage(data.done, data.total)}%"></div>
                     <div class="h-full bg-orange-500 dark:bg-orange-800" style="width: {getProgressPercentage(data.wip, data.total)}%"></div>
                     <div class="h-full bg-yellow-500 dark:bg-yellow-800" style="width: {getProgressPercentage(data.available, data.total)}%"></div>

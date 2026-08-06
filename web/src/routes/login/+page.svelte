@@ -1,15 +1,7 @@
 <script lang="ts">
     import Login from "./Login.svelte";
-    import { onMount } from "svelte";
     import { goto } from "$app/navigation";
     import { resolve } from "$app/paths";
-
-    onMount(() => {
-        const token = localStorage.getItem("token");
-        if (token) {
-            onLogin();
-        }
-    });
 
     function onLogin() {
         goto(resolve("/"));

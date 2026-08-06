@@ -67,6 +67,3 @@
 <div class="flex w-full flex-1">
     <AgGrid {gridOptions} rowData={data} {modules} {gridClass} />
 </div>
-
-<style>
-</style>

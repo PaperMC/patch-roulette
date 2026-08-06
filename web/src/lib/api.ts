@@ -6,20 +6,13 @@ interface FetchOptions extends RequestInit {
 export async function fetchApi(endpoint: string, options: FetchOptions = {}): Promise<Response> {
     const { params = {}, token, ...fetchOptions } = options;
 
-    const url = new URL(`${window.location.origin}/api${endpoint}`);
-    Object.keys(params).forEach((key) => url.searchParams.append(key, params[key]));
+    const base = `/api${endpoint}`;
+    const query = new URLSearchParams(params).toString();
+    const url = query ? `${base}${base.includes("?") ? "&" : "?"}${query}` : base;
 
-    const init = {
-        headers: {
-            ...fetchOptions.headers,
-        },
-        ...fetchOptions,
-    };
+    const init: RequestInit = { ...fetchOptions };
     if (token) {
-        init.headers = {
-            ...init.headers,
-            Authorization: `Basic ${token}`,
-        };
+        init.headers = { ...init.headers, Authorization: `Basic ${token}` };
     }
     return await fetch(url, init);
 }
