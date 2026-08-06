@@ -26,8 +26,6 @@ SvelteKit frontend using tailwindcss for styling. Hosted as static files by the 
 
 ## Development
 
-Note that Bun can be substituted with the package manager of your choice.
-
 ### Setup
 
 - Install [Bun](https://bun.sh/) and execute `bun install` in `/web` to install the required dependencies for the frontend.
