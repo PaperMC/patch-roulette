@@ -1,29 +1,28 @@
-// Let typescript know about the ...restProps pattern
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export type RestProps = Record<PropertyKey, any>;
+// Types matching the backend API JSON exactly (nullable fields!).
 
 export type PatchStatus = "WIP" | "AVAILABLE" | "DONE";
 
-export type PatchDetails = {
+export interface PatchDetails {
     path: string;
     status: PatchStatus;
-    responsibleUser: string;
-    lastUpdated: string; // ISO 8601 UTC datetime
-    duration: string;
-};
+    responsibleUser: string | null;
+    lastUpdated: string | null; // ISO 8601 UTC datetime
+    duration: string | null; // ISO 8601 duration
+}
 
-export type Stats = {
-    available: number;
-    done: number;
-    wip: number;
+export interface Stats {
     total: number;
-    timeSpent: string;
+    available: number;
+    wip: number;
+    done: number;
     users: UserStats[];
-};
+    timeSpent: string; // ISO 8601 duration
+}
 
-export type UserStats = {
+export interface UserStats {
+    rank: number;
     user: string;
     wip: number;
     done: number;
-    timeSpent: string;
-};
+    timeSpent: string; // ISO 8601 duration
+}

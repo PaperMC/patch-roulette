@@ -1,19 +1,35 @@
 <script lang="ts">
     import "../app.css";
-    import { initThemeHooks } from "$lib/theme.svelte";
-    import { Tooltip } from "bits-ui";
+    import { QueryClient, QueryClientProvider } from "@tanstack/svelte-query";
+    import { Toasty, TooltipProvider } from "kumo-svelte";
+    import { initAuth } from "$lib/auth.svelte";
+    import { initTheme } from "$lib/theme.svelte";
 
     let { children } = $props();
 
-    initThemeHooks();
+    const queryClient = new QueryClient({
+        defaultOptions: {
+            queries: {
+                retry: 1,
+                refetchOnWindowFocus: false,
+            },
+        },
+    });
+
+    initTheme();
+    initAuth();
 </script>
 
 <svelte:head>
     <title>Patch Roulette</title>
 </svelte:head>
 
-<Tooltip.Provider delayDuration={100}>
-    <div class="min-h-screen bg-neutral">
-        {@render children()}
-    </div>
-</Tooltip.Provider>
+<QueryClientProvider client={queryClient}>
+    <Toasty>
+        <TooltipProvider>
+            <div class="bg-kumo-canvas text-kumo-default min-h-screen">
+                {@render children()}
+            </div>
+        </TooltipProvider>
+    </Toasty>
+</QueryClientProvider>

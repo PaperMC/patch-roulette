@@ -1,19 +1,14 @@
 <script lang="ts">
+    import GitDiff from "phosphor-svelte/lib/GitDiff";
+    import { Link } from "kumo-svelte";
     import Login from "./Login.svelte";
-    import { goto } from "$app/navigation";
-    import { resolve } from "$app/paths";
-
-    function onLogin() {
-        goto(resolve("/"));
-    }
 </script>
 
-<div class="flex flex-col" id="login">
-    <div id="login-container" class="relative flex h-screen flex-col items-center justify-center p-4">
-        <Login {onLogin}></Login>
+<div class="flex min-h-dvh flex-col items-center justify-center gap-6 p-4">
+    <Login />
 
-        <a href="https://diffs.dev" class="absolute bottom-4 flex items-center rounded-md btn-primary px-4 py-2 text-center">
-            <span class="me-2 iconify octicon--file-diff-16"></span>Looking for the diff viewer?
-        </a>
-    </div>
+    <Link href="https://diffs.dev" variant="plain" class="flex items-center gap-1.5 text-center text-sm">
+        <GitDiff size={16} aria-hidden="true" />
+        Looking for the diff viewer?
+    </Link>
 </div>

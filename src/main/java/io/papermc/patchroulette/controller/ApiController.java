@@ -153,6 +153,7 @@ public class ApiController {
       long total, long available, long wip, long done, List<UserStats> users, Duration timeSpent) {}
 
   public static class UserStats {
+    public long rank;
     public String user;
     public long wip;
     public long done;
@@ -234,8 +235,23 @@ public class ApiController {
     }
 
     final List<UserStats> sortedUsers = users.values().stream()
-        .sorted((u1, u2) -> Long.compare(u2.done + u2.wip, u1.done + u1.wip))
+        .sorted(Comparator.comparingLong((UserStats user) -> user.done)
+            .reversed()
+            .thenComparing(
+                Comparator.comparingLong((UserStats user) -> user.wip).reversed())
+            .thenComparing(user -> user.user))
         .toList();
+
+    long rank = 0;
+    UserStats previousUser = null;
+    for (int index = 0; index < sortedUsers.size(); index++) {
+      final UserStats user = sortedUsers.get(index);
+      if (previousUser == null || user.done != previousUser.done || user.wip != previousUser.wip) {
+        rank = index + 1L;
+      }
+      user.rank = rank;
+      previousUser = user;
+    }
 
     return ResponseEntity.ok(new Stats(total, available, wip, done, sortedUsers, totalTimeSpent));
   }

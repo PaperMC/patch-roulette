@@ -1,67 +1,50 @@
 <script lang="ts">
-    import { fetchApi } from "$lib/api";
-    import Spinner from "$lib/components/Spinner.svelte";
-
-    interface Props {
-        onLogin: () => void;
-    }
-
-    let { onLogin }: Props = $props();
+    import { goto } from "$app/navigation";
+    import { resolve } from "$app/paths";
+    import { Banner, Button, Input, LayerCard, Text } from "kumo-svelte";
+    import { ApiError } from "$lib/api";
+    import { login } from "$lib/auth.svelte";
 
     let username = $state("");
     let password = $state("");
     let submitting = $state(false);
+    let errorMessage = $state("");
 
     async function submit(event: SubmitEvent) {
         event.preventDefault();
+        if (submitting) return;
 
-        const encoded = btoa(username + ":" + password);
-
-        let response: Response;
+        errorMessage = "";
         submitting = true;
         try {
-            response = await fetchApi("/test-login", {
-                method: "POST",
-                token: encoded,
-            });
+            await login(username, password);
+            goto(resolve("/"));
+        } catch (error) {
+            errorMessage =
+                error instanceof ApiError && error.status === 401
+                    ? "Invalid username or password."
+                    : error instanceof Error
+                      ? error.message
+                      : "Login failed. Please try again.";
         } finally {
             submitting = false;
-        }
-
-        if (response.ok) {
-            localStorage.setItem("token", encoded);
-            onLogin();
-        } else {
-            alert("Invalid login.");
         }
     }
 </script>
 
-<form id="login-form" class="w-full max-w-md p-6" onsubmit={submit}>
-    <h1 class="mb-6 w-full text-center text-2xl font-bold">Patch Roulette</h1>
-    <div class="mb-4">
-        <label for="username" class="mb-2 block text-sm font-bold">Username</label>
-        <input
-            type="text"
-            id="username"
-            name="username"
-            autocomplete="username"
-            class="w-full rounded border px-3 py-2 focus:ring-2 focus:ring-primary focus:outline-none"
-            bind:value={username}
-        />
-    </div>
-    <div class="mb-6">
-        <label for="password" class="mb-2 block text-sm font-bold">Password</label>
-        <input
-            type="password"
-            id="password"
-            name="password"
-            autocomplete="current-password"
-            class="w-full rounded border px-3 py-2 focus:ring-2 focus:ring-primary focus:outline-none"
-            bind:value={password}
-        />
-    </div>
-    <button type="submit" class="focus:shadow-outline flex w-full items-center justify-center gap-2 rounded btn-primary px-4 py-2 font-bold focus:outline-none">
-        {#if submitting}Logging in... <Spinner size={4} class="border-white" />{:else}Login{/if}
-    </button>
-</form>
+<LayerCard class="w-full max-w-sm p-6">
+    <form class="flex flex-col gap-6" onsubmit={submit}>
+        <Text variant="heading2" as="h1" class="text-center">Patch Roulette</Text>
+
+        <div class="flex flex-col gap-4">
+            <Input label="Username" name="username" type="text" autocomplete="username" bind:value={username} />
+            <Input label="Password" name="password" type="password" autocomplete="current-password" bind:value={password} />
+        </div>
+
+        {#if errorMessage}
+            <Banner variant="error" size="sm" text={errorMessage} />
+        {/if}
+
+        <Button type="submit" variant="primary" loading={submitting} class="w-full justify-center">Login</Button>
+    </form>
+</LayerCard>

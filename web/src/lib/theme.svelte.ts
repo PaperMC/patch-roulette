@@ -1,60 +1,58 @@
 import { browser } from "$app/environment";
-import { watchLocalStorage } from "$lib/util";
+import { PersistedState } from "runed";
 import { MediaQuery } from "svelte/reactivity";
-import { colorSchemeDark, colorSchemeLight, themeQuartz } from "@ag-grid-community/theming";
 
-export type Theme = "dark" | "light" | "auto";
+export type Theme = "light" | "dark" | "auto";
+export type EffectiveTheme = "light" | "dark";
 
-// Used indirectly in app.html
-const themeKey = "theme";
+export const THEME_STORAGE_KEY = "theme";
 
-function initialTheme() {
-    if (browser) {
-        const storedTheme = localStorage.getItem(themeKey);
-        if (storedTheme) {
-            return storedTheme as Theme;
-        }
-    }
-    return "auto";
+function isTheme(value: string | null): value is Theme {
+    return value === "light" || value === "dark" || value === "auto";
 }
 
-// Module state is safe here only because the app is fully prerendered; revisit if SSR is introduced.
-let theme: Theme = $state(initialTheme());
-
-const prefersDark = new MediaQuery("prefers-color-scheme: dark");
-
-export function initThemeHooks() {
-    watchLocalStorage(themeKey, (newValue) => {
-        if (newValue) {
-            theme = newValue as Theme;
-        }
-    });
-    $effect(() => document.documentElement.setAttribute("data-theme", theme));
-}
-
-export function setGlobalTheme(newTheme: Theme) {
-    theme = newTheme;
-    localStorage.setItem(themeKey, newTheme);
-}
-
-export function getGlobalTheme(): Theme {
-    return theme;
-}
-
-export function getEffectiveGlobalTheme(): "dark" | "light" {
-    if (theme === "auto") {
-        return prefersDark.current ? "dark" : "light";
-    }
-    return theme;
-}
-
-const agTheme = $derived.by(() => {
-    if (getEffectiveGlobalTheme() === "dark") {
-        return themeQuartz.withPart(colorSchemeDark);
-    }
-    return themeQuartz.withPart(colorSchemeLight);
+export const theme = new PersistedState<Theme>(THEME_STORAGE_KEY, "auto", {
+    // Keep the existing unquoted storage format used by app.html's pre-paint
+    // script, while rejecting malformed values.
+    serializer: {
+        serialize: String,
+        deserialize: (value) => (isTheme(value) ? value : "auto"),
+    },
 });
 
-export function getAgTheme() {
-    return agTheme;
+const prefersDark = new MediaQuery("(prefers-color-scheme: dark)");
+
+/** The currently applied mode: "auto" resolves against prefers-color-scheme. */
+export function effectiveTheme(): EffectiveTheme {
+    return theme.current === "auto" ? (prefersDark.current ? "dark" : "light") : theme.current;
+}
+
+function applyTheme(): void {
+    if (!browser) return;
+    const mode = effectiveTheme();
+    const root = document.documentElement;
+    // Kumo's dark tokens only apply via data-mode="dark" on <html>; light is
+    // the default. color-scheme is set explicitly so native controls (select
+    // dropdowns, scrollbars, autofill) match the mode.
+    root.setAttribute("data-mode", mode);
+    root.style.colorScheme = mode;
+}
+
+/**
+ * Sets the persisted theme preference ("light" | "dark" | "auto").
+ * `effectiveTheme()` reacts immediately (and to OS changes while in auto
+ * mode, via the MediaQuery).
+ */
+export function setTheme(next: Theme): void {
+    theme.current = next;
+}
+
+/**
+ * Applies the effective mode reactively. PersistedState handles storage and
+ * cross-tab synchronization; app.html's pre-paint script handles initial paint.
+ */
+export function initTheme(): void {
+    $effect(() => {
+        applyTheme();
+    });
 }

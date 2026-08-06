@@ -1,129 +1,25 @@
+@source "../node_modules/kumo-svelte/dist/**/*.{js,svelte,ts}";
+
+@import "@fontsource-variable/inter/wght.css";
 @import "tailwindcss";
+@import "kumo-svelte/styles.css";
 
-@plugin "@iconify/tailwind4" {
-    prefixes: octicon;
-}
-
-@custom-variant dark {
-    /* Enable dark mode when data-theme attribute = dark */
-    &:where([data-theme="dark"], [data-theme="dark"] *) {
-        @slot;
-    }
-    /* Enable dark mode when data-theme attribute = auto and prefers-color-scheme is dark */
-    @media (prefers-color-scheme: dark) {
-        &:where([data-theme="auto"], [data-theme="auto"] *) {
-            @slot;
-        }
-    }
-}
-
+/* Fontsource registers the variable font as "Inter Variable", while Kumo's
+   default sans stack refers to "Inter". Keep the stack aligned so the bundled
+   font is actually selected instead of falling back to a system font. */
 @theme {
-    --color-primary: var(--color-blue-500);
-
-    /* Text colors */
-    --color-em-high-light: rgba(0, 0, 0, 0.87);
-    --color-em-high-dark: rgba(255, 255, 255, 0.87);
-    --color-em-high: var(--color-em-high-light);
-
-    --color-em-med-light: rgba(0, 0, 0, 0.6);
-    --color-em-med-dark: rgba(255, 255, 255, 0.6);
-    --color-em-med: var(--color-em-med-light);
-
-    --color-em-disabled-light: rgba(0, 0, 0, 0.38);
-    --color-em-disabled-dark: rgba(255, 255, 255, 0.38);
-    --color-em-disabled: var(--color-em-disabled-light);
-
-    /* Bg colors */
-    --color-neutral-light: var(--color-white);
-    --color-neutral-dark: var(--color-neutral-900);
-    --color-neutral: var(--color-neutral-light);
-    --color-neutral-light-2: var(--color-neutral-100);
-    --color-neutral-dark-2: var(--color-neutral-800);
-    --color-neutral-2: var(--color-neutral-light-2);
-    --color-neutral-light-3: var(--color-neutral-200);
-    --color-neutral-dark-3: var(--color-neutral-700);
-    --color-neutral-3: var(--color-neutral-light-3);
-
-    /* Border colors */
-    --color-edge-light: rgba(0, 0, 0, 0.2);
-    --color-edge-dark: rgba(255, 255, 255, 0.2);
-    --color-edge: var(--color-edge-light);
+    --font-sans: "Inter Variable", ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
 }
 
-@layer base {
-    @variant dark {
-        --color-em-high: var(--color-em-high-dark);
-        --color-em-med: var(--color-em-med-dark);
-        --color-em-disabled: var(--color-em-disabled-dark);
-
-        --color-neutral: var(--color-neutral-dark);
-        --color-neutral-2: var(--color-neutral-dark-2);
-        --color-neutral-3: var(--color-neutral-dark-3);
-
-        --color-edge: var(--color-edge-dark);
-    }
-    html {
-        color: var(--color-em-high);
-        color-scheme: light;
-
-        @apply dark:[color-scheme:dark];
-    }
-    * {
-        border-color: var(--color-edge);
-    }
-    select,
-    select option {
-        background-color: var(--color-neutral);
-        color: var(--color-em-high);
-    }
+/* Kumo only switches to dark mode via data-mode="dark" on <html>, and it does
+   not set color-scheme itself. Set it explicitly so native controls (select
+   dropdowns, scrollbars, autofill) match the active mode. The inline script in
+   app.html also sets an inline color-scheme before first paint; these rules
+   keep it consistent for any element the inline style does not cover. */
+:root {
+    color-scheme: light;
 }
 
-@utility btn-ghost-hover {
-    @apply bg-neutral-300/80 dark:bg-neutral-700/80;
-}
-@utility btn-ghost-active {
-    @apply bg-neutral-400/80 dark:bg-neutral-600/80;
-}
-@utility btn-ghost {
-    &:hover {
-        @apply btn-ghost-hover;
-    }
-    &:active {
-        @apply btn-ghost-active;
-    }
-    @apply transition-colors duration-100 ease-in-out;
-}
-@utility btn-ghost-visible {
-    @apply btn-ghost-hover;
-    &:active {
-        @apply btn-ghost-active;
-    }
-}
-
-@utility btn-primary-hover {
-    @apply bg-blue-600;
-}
-@utility btn-primary {
-    @apply bg-primary text-white;
-    &:hover {
-        @apply btn-primary-hover;
-    }
-    &:active {
-        @apply bg-blue-700;
-    }
-    @apply transition-colors duration-100 ease-in-out;
-}
-
-@utility btn-danger {
-    @apply bg-red-500 text-white;
-    &:hover {
-        @apply bg-red-600;
-    }
-    &:active {
-        @apply bg-red-700;
-    }
-}
-
-.png-bg {
-    background: url("/png.gif") right bottom var(--color-gray-300);
+:root[data-mode="dark"] {
+    color-scheme: dark;
 }
