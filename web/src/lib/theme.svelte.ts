@@ -18,6 +18,7 @@ function initialTheme() {
     return "auto";
 }
 
+// Module state is safe here only because the app is fully prerendered; revisit if SSR is introduced.
 let theme: Theme = $state(initialTheme());
 
 const prefersDark = new MediaQuery("prefers-color-scheme: dark");

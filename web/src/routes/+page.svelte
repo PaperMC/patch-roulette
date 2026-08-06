@@ -33,22 +33,14 @@
         }
     }
 
-    async function handleVersionSelect(event: Event) {
-        instance.selectedVersion = (event.target as HTMLSelectElement).value;
-        if (instance.selectedVersion === "" || instance.selectedVersion === null) {
-            return;
-        } else if (instance.selectedVersion) {
-            await instance.onVersionSelect((event.target as HTMLSelectElement).value);
+    function handleVersionSelect() {
+        if (instance.selectedVersion) {
+            instance.onVersionSelect(instance.selectedVersion);
         }
     }
 
     onMount(async () => {
         token.value = localStorage.getItem("token");
-
-        if (token.value === null) {
-            await goto(resolve("/login"));
-            return;
-        }
 
         await loadMinecraftVersions();
 
@@ -92,6 +84,7 @@
             <button
                 class="flex items-center justify-center rounded-sm btn-ghost px-2 py-1 text-primary data-[active=true]:btn-ghost-visible"
                 data-active={currentView === view}
+                aria-pressed={currentView === view}
                 onclick={() => (currentView = view)}
             >
                 {capitalizeFirstLetter(view)}

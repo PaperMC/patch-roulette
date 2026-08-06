@@ -1,6 +1,3 @@
-<script module>
-</script>
-
 <script lang="ts">
     import { useId, Label } from "bits-ui";
     import type { Snippet } from "svelte";
@@ -12,17 +9,11 @@
 
     let { children, title }: Props = $props();
 
-    let groupId = useId();
-    let labelId = useId();
+    const groupId = useId();
+    const labelId = useId();
 </script>
-
-{#snippet renderChildren()}
-    {#if children}
-        {@render children()}
-    {/if}
-{/snippet}
 
 <div id={groupId} aria-labelledby={labelId} class="flex flex-col" role="group">
     <Label.Root id={labelId} for={groupId} class="px-2 pt-4 pb-1 font-semibold">{title}</Label.Root>
-    {@render renderChildren()}
+    {@render children?.()}
 </div>

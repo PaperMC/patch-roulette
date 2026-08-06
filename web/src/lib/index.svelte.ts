@@ -53,9 +53,9 @@ export class PatchRouletteState {
             return;
         }
 
-        const patchResponse = await fetchApi(`/get-all-patches?minecraftVersion=${mcVersion}`, {
+        const patchResponse = await fetchApi(`/get-all-patches?minecraftVersion=${encodeURIComponent(mcVersion)}`, {
             method: "GET",
-            token: localStorage.getItem("token")!,
+            token: token.value ?? undefined,
         });
 
         if (patchResponse.ok) {
@@ -64,9 +64,9 @@ export class PatchRouletteState {
             alert("Failed to fetch patches. Please try again.");
         }
 
-        const statsResponse = await fetchApi(`/stats?minecraftVersion=${mcVersion}`, {
+        const statsResponse = await fetchApi(`/stats?minecraftVersion=${encodeURIComponent(mcVersion)}`, {
             method: "GET",
-            token: localStorage.getItem("token")!,
+            token: token.value ?? undefined,
         });
 
         if (statsResponse.ok) {

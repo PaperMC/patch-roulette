@@ -45,6 +45,7 @@
             type="text"
             id="username"
             name="username"
+            autocomplete="username"
             class="w-full rounded border px-3 py-2 focus:ring-2 focus:ring-primary focus:outline-none"
             bind:value={username}
         />
@@ -55,6 +56,7 @@
             type="password"
             id="password"
             name="password"
+            autocomplete="current-password"
             class="w-full rounded border px-3 py-2 focus:ring-2 focus:ring-primary focus:outline-none"
             bind:value={password}
         />
