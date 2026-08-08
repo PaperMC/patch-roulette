@@ -7,6 +7,7 @@ import io.papermc.patchroulette.repository.PatchRepository;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -87,7 +88,9 @@ public class PatchService {
     if (patch.getStatus() != Status.WIP) {
       throw new IllegalStateException("Patch " + patchId + " is not WIP");
     }
-    if (!patch.getResponsibleUser().equals(user)) {
+    final String responsibleUser = Objects.requireNonNull(
+        patch.getResponsibleUser(), "Patch " + patchId + " has no responsible user");
+    if (!responsibleUser.equals(user)) {
       throw new IllegalStateException("User " + user + " is not responsible for patch " + patchId);
     }
     patch.setStatus(Status.DONE);

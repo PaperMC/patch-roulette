@@ -1,4 +1,6 @@
 import java.time.Instant
+import net.ltgt.gradle.errorprone.errorprone
+import net.ltgt.gradle.nullaway.nullaway
 
 plugins {
     id("net.kyori.indra") version "4.0.0"
@@ -7,6 +9,8 @@ plugins {
     id("io.spring.dependency-management") version "1.1.7"
     id("com.google.cloud.tools.jib") version "3.5.4"
     id("dev.lukebemish.immaculate") version "0.2.5"
+    id("net.ltgt.errorprone") version "5.1.0"
+    id("net.ltgt.nullaway") version "3.1.0"
 }
 
 indra {
@@ -33,9 +37,28 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-flyway")
     implementation("org.flywaydb:flyway-database-postgresql")
     implementation("org.springframework.boot:spring-boot-starter-security")
+    compileOnly("org.jspecify:jspecify")
     runtimeOnly("com.h2database:h2") // for local
     runtimeOnly("org.postgresql:postgresql") // for prod
     testImplementation("org.springframework.boot:spring-boot-starter-test")
+    errorprone("com.google.errorprone:error_prone_core:2.50.0")
+    errorprone("com.uber.nullaway:nullaway:0.13.8")
+}
+
+nullaway {
+    onlyNullMarked = true
+    jspecifyMode = true
+}
+
+tasks.withType<JavaCompile>().configureEach {
+    options.errorprone {
+        disableAllChecks = true // Only NullAway is enabled
+        error("RequireExplicitNullMarking")
+        nullaway {
+            error()
+        }
+        option("NullAway:CustomContractAnnotations", "org.springframework.lang.Contract")
+    }
 }
 
 buildscript {

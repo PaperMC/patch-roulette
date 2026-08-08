@@ -6,9 +6,13 @@ import java.io.Serializable;
 import java.util.Objects;
 
 public class PatchId implements Serializable {
+  private static final long serialVersionUID = 1L;
+
   private String minecraftVersion;
   private String path;
 
+  // Required by JPA; fields are always set via the constructor or by Hibernate reflection.
+  @SuppressWarnings("NullAway")
   public PatchId() {}
 
   public String getMinecraftVersion() {

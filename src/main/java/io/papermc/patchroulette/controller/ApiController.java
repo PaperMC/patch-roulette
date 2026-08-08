@@ -13,6 +13,8 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import org.jspecify.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -47,7 +49,11 @@ public class ApiController {
   }
 
   public record PatchDetails(
-      String path, String status, String responsibleUser, Instant lastUpdated, Duration duration) {}
+      String path,
+      String status,
+      @Nullable String responsibleUser,
+      @Nullable Instant lastUpdated,
+      @Nullable Duration duration) {}
 
   @PreAuthorize("hasRole('PATCH')")
   @GetMapping(value = "/get-all-patches", produces = "application/json")
@@ -177,36 +183,39 @@ public class ApiController {
     final Map<String, UserStats> users = new HashMap<>();
 
     // Track intervals for each user
-    Map<String, List<TimeUtil.TimeInterval>> userIntervals = new HashMap<>();
+    final Map<String, List<TimeUtil.TimeInterval>> userIntervals = new HashMap<>();
 
     for (Patch patch : allPatches) {
-      switch (patch.getStatus()) {
+      final Status status = patch.getStatus();
+      switch (status) {
         case AVAILABLE -> available++;
         case WIP -> wip++;
         case DONE -> done++;
       }
 
-      if (patch.getResponsibleUser() != null) {
-        users.compute(patch.getResponsibleUser(), (user, userStats) -> {
+      final String responsibleUser = patch.getResponsibleUser();
+      if (responsibleUser != null) {
+        users.compute(responsibleUser, (user, userStats) -> {
           if (userStats == null) {
-            userStats = new UserStats(patch.getResponsibleUser(), 0, 0, Duration.ZERO);
+            userStats = new UserStats(responsibleUser, 0, 0, Duration.ZERO);
           }
-          if (patch.getStatus() == Status.WIP) {
+          if (status == Status.WIP) {
             userStats.wip++;
-          } else if (patch.getStatus() == Status.DONE) {
+          } else if (status == Status.DONE) {
             userStats.done++;
           }
           return userStats;
         });
 
         // Track the time interval for this patch if it has duration
-        if (patch.getDuration() != null && patch.getLastUpdated() != null) {
-          Instant endTime = patch.getLastUpdated();
-          Instant startTime = endTime.minus(patch.getDuration());
+        final Duration duration = patch.getDuration();
+        final Instant lastUpdated = patch.getLastUpdated();
+        if (duration != null && lastUpdated != null) {
+          final Instant startTime = lastUpdated.minus(duration);
 
           userIntervals
-              .computeIfAbsent(patch.getResponsibleUser(), k -> new ArrayList<>())
-              .add(new TimeUtil.TimeInterval(startTime, endTime));
+              .computeIfAbsent(responsibleUser, k -> new ArrayList<>())
+              .add(new TimeUtil.TimeInterval(startTime, lastUpdated));
         }
       }
     }
@@ -226,8 +235,9 @@ public class ApiController {
       // Calculate total duration from merged intervals
       Duration userDuration = TimeUtil.calculateDuration(mergedIntervals);
 
-      // Update user stats
-      users.get(user).timeSpent = userDuration;
+      // Present for every userIntervals key: both maps are populated together above.
+      final UserStats userStats = Objects.requireNonNull(users.get(user));
+      userStats.timeSpent = userDuration;
 
       // Add to total time
       totalTimeSpent = totalTimeSpent.plus(userDuration);

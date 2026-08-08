@@ -8,6 +8,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.IdClass;
 import java.time.Duration;
 import java.time.Instant;
+import org.jspecify.annotations.Nullable;
 
 @Entity
 @IdClass(PatchId.class)
@@ -23,8 +24,13 @@ public class Patch {
   @Enumerated(EnumType.ORDINAL)
   private Status status;
 
+  @Nullable
   private String responsibleUser;
+
+  @Nullable
   private Instant lastUpdated;
+
+  @Nullable
   private Duration duration;
 
   public Patch() {}
@@ -53,37 +59,37 @@ public class Patch {
     this.status = status;
   }
 
-  public String getResponsibleUser() {
+  public @Nullable String getResponsibleUser() {
     return this.responsibleUser;
   }
 
-  public void setResponsibleUser(final String responsibleUser) {
+  public void setResponsibleUser(final @Nullable String responsibleUser) {
     this.responsibleUser = responsibleUser;
   }
 
-  public Instant getLastUpdated() {
+  public @Nullable Instant getLastUpdated() {
     return lastUpdated;
   }
 
-  public void setLastUpdated(Instant lastUpdated) {
+  public void setLastUpdated(final @Nullable Instant lastUpdated) {
     this.lastUpdated = lastUpdated;
   }
 
-  public Duration getDuration() {
+  public @Nullable Duration getDuration() {
     return duration;
   }
 
-  public void setDuration(Duration duration) {
+  public void setDuration(final @Nullable Duration duration) {
     this.duration = duration;
   }
 
   public void updateDuration() {
     if (this.lastUpdated != null) {
-      final Duration duration = Duration.between(this.lastUpdated, Instant.now());
+      final Duration elapsed = Duration.between(this.lastUpdated, Instant.now());
       if (this.duration == null) {
-        this.duration = duration;
+        this.duration = elapsed;
       } else {
-        this.duration = this.duration.plus(duration);
+        this.duration = this.duration.plus(elapsed);
       }
     }
   }
