@@ -2,7 +2,7 @@ package io.papermc.patchroulette.controller;
 
 import io.papermc.patchroulette.model.Patch;
 import io.papermc.patchroulette.model.PatchId;
-import io.papermc.patchroulette.model.Status;
+import io.papermc.patchroulette.model.PatchState;
 import io.papermc.patchroulette.service.PatchService;
 import io.papermc.patchroulette.util.TimeUtil;
 import jakarta.persistence.EntityNotFoundException;
@@ -13,7 +13,6 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import org.jspecify.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -44,7 +43,7 @@ public class ApiController {
   public ResponseEntity<List<String>> getAvailablePatches(
       @RequestParam final String minecraftVersion) {
     return ResponseEntity.ok(this.patchService.getAvailablePatches(minecraftVersion).stream()
-        .map(Patch::getPath)
+        .map(patch -> patch.id().getPath())
         .toList());
   }
 
@@ -55,17 +54,30 @@ public class ApiController {
       @Nullable Instant lastUpdated,
       @Nullable Duration duration) {}
 
+  private static PatchDetails toPatchDetails(final Patch patch) {
+    final PatchState state = patch.state();
+    return switch (state) {
+      case PatchState.Available a ->
+        new PatchDetails(patch.id().getPath(), state.label(), null, patch.lastUpdated(), null);
+      case PatchState.InProgress w ->
+        new PatchDetails(
+            patch.id().getPath(), state.label(), w.responsibleUser(), patch.lastUpdated(), null);
+      case PatchState.Completed c ->
+        new PatchDetails(
+            patch.id().getPath(),
+            state.label(),
+            c.responsibleUser(),
+            patch.lastUpdated(),
+            c.duration());
+    };
+  }
+
   @PreAuthorize("hasRole('PATCH')")
   @GetMapping(value = "/get-all-patches", produces = "application/json")
   public ResponseEntity<List<PatchDetails>> getAllPatches(
       @RequestParam final String minecraftVersion) {
     return ResponseEntity.ok(this.patchService.getAllPatches(minecraftVersion).stream()
-        .map(patch -> new PatchDetails(
-            patch.getPath(),
-            patch.getStatus().name(),
-            patch.getResponsibleUser(),
-            patch.getLastUpdated(),
-            patch.getDuration()))
+        .map(ApiController::toPatchDetails)
         .toList());
   }
 
@@ -163,6 +175,7 @@ public class ApiController {
     public long wip;
     public long done;
     public Duration timeSpent;
+    private final List<TimeUtil.TimeInterval> intervals = new ArrayList<>();
 
     public UserStats(String user, long wip, long done, Duration timeSpent) {
       this.user = user;
@@ -182,64 +195,37 @@ public class ApiController {
     long done = 0;
     final Map<String, UserStats> users = new HashMap<>();
 
-    // Track intervals for each user
-    final Map<String, List<TimeUtil.TimeInterval>> userIntervals = new HashMap<>();
-
-    for (Patch patch : allPatches) {
-      final Status status = patch.getStatus();
-      switch (status) {
-        case AVAILABLE -> available++;
-        case WIP -> wip++;
-        case DONE -> done++;
-      }
-
-      final String responsibleUser = patch.getResponsibleUser();
-      if (responsibleUser != null) {
-        users.compute(responsibleUser, (user, userStats) -> {
-          if (userStats == null) {
-            userStats = new UserStats(responsibleUser, 0, 0, Duration.ZERO);
+    for (final Patch patch : allPatches) {
+      switch (patch.state()) {
+        case PatchState.Available a -> available++;
+        case PatchState.InProgress w -> {
+          wip++;
+          users.computeIfAbsent(
+                  w.responsibleUser(), user -> new UserStats(user, 0, 0, Duration.ZERO))
+              .wip++;
+        }
+        case PatchState.Completed c -> {
+          done++;
+          final UserStats userStats = users.computeIfAbsent(
+              c.responsibleUser(), user -> new UserStats(user, 0, 0, Duration.ZERO));
+          userStats.done++;
+          final Instant lastUpdated = patch.lastUpdated();
+          if (lastUpdated != null) {
+            userStats.intervals.add(
+                new TimeUtil.TimeInterval(lastUpdated.minus(c.duration()), lastUpdated));
           }
-          if (status == Status.WIP) {
-            userStats.wip++;
-          } else if (status == Status.DONE) {
-            userStats.done++;
-          }
-          return userStats;
-        });
-
-        // Track the time interval for this patch if it has duration
-        final Duration duration = patch.getDuration();
-        final Instant lastUpdated = patch.getLastUpdated();
-        if (duration != null && lastUpdated != null) {
-          final Instant startTime = lastUpdated.minus(duration);
-
-          userIntervals
-              .computeIfAbsent(responsibleUser, k -> new ArrayList<>())
-              .add(new TimeUtil.TimeInterval(startTime, lastUpdated));
         }
       }
     }
 
     // Calculate accurate time spent for each user by merging overlapping intervals
     Duration totalTimeSpent = Duration.ZERO;
-    for (Map.Entry<String, List<TimeUtil.TimeInterval>> entry : userIntervals.entrySet()) {
-      String user = entry.getKey();
-      List<TimeUtil.TimeInterval> intervals = entry.getValue();
-
-      // Sort intervals by start time
+    for (final UserStats userStats : users.values()) {
+      final List<TimeUtil.TimeInterval> intervals = userStats.intervals;
       intervals.sort(Comparator.comparing(TimeUtil.TimeInterval::start));
-
-      // Merge overlapping intervals
-      List<TimeUtil.TimeInterval> mergedIntervals = TimeUtil.mergeOverlappingIntervals(intervals);
-
-      // Calculate total duration from merged intervals
-      Duration userDuration = TimeUtil.calculateDuration(mergedIntervals);
-
-      // Present for every userIntervals key: both maps are populated together above.
-      final UserStats userStats = Objects.requireNonNull(users.get(user));
+      final Duration userDuration =
+          TimeUtil.calculateDuration(TimeUtil.mergeOverlappingIntervals(intervals));
       userStats.timeSpent = userDuration;
-
-      // Add to total time
       totalTimeSpent = totalTimeSpent.plus(userDuration);
     }
 
