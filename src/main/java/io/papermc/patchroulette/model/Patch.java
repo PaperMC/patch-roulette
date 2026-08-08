@@ -6,7 +6,6 @@ import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
 import jakarta.persistence.IdClass;
-
 import java.time.Duration;
 import java.time.Instant;
 
@@ -14,79 +13,78 @@ import java.time.Instant;
 @IdClass(PatchId.class)
 public class Patch {
 
-    @Id
-    private String minecraftVersion;
+  @Id
+  private String minecraftVersion;
 
-    @Id
-    @Column(columnDefinition = "VARCHAR(1024)")
-    private String path;
+  @Id
+  @Column(columnDefinition = "VARCHAR(1024)")
+  private String path;
 
-    @Enumerated(EnumType.ORDINAL)
-    private Status status;
+  @Enumerated(EnumType.ORDINAL)
+  private Status status;
 
-    private String responsibleUser;
-    private Instant lastUpdated;
-    private Duration duration;
+  private String responsibleUser;
+  private Instant lastUpdated;
+  private Duration duration;
 
-    public Patch() {
-    }
+  public Patch() {}
 
-    public String getMinecraftVersion() {
-        return this.minecraftVersion;
-    }
+  public String getMinecraftVersion() {
+    return this.minecraftVersion;
+  }
 
-    public void setMinecraftVersion(final String minecraftVersion) {
-        this.minecraftVersion = minecraftVersion;
-    }
+  public void setMinecraftVersion(final String minecraftVersion) {
+    this.minecraftVersion = minecraftVersion;
+  }
 
-    public String getPath() {
-        return this.path;
-    }
+  public String getPath() {
+    return this.path;
+  }
 
-    public void setPath(final String path) {
-        this.path = path;
-    }
+  public void setPath(final String path) {
+    this.path = path;
+  }
 
-    public Status getStatus() {
-        return this.status;
-    }
+  public Status getStatus() {
+    return this.status;
+  }
 
-    public void setStatus(final Status status) {
-        this.status = status;
-    }
+  public void setStatus(final Status status) {
+    this.status = status;
+  }
 
-    public String getResponsibleUser() {
-        return this.responsibleUser;
-    }
+  public String getResponsibleUser() {
+    return this.responsibleUser;
+  }
 
-    public void setResponsibleUser(final String responsibleUser) {
-        this.responsibleUser = responsibleUser;
-    }
+  public void setResponsibleUser(final String responsibleUser) {
+    this.responsibleUser = responsibleUser;
+  }
 
-    public Instant getLastUpdated() {
-        return lastUpdated;
-    }
+  public Instant getLastUpdated() {
+    return lastUpdated;
+  }
 
-    public void setLastUpdated(Instant lastUpdated) {
-        this.lastUpdated = lastUpdated;
-    }
+  public void setLastUpdated(Instant lastUpdated) {
+    this.lastUpdated = lastUpdated;
+  }
 
-    public Duration getDuration() {
-        return duration;
-    }
+  public Duration getDuration() {
+    return duration;
+  }
 
-    public void setDuration(Duration duration) {
+  public void setDuration(Duration duration) {
+    this.duration = duration;
+  }
+
+  public void updateDuration() {
+    if (this.lastUpdated != null) {
+      final Duration duration = Duration.between(this.lastUpdated, Instant.now());
+      if (this.duration == null) {
         this.duration = duration;
+      } else {
+        this.duration = this.duration.plus(duration);
+      }
     }
-
-    public void updateDuration() {
-        if (this.lastUpdated != null) {
-            final Duration duration = Duration.between(this.lastUpdated, Instant.now());
-            if (this.duration == null) {
-                this.duration = duration;
-            } else {
-                this.duration = this.duration.plus(duration);
-            }
-        }
-    }
+  }
 }
