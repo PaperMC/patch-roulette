@@ -21,39 +21,37 @@ import org.springframework.security.web.SecurityFilterChain;
 @EnableWebSecurity
 @EnableMethodSecurity
 public class SecurityConfiguration {
-    @Bean
-    public PasswordEncoder passwordEncoder() {
-        return PasswordEncoderFactories.createDelegatingPasswordEncoder();
-    }
+  @Bean
+  public PasswordEncoder passwordEncoder() {
+    return PasswordEncoderFactories.createDelegatingPasswordEncoder();
+  }
 
-    @Bean
-    public SecurityFilterChain securityFilterChain(final HttpSecurity http) throws Exception {
-        return http
-            .authorizeHttpRequests(configurer -> configurer.anyRequest().permitAll())
-            .cors(Customizer.withDefaults())
-            .csrf(AbstractHttpConfigurer::disable)
-            .formLogin(AbstractHttpConfigurer::disable)
-            .httpBasic(Customizer.withDefaults())
-            .logout(AbstractHttpConfigurer::disable)
-            .sessionManagement(configurer -> configurer.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-            .build();
-    }
+  @Bean
+  public SecurityFilterChain securityFilterChain(final HttpSecurity http) throws Exception {
+    return http.authorizeHttpRequests(configurer -> configurer.anyRequest().permitAll())
+        .cors(Customizer.withDefaults())
+        .csrf(AbstractHttpConfigurer::disable)
+        .formLogin(AbstractHttpConfigurer::disable)
+        .httpBasic(Customizer.withDefaults())
+        .logout(AbstractHttpConfigurer::disable)
+        .sessionManagement(
+            configurer -> configurer.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+        .build();
+  }
 
-    @Bean
-    public UserDetailsService userDetailsService(
-        final ApplicationConfig config,
-        final PasswordEncoder encoder
-    ) {
-        final List<UserDetails> users = config.users().stream()
-            .map(user -> {
-                final User.UserBuilder builder = User.builder()
-                    .username(user.username())
-                    .passwordEncoder(encoder::encode)
-                    .password(user.password())
-                    .roles("PATCH");
-                return builder.build();
-            })
-            .toList();
-        return new InMemoryUserDetailsManager(users);
-    }
+  @Bean
+  public UserDetailsService userDetailsService(
+      final ApplicationConfig config, final PasswordEncoder encoder) {
+    final List<UserDetails> users = config.users().stream()
+        .map(user -> {
+          final User.UserBuilder builder = User.builder()
+              .username(user.username())
+              .passwordEncoder(encoder::encode)
+              .password(user.password())
+              .roles("PATCH");
+          return builder.build();
+        })
+        .toList();
+    return new InMemoryUserDetailsManager(users);
+  }
 }

@@ -11,16 +11,17 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Repository
 public interface PatchRepository extends JpaRepository<Patch, PatchId> {
-    @Transactional(readOnly = true)
-    List<Patch> getPatchesByStatusAndMinecraftVersion(Status status, String minecraftVersion);
+  @Transactional(readOnly = true)
+  List<Patch> getPatchesByStatusAndMinecraftVersion(Status status, String minecraftVersion);
 
-    @Transactional(readOnly = true)
-    List<Patch> getPatchesByMinecraftVersion(String minecraftVersion);
+  @Transactional(readOnly = true)
+  List<Patch> getPatchesByMinecraftVersion(String minecraftVersion);
 
-    @Transactional
-    void deleteAllByMinecraftVersion(String minecraftVersion);
+  @Transactional
+  void deleteAllByMinecraftVersion(String minecraftVersion);
 
-    @Transactional(readOnly = true)
-    @Query("SELECT p.minecraftVersion FROM Patch p GROUP BY p.minecraftVersion ORDER BY MAX(p.lastUpdated)")
-    List<String> getMinecraftVersions();
+  @Transactional(readOnly = true)
+  @Query("SELECT p.minecraftVersion FROM Patch p GROUP BY p.minecraftVersion ORDER BY"
+      + " MAX(p.lastUpdated)")
+  List<String> getMinecraftVersions();
 }
