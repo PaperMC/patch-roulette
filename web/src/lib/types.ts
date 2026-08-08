@@ -8,7 +8,7 @@ export type PatchDetails = {
     path: string;
     status: PatchStatus;
     responsibleUser: string;
-    lastUpdated: string;
+    lastUpdated: string; // ISO 8601 UTC datetime
     duration: string;
 };
 

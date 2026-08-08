@@ -1,7 +1,7 @@
 package io.papermc.patchroulette.util;
 
 import java.time.Duration;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -9,7 +9,7 @@ public final class TimeUtil {
     private TimeUtil() {
     }
 
-    public record TimeInterval(LocalDateTime start, LocalDateTime end) {}
+    public record TimeInterval(Instant start, Instant end) {}
 
     public static List<TimeInterval> mergeOverlappingIntervals(List<TimeInterval> intervals) {
         if (intervals.isEmpty()) {

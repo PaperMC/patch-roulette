@@ -7,7 +7,7 @@ import io.papermc.patchroulette.service.PatchService;
 import io.papermc.patchroulette.util.TimeUtil;
 import jakarta.persistence.EntityNotFoundException;
 import java.time.Duration;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -50,7 +50,7 @@ public class ApiController {
         );
     }
 
-    public record PatchDetails(String path, String status, String responsibleUser, LocalDateTime lastUpdated, Duration duration) {}
+    public record PatchDetails(String path, String status, String responsibleUser, Instant lastUpdated, Duration duration) {}
 
     @PreAuthorize("hasRole('PATCH')")
     @GetMapping(
@@ -60,7 +60,13 @@ public class ApiController {
     public ResponseEntity<List<PatchDetails>> getAllPatches(@RequestParam final String minecraftVersion) {
         return ResponseEntity.ok(
             this.patchService.getAllPatches(minecraftVersion).stream()
-                .map(patch -> new PatchDetails(patch.getPath(), patch.getStatus().name(), patch.getResponsibleUser(), patch.getLastUpdated(), patch.getDuration()))
+                .map(patch -> new PatchDetails(
+                    patch.getPath(),
+                    patch.getStatus().name(),
+                    patch.getResponsibleUser(),
+                    patch.getLastUpdated(),
+                    patch.getDuration()
+                ))
                 .toList()
         );
     }
@@ -232,8 +238,8 @@ public class ApiController {
 
                 // Track the time interval for this patch if it has duration
                 if (patch.getDuration() != null && patch.getLastUpdated() != null) {
-                    LocalDateTime endTime = patch.getLastUpdated();
-                    LocalDateTime startTime = endTime.minus(patch.getDuration());
+                    Instant endTime = patch.getLastUpdated();
+                    Instant startTime = endTime.minus(patch.getDuration());
 
                     userIntervals.computeIfAbsent(patch.getResponsibleUser(), k -> new ArrayList<>())
                         .add(new TimeUtil.TimeInterval(startTime, endTime));
