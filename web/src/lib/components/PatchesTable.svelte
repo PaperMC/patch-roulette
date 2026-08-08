@@ -53,7 +53,9 @@
                 filter: true,
                 floatingFilter: true,
                 valueFormatter: (params) =>
-                    params.data?.lastUpdated ? DateTime.fromISO(params.data.lastUpdated).toLocal().toLocaleString(DateTime.DATETIME_SHORT) : "",
+                    params.data?.lastUpdated
+                        ? DateTime.fromISO(params.data.lastUpdated, { zone: "utc" }).toLocal().toLocaleString(DateTime.DATETIME_SHORT)
+                        : "",
             },
         ],
         getRowId: (params) => params.data.path,

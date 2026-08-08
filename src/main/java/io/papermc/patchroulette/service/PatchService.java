@@ -5,7 +5,7 @@ import io.papermc.patchroulette.model.PatchId;
 import io.papermc.patchroulette.model.Status;
 import io.papermc.patchroulette.repository.PatchRepository;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,7 +29,7 @@ public class PatchService {
             patch.setPath(path);
             patch.setStatus(Status.AVAILABLE);
             patch.setMinecraftVersion(minecraftVersion);
-            patch.setLastUpdated(LocalDateTime.now());
+            patch.setLastUpdated(Instant.now());
             return patch;
         }).toList();
 
@@ -58,7 +58,7 @@ public class PatchService {
             }
             patch.setStatus(Status.WIP);
             patch.setResponsibleUser(user);
-            patch.setLastUpdated(LocalDateTime.now());
+            patch.setLastUpdated(Instant.now());
             this.patchRepository.save(patch);
             startedPatches.add(path);
         }
@@ -74,7 +74,7 @@ public class PatchService {
         patch.setStatus(Status.AVAILABLE);
         patch.setResponsibleUser(null);
         patch.setDuration(null);
-        patch.setLastUpdated(LocalDateTime.now());
+        patch.setLastUpdated(Instant.now());
         this.patchRepository.save(patch);
     }
 
@@ -89,7 +89,7 @@ public class PatchService {
         }
         patch.setStatus(Status.DONE);
         patch.updateDuration();
-        patch.setLastUpdated(LocalDateTime.now());
+        patch.setLastUpdated(Instant.now());
         this.patchRepository.save(patch);
     }
 
@@ -101,7 +101,7 @@ public class PatchService {
         }
         patch.setStatus(Status.WIP);
         patch.setResponsibleUser(user);
-        patch.setLastUpdated(LocalDateTime.now());
+        patch.setLastUpdated(Instant.now());
         this.patchRepository.save(patch);
     }
 

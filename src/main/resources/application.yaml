@@ -13,6 +13,13 @@ spring:
     username: admin
     password: password
     driver-class-name: org.h2.Driver
+  flyway:
+    baseline-on-migrate: true
+    baseline-version: 1
+    locations: classpath:db/migration/{vendor}
+    placeholders:
+      # Timezone used by the old LocalDateTime values during legacy migration.
+      legacy_timezone: UTC
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: validate

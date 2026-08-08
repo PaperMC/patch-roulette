@@ -10,4 +10,7 @@ build
 database.mv.db
 database.trace.db
 db/
+!src/main/resources/db/
+!src/main/resources/db/migration/
+!src/main/resources/db/migration/**
 .DS_Store
