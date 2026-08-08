@@ -64,11 +64,17 @@
     }
     html {
         color: var(--color-em-high);
+        color-scheme: light;
 
         @apply dark:[color-scheme:dark];
     }
     * {
         border-color: var(--color-edge);
+    }
+    select,
+    select option {
+        background-color: var(--color-neutral);
+        color: var(--color-em-high);
     }
 }
 
