@@ -29,7 +29,7 @@ SvelteKit frontend using tailwindcss for styling. Hosted as static files by the 
 ### Setup
 
 - Install [Bun](https://bun.sh/) and execute `bun install` in `/web` to install the required dependencies for the frontend.
-- Install a JVM 21 or newer for the Gradle runtime (prefer a JDK to avoid extra downloads for a compiler).
+- Install a JVM 25 or newer for the Gradle runtime (prefer a JDK to avoid extra downloads for a compiler).
 
 ### Testing
 

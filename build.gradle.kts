@@ -10,7 +10,7 @@ plugins {
 }
 
 indra {
-    javaVersions().target(21)
+    javaVersions().target(25)
 }
 
 repositories {
