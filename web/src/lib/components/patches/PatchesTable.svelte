@@ -285,11 +285,11 @@
         </Banner>
     {:else}
         <div class="flex min-h-0 flex-1 flex-col gap-2">
-            <div>
+            <div class="h-4">
                 {#if patchesQuery.isPending}
-                    <SkeletonLine minWidth={10} maxWidth={16} class="h-4" />
+                    <SkeletonLine minWidth={10} maxWidth={16} class="h-full" />
                 {:else}
-                    <Text variant="secondary" size="sm" class="tabular-nums">
+                    <Text variant="secondary" size="sm" class="leading-4 tabular-nums">
                         {visibleCount} of {patches.length} patches
                     </Text>
                 {/if}
