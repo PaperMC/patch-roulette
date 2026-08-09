@@ -6,9 +6,12 @@
     import RefreshButton from "$lib/components/header/RefreshButton.svelte";
     import VersionSelect from "$lib/components/header/VersionSelect.svelte";
     import PatchesTable from "$lib/components/patches/PatchesTable.svelte";
+    import BrainrotPanel from "$lib/components/stats/BrainrotPanel.svelte";
     import LeaderboardCard from "$lib/components/stats/LeaderboardCard.svelte";
     import StatsOverview from "$lib/components/stats/StatsOverview.svelte";
+    import ViewportDvdBouncer from "$lib/components/stats/ViewportDvdBouncer.svelte";
     import { baseQueryOptions, queryKeys } from "$lib/queries";
+    import { brainrot } from "$lib/settings.svelte";
 
     const queryClient = useQueryClient();
 
@@ -95,3 +98,8 @@
         {/if}
     </main>
 </div>
+
+{#if brainrot.current && activeView === "stats"}
+    <BrainrotPanel />
+    <ViewportDvdBouncer />
+{/if}

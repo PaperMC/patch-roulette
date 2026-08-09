@@ -1,7 +1,7 @@
 <script lang="ts">
     import Gear from "phosphor-svelte/lib/Gear";
     import { Button, Label, Popover, Radio, Switch, Text } from "kumo-svelte";
-    import { autoRefresh, setAutoRefresh } from "$lib/settings.svelte";
+    import { autoRefresh, brainrot, setAutoRefresh, setBrainrot } from "$lib/settings.svelte";
     import { setTheme, theme, type Theme } from "$lib/theme.svelte";
 </script>
 
@@ -28,6 +28,10 @@
                 <div class="flex items-center justify-between gap-4">
                     <Label for="auto-refresh" class="font-normal">Auto refresh</Label>
                     <Switch id="auto-refresh" size="sm" checked={autoRefresh.current} onCheckedChange={setAutoRefresh} aria-label="Auto refresh" />
+                </div>
+                <div class="flex items-center justify-between gap-4">
+                    <Label for="brainrot" class="font-normal">Brainrot mode</Label>
+                    <Switch id="brainrot" size="sm" checked={brainrot.current} onCheckedChange={setBrainrot} aria-label="Brainrot mode" />
                 </div>
             </div>
         </div>
