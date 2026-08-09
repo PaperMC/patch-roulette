@@ -1,7 +1,7 @@
 <script lang="ts">
     import Gear from "phosphor-svelte/lib/Gear";
     import { Button, Label, Popover, Radio, Switch, Text } from "kumo-svelte";
-    import { autoRefresh, brainrot, setAutoRefresh, setBrainrot } from "$lib/settings.svelte";
+    import { autoRefresh, brainrotLevel, setAutoRefresh, setBrainrotLevel, type BrainrotLevel } from "$lib/settings.svelte";
     import { setTheme, theme, type Theme } from "$lib/theme.svelte";
 </script>
 
@@ -13,7 +13,7 @@
             </Button>
         {/snippet}
     </Popover.Trigger>
-    <Popover.Content class="w-56" align="end">
+    <Popover.Content class="w-64" align="end">
         <div class="grid gap-4">
             <div class="grid gap-1.5">
                 <Text variant="secondary" size="sm">Theme</Text>
@@ -29,10 +29,11 @@
                     <Label for="auto-refresh" class="font-normal">Auto refresh</Label>
                     <Switch id="auto-refresh" size="sm" checked={autoRefresh.current} onCheckedChange={setAutoRefresh} aria-label="Auto refresh" />
                 </div>
-                <div class="flex items-center justify-between gap-4">
-                    <Label for="brainrot" class="font-normal">Brainrot mode</Label>
-                    <Switch id="brainrot" size="sm" checked={brainrot.current} onCheckedChange={setBrainrot} aria-label="Brainrot mode" />
-                </div>
+                <Radio.Group orientation="horizontal" value={brainrotLevel.current} onValueChange={(next) => setBrainrotLevel(next as BrainrotLevel)}>
+                    <Radio.Item label="Off" value="off" />
+                    <Radio.Item label="On" value="on" />
+                    <Radio.Item label="Weeb" value="weeb" />
+                </Radio.Group>
             </div>
         </div>
     </Popover.Content>
