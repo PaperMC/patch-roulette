@@ -251,9 +251,14 @@
             <Table.Row>
                 <Table.Cell colspan={columns.length} class="p-0!">
                     {#if patches.length === 0}
-                        <Empty size="sm" title="No patches" description={"No patches exist for Minecraft " + version + " yet."} />
+                        <Empty
+                            size="sm"
+                            class="rounded-none border-0 bg-transparent"
+                            title="No patches"
+                            description={"No patches exist for Minecraft " + version + " yet."}
+                        />
                     {:else}
-                        <Empty size="sm" title="No matching patches" description="Try adjusting the filters.">
+                        <Empty size="sm" class="rounded-none border-0 bg-transparent" title="No matching patches" description="Try adjusting the filters.">
                             <Button size="sm" onclick={() => table.resetColumnFilters()}>
                                 <X size={16} aria-hidden="true" />
                                 Clear filters
