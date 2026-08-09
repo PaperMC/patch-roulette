@@ -9,6 +9,7 @@
     import BrainrotPanel from "$lib/components/stats/BrainrotPanel.svelte";
     import LeaderboardCard from "$lib/components/stats/LeaderboardCard.svelte";
     import PaperChanCompanion from "$lib/components/stats/PaperChanCompanion.svelte";
+    import PaperLogo from "$lib/components/stats/PaperLogo.svelte";
     import StatsOverview from "$lib/components/stats/StatsOverview.svelte";
     import ViewportDvdBouncer from "$lib/components/stats/ViewportDvdBouncer.svelte";
     import { baseQueryOptions, queryKeys } from "$lib/queries";
@@ -102,7 +103,9 @@
 
 {#if brainrotLevel.current !== "off" && activeView === "stats"}
     <BrainrotPanel />
-    <ViewportDvdBouncer />
+    <ViewportDvdBouncer seed={901} speed={1.05} zIndex={30} ariaHidden>
+        <PaperLogo />
+    </ViewportDvdBouncer>
     {#if brainrotLevel.current === "weeb"}
         <PaperChanCompanion />
     {/if}

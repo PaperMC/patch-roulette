@@ -1,108 +1,121 @@
 <script lang="ts">
-    let bouncer: HTMLDivElement;
+    import type { Snippet } from "svelte";
 
-    $effect(() => {
-        if (!bouncer) return;
+    interface Props {
+        children: Snippet;
+        seed?: number;
+        speed?: number;
+        zIndex?: number;
+        ariaHidden?: boolean;
+    }
 
-        const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-        const state = { x: 24, y: 72, vx: 2.15, vy: 1.75 };
+    let { children, seed = 1, speed = 1, zIndex = 20, ariaHidden = false }: Props = $props();
 
-        const render = () => {
-            bouncer.style.transform = `translate3d(${state.x}px, ${state.y}px, 0)`;
+    function seededRandom(initialSeed: number): () => number {
+        let state = initialSeed >>> 0;
+
+        return () => {
+            state = (state * 1664525 + 1013904223) >>> 0;
+            return state / 4294967296;
         };
+    }
 
-        render();
-        if (reducedMotion) return;
+    function dvdBounce(initialSeed: number, speedMultiplier: number) {
+        return (bouncer: HTMLDivElement) => {
+            const random = seededRandom(initialSeed);
+            const viewportSize = () => ({
+                width: window.visualViewport?.width ?? window.innerWidth,
+                height: window.visualViewport?.height ?? window.innerHeight,
+            });
+            const maxPosition = () => {
+                const viewport = viewportSize();
+                return {
+                    x: Math.max(0, viewport.width - bouncer.offsetWidth),
+                    y: Math.max(0, viewport.height - bouncer.offsetHeight),
+                };
+            };
+            const position = maxPosition();
+            const state = {
+                x: random() * position.x,
+                y: random() * position.y,
+                vx: (random() > 0.5 ? 1 : -1) * (0.85 + random() * 0.85) * speedMultiplier,
+                vy: (random() > 0.5 ? 1 : -1) * (0.85 + random() * 0.85) * speedMultiplier,
+            };
 
-        let frame = 0;
-        let previous = performance.now();
-        const tick = (now: number) => {
-            const delta = Math.min((now - previous) / 16.67, 2);
-            previous = now;
-            const maxX = Math.max(0, window.innerWidth - bouncer.offsetWidth);
-            const maxY = Math.max(0, window.innerHeight - bouncer.offsetHeight);
+            const render = () => {
+                bouncer.style.transform = `translate3d(${state.x}px, ${state.y}px, 0)`;
+            };
+            const clamp = () => {
+                const position = maxPosition();
+                state.x = Math.max(0, Math.min(state.x, position.x));
+                state.y = Math.max(0, Math.min(state.y, position.y));
+                render();
+            };
 
-            state.x += state.vx * delta;
-            state.y += state.vy * delta;
-
-            if (state.x <= 0 || state.x >= maxX) {
-                state.x = Math.max(0, Math.min(state.x, maxX));
-                state.vx *= -1;
-            }
-            if (state.y <= 0 || state.y >= maxY) {
-                state.y = Math.max(0, Math.min(state.y, maxY));
-                state.vy *= -1;
-            }
+            const resizeObserver = new ResizeObserver(clamp);
+            resizeObserver.observe(bouncer);
+            window.addEventListener("resize", clamp, { passive: true });
+            window.visualViewport?.addEventListener("resize", clamp, { passive: true });
 
             render();
-            frame = requestAnimationFrame(tick);
-        };
+            let frame = 0;
+            let previous = performance.now();
+            const tick = (now: number) => {
+                const delta = Math.min((now - previous) / 16.67, 2);
+                previous = now;
+                const position = maxPosition();
 
-        frame = requestAnimationFrame(tick);
-        return () => cancelAnimationFrame(frame);
-    });
+                state.x += state.vx * delta;
+                state.y += state.vy * delta;
+
+                if (position.x > 0 && (state.x <= 0 || state.x >= position.x)) {
+                    state.x = Math.max(0, Math.min(state.x, position.x));
+                    state.vx *= -1;
+                }
+                if (position.y > 0 && (state.y <= 0 || state.y >= position.y)) {
+                    state.y = Math.max(0, Math.min(state.y, position.y));
+                    state.vy *= -1;
+                }
+
+                render();
+                frame = requestAnimationFrame(tick);
+            };
+
+            if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+                frame = requestAnimationFrame(tick);
+            }
+
+            return () => {
+                cancelAnimationFrame(frame);
+                resizeObserver.disconnect();
+                window.removeEventListener("resize", clamp);
+                window.visualViewport?.removeEventListener("resize", clamp);
+            };
+        };
+    }
 </script>
 
-<div class="viewport-bouncer" bind:this={bouncer} aria-hidden="true">
-    <img src="https://assets.papermc.io/brand/papermc_logo.256.png" alt="" />
+<div class="viewport-bouncer" style:z-index={zIndex} aria-hidden={ariaHidden}>
+    <div class="bouncer" {@attach dvdBounce(seed, speed)}>
+        {@render children()}
+    </div>
 </div>
 
 <style>
     .viewport-bouncer {
         position: fixed;
-        z-index: 30;
+        z-index: 20;
+        inset: 0;
+        overflow: hidden;
+        pointer-events: none;
+    }
+
+    .bouncer {
+        position: absolute;
         top: 0;
         left: 0;
-        width: 6rem;
-        height: auto;
-        isolation: isolate;
+        width: max-content;
         pointer-events: none;
         will-change: transform;
-    }
-
-    .viewport-bouncer::before {
-        position: absolute;
-        z-index: -1;
-        inset: -1.25rem;
-        content: "";
-        border-radius: 50%;
-        background: conic-gradient(#22d3ee, #818cf8, #e879f9, #fb7185, #facc15, #22d3ee);
-        filter: blur(1.1rem);
-        opacity: 0.82;
-        mix-blend-mode: screen;
-        animation:
-            glow-spin 5s linear infinite,
-            glow-pulse 2.4s ease-in-out infinite alternate;
-    }
-
-    .viewport-bouncer img {
-        display: block;
-        width: 100%;
-        height: auto;
-        filter: drop-shadow(0 0 0.2rem #fff) drop-shadow(0 0 0.8rem #67e8f9) drop-shadow(0 0 1.2rem #e879f9);
-    }
-
-    @keyframes glow-spin {
-        to {
-            transform: rotate(360deg);
-        }
-    }
-
-    @keyframes glow-pulse {
-        to {
-            opacity: 0.98;
-        }
-    }
-
-    @media (prefers-reduced-motion: reduce) {
-        .viewport-bouncer::before {
-            animation-play-state: paused;
-        }
-    }
-
-    @media (max-width: 26rem) {
-        .viewport-bouncer {
-            width: 4.5rem;
-        }
     }
 </style>
