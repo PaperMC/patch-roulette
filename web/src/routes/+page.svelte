@@ -6,9 +6,14 @@
     import RefreshButton from "$lib/components/header/RefreshButton.svelte";
     import VersionSelect from "$lib/components/header/VersionSelect.svelte";
     import PatchesTable from "$lib/components/patches/PatchesTable.svelte";
+    import BrainrotPanel from "$lib/components/stats/BrainrotPanel.svelte";
     import LeaderboardCard from "$lib/components/stats/LeaderboardCard.svelte";
+    import PaperChanCompanion from "$lib/components/stats/PaperChanCompanion.svelte";
+    import PaperLogo from "$lib/components/stats/PaperLogo.svelte";
     import StatsOverview from "$lib/components/stats/StatsOverview.svelte";
+    import ViewportDvdBouncer from "$lib/components/stats/ViewportDvdBouncer.svelte";
     import { baseQueryOptions, queryKeys } from "$lib/queries";
+    import { brainrotLevel } from "$lib/settings.svelte";
 
     const queryClient = useQueryClient();
 
@@ -95,3 +100,13 @@
         {/if}
     </main>
 </div>
+
+{#if brainrotLevel.current !== "off" && activeView === "stats"}
+    <BrainrotPanel />
+    <ViewportDvdBouncer seed={901} speed={1.05} zIndex={30} ariaHidden>
+        <PaperLogo />
+    </ViewportDvdBouncer>
+    {#if brainrotLevel.current === "weeb"}
+        <PaperChanCompanion />
+    {/if}
+{/if}
