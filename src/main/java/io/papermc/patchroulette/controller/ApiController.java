@@ -1,5 +1,6 @@
 package io.papermc.patchroulette.controller;
 
+import io.papermc.patchroulette.config.ApplicationConfig;
 import io.papermc.patchroulette.model.Patch;
 import io.papermc.patchroulette.model.PatchId;
 import io.papermc.patchroulette.model.Status;
@@ -18,6 +19,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -31,10 +33,17 @@ import org.springframework.web.bind.annotation.RestController;
 public class ApiController {
 
   private final PatchService patchService;
+  private final ApplicationConfig applicationConfig;
+  private final PasswordEncoder passwordEncoder;
 
   @Autowired
-  public ApiController(final PatchService patchService) {
+  public ApiController(
+      final PatchService patchService,
+      final ApplicationConfig applicationConfig,
+      final PasswordEncoder passwordEncoder) {
     this.patchService = patchService;
+    this.applicationConfig = applicationConfig;
+    this.passwordEncoder = passwordEncoder;
   }
 
   @PreAuthorize("hasRole('PATCH')")
@@ -141,6 +150,38 @@ public class ApiController {
   public ResponseEntity<List<String>> getMinecraftVersions() {
     final List<String> minecraftVersions = this.patchService.getMinecraftVersions();
     return ResponseEntity.ok(minecraftVersions);
+  }
+
+  public record LegacyUser(String username, String passwordHash) {}
+
+  public record ExportPatch(
+      String minecraftVersion,
+      String path,
+      String status,
+      String responsibleUser,
+      long lastUpdated,
+      Long duration) {}
+
+  public record LegacyDataExport(
+      long exportedAt, List<LegacyUser> legacyUsers, List<ExportPatch> patches) {}
+
+  @PreAuthorize("hasRole('PATCH')")
+  @GetMapping(value = "/export-legacy-data", produces = "application/json")
+  public ResponseEntity<LegacyDataExport> exportLegacyData() {
+    final List<LegacyUser> legacyUsers = this.applicationConfig.users().stream()
+        .map(user -> new LegacyUser(user.username(), this.passwordEncoder.encode(user.password())))
+        .toList();
+    final List<ExportPatch> patches = this.patchService.getAllPatches().stream()
+        .map(patch -> new ExportPatch(
+            patch.getMinecraftVersion(),
+            patch.getPath(),
+            patch.getStatus().name(),
+            patch.getResponsibleUser(),
+            patch.getLastUpdated().toEpochMilli(),
+            patch.getDuration() == null ? null : patch.getDuration().toMillis()))
+        .toList();
+    return ResponseEntity.ok(
+        new LegacyDataExport(System.currentTimeMillis(), legacyUsers, patches));
   }
 
   @PreAuthorize("hasRole('PATCH')")
