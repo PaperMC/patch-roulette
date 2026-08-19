@@ -6,6 +6,7 @@ import io.papermc.patchroulette.model.Status;
 import io.papermc.patchroulette.repository.PatchRepository;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -44,6 +45,13 @@ public class PatchService {
 
   public List<Patch> getAllPatches(final String minecraftVersion) {
     return this.patchRepository.getPatchesByMinecraftVersion(minecraftVersion);
+  }
+
+  @Transactional(readOnly = true)
+  public List<Patch> getAllPatches() {
+    return this.patchRepository.findAll().stream()
+        .sorted(Comparator.comparing(Patch::getMinecraftVersion).thenComparing(Patch::getPath))
+        .toList();
   }
 
   @Transactional
