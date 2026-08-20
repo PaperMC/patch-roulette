@@ -159,7 +159,7 @@ public class ApiController {
       String path,
       String status,
       String responsibleUser,
-      long lastUpdated,
+      long updatedAt,
       Long duration) {}
 
   public record LegacyDataExport(
