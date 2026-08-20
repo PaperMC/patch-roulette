@@ -3,7 +3,7 @@ import java.time.Instant
 plugins {
     id("net.kyori.indra") version "4.1.0"
     id("net.kyori.indra.git") version "4.1.0"
-    id("org.springframework.boot") version "4.1.0"
+    id("org.springframework.boot") version "4.1.1"
     id("io.spring.dependency-management") version "1.1.7"
     id("com.google.cloud.tools.jib") version "3.5.4"
     id("dev.lukebemish.immaculate") version "0.2.5"
