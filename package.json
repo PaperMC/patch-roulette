@@ -41,7 +41,7 @@
     "@sveltejs/kit": "^2.70.2",
     "@sveltejs/vite-plugin-svelte": "^7.2.0",
     "@tailwindcss/vite": "^4.3.3",
-    "concurrently": "^9.2.1",
+    "concurrently": "^10.0.0",
     "drizzle-kit": "rc",
     "oxfmt": "^0.64.0",
     "oxlint": "^1.79.0",
