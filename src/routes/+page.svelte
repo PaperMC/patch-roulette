@@ -47,11 +47,11 @@
     manualRefresh = true;
     Promise.all([
       queryClient.invalidateQueries({
-        queryKey: queryKeys.patches(selectedVersion),
+        queryKey: queryKeys.patches.forVersion(selectedVersion),
         refetchType: "active",
       }),
       queryClient.invalidateQueries({
-        queryKey: queryKeys.stats(selectedVersion),
+        queryKey: queryKeys.stats.forVersion(selectedVersion),
         refetchType: "active",
       }),
     ]).finally(() => {

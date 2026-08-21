@@ -3,6 +3,7 @@
   import { ApiError, fetchApi } from "$lib/api";
   import { getAuth } from "$lib/auth.svelte";
   import { type UserProfile } from "$lib/domain";
+  import { queryKeys } from "$lib/queries";
   import { Banner, Button, Dialog, Input } from "kumo-svelte";
 
   const auth = getAuth();
@@ -47,8 +48,8 @@
       });
       auth.setUser(user);
       await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ["patches"] }),
-        queryClient.invalidateQueries({ queryKey: ["stats"] }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.patches.all }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.stats.all }),
       ]);
       open = false;
     } catch (error) {
