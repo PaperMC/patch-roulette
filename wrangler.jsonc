@@ -1,0 +1,26 @@
+{
+    "$schema": "node_modules/wrangler/config-schema.json",
+    "name": "patch-roulette",
+    "main": "src/worker.ts",
+    "compatibility_date": "2026-08-08",
+    "compatibility_flags": ["nodejs_als"],
+    "assets": {
+        "binding": "ASSETS",
+        "directory": ".svelte-kit/cloudflare",
+    },
+    "durable_objects": {
+        "bindings": [
+            {
+                "name": "PATCH_ROULETTE",
+                "class_name": "PatchRoulette",
+            },
+        ],
+    },
+    "migrations": [
+        {
+            "tag": "v1",
+            "new_sqlite_classes": ["PatchRoulette"],
+        },
+    ],
+    "rules": [{ "type": "Text", "globs": ["**/*.sql"], "fallthrough": true }],
+}
