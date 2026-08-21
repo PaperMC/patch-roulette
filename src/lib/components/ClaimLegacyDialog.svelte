@@ -1,7 +1,7 @@
 <script lang="ts">
   import { useQueryClient } from "@tanstack/svelte-query";
   import { ApiError, fetchApi } from "$lib/api";
-  import { Banner, Button, Dialog, Input, Tabs, type TabsItem } from "kumo-svelte";
+  import { Banner, Button, Dialog, Input, Tabs, type TabsItem, useKumoToastManager } from "kumo-svelte";
 
   type ClaimMethod = "encoded" | "credentials";
 
@@ -11,6 +11,7 @@
   ];
 
   const queryClient = useQueryClient();
+  const toastManager = useKumoToastManager();
 
   let { open = $bindable(false) } = $props();
 
@@ -93,6 +94,11 @@
         queryClient.invalidateQueries({ queryKey: ["patches"] }),
         queryClient.invalidateQueries({ queryKey: ["stats"] }),
       ]);
+      toastManager.add({
+        title: "Legacy account claimed",
+        description: "Patch history linked successfully.",
+        variant: "success",
+      });
       open = false;
     } catch (error) {
       claimError = error instanceof ApiError ? error.message : "Could not claim the legacy account.";
