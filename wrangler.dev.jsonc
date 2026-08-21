@@ -1,0 +1,22 @@
+{
+    "$schema": "node_modules/wrangler/config-schema.json",
+    "name": "patch-roulette-dev",
+    "main": "src/dev-worker.ts",
+    "compatibility_date": "2026-08-08",
+    "compatibility_flags": ["nodejs_als"],
+    "durable_objects": {
+        "bindings": [
+            {
+                "name": "PATCH_ROULETTE",
+                "class_name": "PatchRoulette",
+            },
+        ],
+    },
+    "migrations": [
+        {
+            "tag": "v1",
+            "new_sqlite_classes": ["PatchRoulette"],
+        },
+    ],
+    "rules": [{ "type": "Text", "globs": ["**/*.sql"], "fallthrough": true }],
+}

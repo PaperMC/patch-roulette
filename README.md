@@ -1,51 +1,67 @@
 # Patch Roulette
 
-REST API and web interface for managing Paper updates.
+Patch Roulette manages Paper update work through a Cloudflare Worker, a Durable Object SQLite database, and a SvelteKit web interface.
 
-> [!NOTE]  
-> This project is intended for internal use and does not guarantee stability, compatibility, support, or follow semantic versioning.
+> [!NOTE]
+> This project is intended for internal use and does not guarantee stability, compatibility, support, or semantic versioning.
 
-## Overview
+## Architecture
 
-### REST API
+- The Cloudflare Worker serves both the SvelteKit UI and the API.
+- API routes are under `/api` and are used directly by browser and CLI clients; see [docs/api.md](docs/api.md).
+- A single Durable Object owns the SQLite database and serializes patch claims.
+- Drizzle ORM manages the Durable Object schema and migrations.
+- Cloudflare Access protects every deployed hostname and every route, including `/api`.
+- Managed OAuth supplies CLI authentication. The application has no custom API-token system.
 
-Powered by Spring Boot, backend for the web interface and `paperweight`. Routes are under `/api`.
-
-### paperweight
-
-`paperweight` has tasks to interface with the REST API during the update process.
-
-### Web Interface
-
-SvelteKit frontend using Kumo Svelte and Tailwind CSS for styling. Hosted as static files by the Spring Boot server.
-
-#### Pages
-
-- [`/`](https://patch-roulette.papermc.io/): Management dashboard
-- [`/login`](https://patch-roulette.papermc.io/login) : Login page
+The Worker trusts Cloudflare Access as the authentication boundary. It extracts the `iss` and `sub` claims from `Cf-Access-Jwt-Assertion` and maps that external identity to an internal user. The deployed `workers.dev` or custom hostname must therefore be protected by the Access application; do not leave an alternate hostname unprotected.
 
 ## Development
 
-### Setup
+Install the dependencies:
 
-- Install [Bun](https://bun.sh/) and execute `bun install` in `/web` to install the required dependencies for the frontend.
-- Install a JVM 25 or newer for the Gradle runtime (prefer a JDK to avoid extra downloads for a compiler).
+```sh
+bun install
+```
 
-### Running Locally
+Run the Vite frontend and local Worker together:
 
-- Run the frontend with `bun run devLocalServer` or `bun run devProdServer` in `/web`. `devLocalServer` will use localhost as the API, while `devProdServer` will use the production API at https://patch-roulette.papermc.io/api.
-- Run the backend with `./gradlew bootRun` in the project root.
+```sh
+bun run dev
+```
 
-### Checks
+The local Worker uses a fixed development identity and local Durable Object SQLite state. Wrangler's normal local persistence is left enabled. Reset it with:
 
-- Run the frontend checks with `bun run lint`, `bun run check`, and `bun run build` in `/web`.
-- Run the backend checks and tests with `./gradlew build` in the project root.
+```sh
+bun run db:reset
+```
 
-### Code Style
+Generate Drizzle migrations after changing `src/lib/db/schema.ts`:
 
-- The frontend uses ESLint and Prettier for code style. Run `bun run format` to reformat and `bun run lint` to check style.
-- The backend uses Immaculate with Palantir Java Format. Run `./gradlew immaculateApply` to reformat and `./gradlew immaculateCheck` to check style.
+```sh
+bun run db:generate
+```
 
-### Deployment
+## Checks
 
-- Published to the GitHub Container Registry after successful pushes to `master` through the `publish` job in the CI workflow.
+```sh
+bun run check
+bun run format:check
+bun run lint
+bun run test
+bunx wrangler deploy --config wrangler.jsonc --dry-run
+```
+
+## Migration
+
+The temporary Spring-to-Worker migration procedure is documented in [docs/legacy.md](docs/legacy.md).
+
+## Deployment
+
+Build and deploy the Worker:
+
+```sh
+bun run deploy
+```
+
+Configure Cloudflare Access separately for the actual hostname used by the deployment. Protect the entire hostname, including `/api/*` and the Managed OAuth discovery endpoints. If both a `workers.dev` hostname and a custom hostname are reachable, protect both or disable the unused hostname.
