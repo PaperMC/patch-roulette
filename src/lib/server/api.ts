@@ -60,8 +60,10 @@ const createApi = ({ localIdentity, enforceSameOrigin = true }: ApiOptions = {})
     vValidator("json", v.strictObject({ username: nonEmptyString, password: nonEmptyString })),
     async (c) => {
       const input = c.req.valid("json");
-      const claimed = await database(c.env).claimLegacyUser(currentUser(c).id, input.username, input.password);
-      return claimed ? empty(c) : c.text("Invalid legacy credentials.", 400);
+      const result = await database(c.env).claimLegacyUser(currentUser(c).id, input.username, input.password);
+      if (result === "ok") return empty(c);
+      if (result === "already-claimed") return c.text("You have already claimed this legacy account.", 409);
+      return c.text("Invalid legacy credentials.", 400);
     },
   );
 

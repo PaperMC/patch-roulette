@@ -1,6 +1,7 @@
 <script lang="ts">
   import { useQueryClient } from "@tanstack/svelte-query";
   import { ApiError, fetchApi } from "$lib/api";
+  import { queryKeys } from "$lib/queries";
   import { Banner, Button, Dialog, Input, Tabs, type TabsItem, useKumoToastManager } from "kumo-svelte";
 
   type ClaimMethod = "encoded" | "credentials";
@@ -21,6 +22,7 @@
   let legacyPassword = $state("");
   let claimSubmitted = $state(false);
   let claimError = $state<string | null>(null);
+  let alreadyClaimed = $state(false);
   let claiming = $state(false);
   let wasOpen = false;
 
@@ -32,6 +34,7 @@
       legacyPassword = "";
       claimSubmitted = false;
       claimError = null;
+      alreadyClaimed = false;
     }
     wasOpen = open;
   });
@@ -84,6 +87,7 @@
   async function claim(): Promise<void> {
     if (claiming) return;
     claimError = null;
+    alreadyClaimed = false;
     const credentials = claimInput();
     if (!credentials) return;
 
@@ -91,17 +95,18 @@
     try {
       await fetchApi("/me/claim-legacy", { method: "POST", body: credentials });
       await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ["patches"] }),
-        queryClient.invalidateQueries({ queryKey: ["stats"] }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.patches.all }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.stats.all }),
       ]);
       toastManager.add({
         title: "Legacy account claimed",
-        description: "Patch history linked successfully.",
+        description: "Patch history claimed successfully.",
         variant: "success",
       });
       open = false;
     } catch (error) {
-      claimError = error instanceof ApiError ? error.message : "Could not claim the legacy account.";
+      if (error instanceof ApiError && error.status === 409) alreadyClaimed = true;
+      else claimError = error instanceof ApiError ? error.message : "Could not claim the legacy account.";
     } finally {
       claiming = false;
     }
@@ -111,7 +116,7 @@
 <Dialog
   bind:open
   title="Claim legacy account"
-  description="Link patch history from your old Patch Roulette account."
+  description="Claim patch history from your old Patch Roulette account."
   class="p-6"
 >
   <form
@@ -133,6 +138,7 @@
           claimMethod = value as ClaimMethod;
           claimSubmitted = false;
           claimError = null;
+          alreadyClaimed = false;
         }
       }}
     />
@@ -145,7 +151,10 @@
         type="text"
         autocomplete="off"
         disabled={claiming}
-        oninput={() => (claimError = null)}
+        oninput={() => {
+          claimError = null;
+          alreadyClaimed = false;
+        }}
       />
     {:else}
       <Input
@@ -165,15 +174,20 @@
         type="password"
         autocomplete="current-password"
         disabled={claiming}
-        oninput={() => (claimError = null)}
+        oninput={() => {
+          claimError = null;
+          alreadyClaimed = false;
+        }}
       />
     {/if}
-    {#if claimError}
+    {#if alreadyClaimed}
+      <Banner variant="alert" size="sm" text="You have already claimed this legacy account." role="status" />
+    {:else if claimError}
       <Banner variant="error" size="sm" text={claimError} role="alert" />
     {/if}
     <div class="flex justify-end gap-2">
       <Button type="button" variant="secondary" onclick={close} disabled={claiming}>Cancel</Button>
-      <Button type="submit" variant="primary" loading={claiming}>Claim account</Button>
+      <Button type="submit" variant="primary" loading={claiming} disabled={claiming}>Claim account</Button>
     </div>
   </form>
 </Dialog>

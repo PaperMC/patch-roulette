@@ -315,11 +315,22 @@ export class PatchRoulette extends DurableObject {
     return true;
   }
 
-  async claimLegacyUser(currentUserId: string, username: string, password: string) {
+  /**
+   * Claims a legacy account on behalf of the current user. An
+   * already-claimed account is only reported as such when it is claimed by
+   * the same user — the discarded password hash means nobody else can
+   * distinguish it from invalid credentials.
+   */
+  async claimLegacyUser(
+    currentUserId: string,
+    username: string,
+    password: string,
+  ): Promise<"ok" | "already-claimed" | "invalid"> {
     const credential = this.db.select().from(legacyCredentials).where(eq(legacyCredentials.username, username)).get();
-    if (!credential?.passwordHash || credential.disabledAt !== null) return false;
+    if (!credential?.passwordHash || credential.disabledAt !== null)
+      return credential?.userId === currentUserId ? "already-claimed" : "invalid";
     const passwordHash = credential.passwordHash;
-    if (!(await compare(password, passwordHash.replace(/^\{bcrypt\}/, "")))) return false;
+    if (!(await compare(password, passwordHash.replace(/^\{bcrypt\}/, "")))) return "invalid";
 
     const timestamp = Date.now();
     let claimed = false;
@@ -349,7 +360,7 @@ export class PatchRoulette extends DurableObject {
       tx.delete(users).where(eq(users.id, activeCredential.userId)).run();
       claimed = true;
     });
-    return claimed;
+    return claimed ? "ok" : "invalid";
   }
 
   async resolveOrProvisionUser(identity: ExternalIdentity) {

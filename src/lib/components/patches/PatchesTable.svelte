@@ -66,7 +66,7 @@
   }
 
   const patchesQuery = createQuery<Patch[]>(() => ({
-    queryKey: queryKeys.patches(version),
+    queryKey: queryKeys.patches.forVersion(version),
     queryFn: () => fetchApi<Patch[]>("/patches", { params: { minecraftVersion: version } }),
     enabled: version !== "",
     refetchInterval: refreshInterval(),

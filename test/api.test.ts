@@ -163,7 +163,14 @@ describe("Patch Roulette API", () => {
     expect(await (await api("/patches?minecraftVersion=1.21.4", { headers: access() })).json()).toMatchObject([
       { path: "first.patch", responsibleUser: expect.any(String) },
     ]);
-    expect((await api("/me/claim-legacy", json({ username: "old-alice", password: "old-password" }))).status).toBe(400);
+    expect(
+      (await api("/me/claim-legacy", json({ username: "old-alice", password: "old-password" }, "bob"))).status,
+    ).toBe(400);
+    const repeat = await api("/me/claim-legacy", json({ username: "old-alice", password: "old-password" }));
+    expect({ status: repeat.status, body: await repeat.text() }).toEqual({
+      status: 409,
+      body: "You have already claimed this legacy account.",
+    });
 
     expect((await api("/patches/clear", json({ minecraftVersion: "1.21.4" }))).status).toBe(204);
     expect(

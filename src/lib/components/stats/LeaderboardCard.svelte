@@ -13,7 +13,7 @@
   // components' identical queries share this single network request.
   const statsQuery = createQuery(() => ({
     ...baseQueryOptions,
-    queryKey: queryKeys.stats(version),
+    queryKey: queryKeys.stats.forVersion(version),
     enabled: version !== "",
     queryFn: () => fetchApi<Stats>("/stats", { params: { minecraftVersion: version } }),
     refetchInterval: refreshInterval(),
