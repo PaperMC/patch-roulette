@@ -26,9 +26,9 @@ const exportPatch = (overrides: Record<string, unknown> = {}) => ({
   duration: 5_000,
   ...overrides,
 });
-const exportPayload = (patches: Record<string, unknown>[]) => ({
+const exportPayload = (patches: Record<string, unknown>[], legacyUsers: Record<string, unknown>[] = []) => ({
   exportedAt: 1_700_000_000_000,
-  legacyUsers: [],
+  legacyUsers,
   patches,
 });
 
@@ -225,6 +225,14 @@ describe("Patch Roulette API", () => {
     ]);
 
     expect((await api("/import-legacy-data", json(payload, "bob"))).status).toBe(409);
+  });
+
+  it("rejects legacy users whose usernames have leading or trailing whitespace", async () => {
+    const response = await api(
+      "/import-legacy-data",
+      json(exportPayload([exportPatch()], [{ username: " old-alice ", passwordHash: hashSync("old-password", 4) }])),
+    );
+    expect(response.status).toBe(400);
   });
 
   it("rejects patch records with impossible lifecycle fields", async () => {

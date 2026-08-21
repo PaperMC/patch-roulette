@@ -1,6 +1,6 @@
 import * as v from "valibot";
 
-export const nonEmptyString = v.pipe(v.string(), v.minLength(1));
+export const nonEmptyString = v.pipe(v.string(), v.nonEmpty());
 export const minecraftVersionSchema = nonEmptyString;
 export const epochMilliseconds = v.pipe(
   v.number(),

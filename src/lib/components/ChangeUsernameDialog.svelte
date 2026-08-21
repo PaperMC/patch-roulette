@@ -14,9 +14,10 @@
   let draftUsername = $state("");
   let saveError = $state<string | null>(null);
   let saving = $state(false);
+  let trimmedDraftUsername = $derived(draftUsername.trim());
   let usernameError = $derived.by(() => {
-    if (draftUsername.length > 64) return "Username must be 64 characters or fewer.";
-    if (!draftUsername.trim()) return "Enter a username.";
+    if (trimmedDraftUsername.length > 64) return "Username must be 64 characters or fewer.";
+    if (!trimmedDraftUsername) return "Enter a username.";
     return undefined;
   });
   let wasOpen = false;
@@ -29,22 +30,25 @@
     wasOpen = open;
   });
 
+  let unchanged = $derived(trimmedDraftUsername === (auth.username ?? ""));
+
   function close(): void {
     if (!saving) open = false;
   }
 
   async function save(): Promise<void> {
-    if (usernameError) {
-      saveError = null;
+    saveError = null;
+    if (unchanged) {
+      open = false;
       return;
     }
+    if (usernameError) return;
 
     saving = true;
-    saveError = null;
     try {
       const user = await fetchApi<UserProfile>("/me", {
         method: "PATCH",
-        body: { username: draftUsername.trim() },
+        body: { username: trimmedDraftUsername },
       });
       auth.setUser(user);
       await Promise.all([

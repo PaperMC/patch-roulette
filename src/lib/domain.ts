@@ -3,7 +3,7 @@ import { epochMilliseconds, minecraftVersionSchema, nonEmptyString } from "./sch
 
 export const PATCH_STATUSES = ["AVAILABLE", "WIP", "DONE"] as const;
 
-export const usernameSchema = v.pipe(nonEmptyString, v.maxLength(64));
+export const usernameSchema = v.pipe(v.string(), v.trim(), v.nonEmpty(), v.maxLength(64));
 const nonNegativeInteger = v.pipe(v.number(), v.safeInteger(), v.minValue(0));
 
 export const patchStatusSchema = v.picklist(PATCH_STATUSES);

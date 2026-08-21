@@ -57,7 +57,13 @@ const createApi = ({ localIdentity, enforceSameOrigin = true }: ApiOptions = {})
   });
   api.post(
     "/me/claim-legacy",
-    vValidator("json", v.strictObject({ username: nonEmptyString, password: nonEmptyString })),
+    vValidator(
+      "json",
+      v.strictObject({
+        username: v.pipe(v.string(), v.trim(), v.nonEmpty()),
+        password: nonEmptyString,
+      }),
+    ),
     async (c) => {
       const input = c.req.valid("json");
       const result = await database(c.env).claimLegacyUser(currentUser(c).id, input.username, input.password);
@@ -129,7 +135,15 @@ const createApi = ({ localIdentity, enforceSameOrigin = true }: ApiOptions = {})
       "json",
       v.strictObject({
         exportedAt: epochMilliseconds,
-        legacyUsers: v.array(v.strictObject({ username: nonEmptyString, passwordHash: nonEmptyString })),
+        legacyUsers: v.array(
+          v.strictObject({
+            username: v.pipe(
+              nonEmptyString,
+              v.check((username) => username.trim() === username, "Username has leading or trailing whitespace."),
+            ),
+            passwordHash: nonEmptyString,
+          }),
+        ),
         patches: v.pipe(v.array(patchSchema), v.minLength(1)),
       }),
       (result, c) => {
