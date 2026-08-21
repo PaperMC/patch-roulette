@@ -60,9 +60,8 @@ const createApi = ({ localIdentity, enforceSameOrigin = true }: ApiOptions = {})
     vValidator("json", v.strictObject({ username: nonEmptyString, password: nonEmptyString })),
     async (c) => {
       const input = c.req.valid("json");
-      return (await database(c.env).claimLegacyUser(currentUser(c).id, input.username, input.password))
-        ? empty(c)
-        : c.text("Invalid legacy credentials.", 400);
+      const claimed = await database(c.env).claimLegacyUser(currentUser(c).id, input.username, input.password);
+      return claimed ? empty(c) : c.text("Invalid legacy credentials.", 400);
     },
   );
 
@@ -75,7 +74,8 @@ const createApi = ({ localIdentity, enforceSameOrigin = true }: ApiOptions = {})
   );
   api.post("/patches/init", vValidator("json", patchListSchema), async (c) => {
     const input = c.req.valid("json");
-    return (await database(c.env).init(input.minecraftVersion, input.paths))
+    const initialized = await database(c.env).init(input.minecraftVersion, input.paths);
+    return initialized
       ? empty(c)
       : c.text(`Patches for ${input.minecraftVersion} already exist; clear them before initializing again.`, 409);
   });
@@ -153,7 +153,8 @@ const createApi = ({ localIdentity, enforceSameOrigin = true }: ApiOptions = {})
     ),
     async (c) => {
       const data = c.req.valid("json");
-      return (await database(c.env).importLegacyData(data.patches, data.legacyUsers))
+      const imported = await database(c.env).importLegacyData(data.patches, data.legacyUsers);
+      return imported
         ? empty(c)
         : c.text("Patch data already exists; legacy import is only allowed before patches are added.", 409);
     },

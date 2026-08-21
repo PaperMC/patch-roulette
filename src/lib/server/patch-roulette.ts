@@ -389,19 +389,21 @@ export class PatchRoulette extends DurableObject {
   }
 
   async user(userId: string) {
-    return (
-      this.db.select({ id: users.id, username: users.username }).from(users).where(eq(users.id, userId)).get() ?? null
-    );
+    const user = this.db
+      .select({ id: users.id, username: users.username })
+      .from(users)
+      .where(eq(users.id, userId))
+      .get();
+    return user ?? null;
   }
 
   private getPatch(minecraftVersion: string, path: string) {
-    return (
-      this.db
-        .select()
-        .from(patches)
-        .where(and(eq(patches.minecraftVersion, minecraftVersion), eq(patches.path, path)))
-        .get() ?? null
-    );
+    const patch = this.db
+      .select()
+      .from(patches)
+      .where(and(eq(patches.minecraftVersion, minecraftVersion), eq(patches.path, path)))
+      .get();
+    return patch ?? null;
   }
 
   private patchForPath(minecraftVersion: string, path: string): Patch {
@@ -441,9 +443,8 @@ export class PatchRoulette extends DurableObject {
   }
 
   private isEmpty(): boolean {
-    return (
-      !this.db.select({ value: patches.minecraftVersion }).from(patches).limit(1).get() &&
-      !this.db.select({ value: legacyCredentials.username }).from(legacyCredentials).limit(1).get()
-    );
+    const hasPatches = this.db.select({ value: patches.minecraftVersion }).from(patches).limit(1).get();
+    if (hasPatches) return false;
+    return !this.db.select({ value: legacyCredentials.username }).from(legacyCredentials).limit(1).get();
   }
 }
