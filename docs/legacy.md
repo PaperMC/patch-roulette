@@ -16,23 +16,23 @@ The export contains:
 
 ```json
 {
-    "exportedAt": 1787116168152,
-    "legacyUsers": [
-        {
-            "username": "alice",
-            "passwordHash": "{bcrypt}..."
-        }
-    ],
-    "patches": [
-        {
-            "minecraftVersion": "1.21.4",
-            "path": "foo.patch",
-            "status": "DONE",
-            "responsibleUser": "alice",
-            "updatedAt": 1787116168152,
-            "duration": 123456
-        }
-    ]
+  "exportedAt": 1787116168152,
+  "legacyUsers": [
+    {
+      "username": "alice",
+      "passwordHash": "{bcrypt}..."
+    }
+  ],
+  "patches": [
+    {
+      "minecraftVersion": "1.21.4",
+      "path": "foo.patch",
+      "status": "DONE",
+      "responsibleUser": "alice",
+      "updatedAt": 1787116168152,
+      "duration": 123456
+    }
+  ]
 }
 ```
 

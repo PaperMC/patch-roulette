@@ -4,12 +4,17 @@ import { type Env } from "./types";
 
 export { PatchRoulette };
 
-type Worker = { fetch: (request: Request, env: Env, ctx: ExecutionContext) => Response | Promise<Response> };
+type Worker = {
+  fetch: (request: Request, env: Env, ctx: ExecutionContext) => Response | Promise<Response>;
+};
 
 /** Production: Hono handles `/api`, SvelteKit (SSR + static) handles everything else. */
 export const createWorker = (frontend: Worker): Worker => ({
-    fetch: (request, env, ctx) => (isApiRequest(request) ? dispatchApi(request, env, ctx) : frontend.fetch(request, env, ctx)),
+  fetch: (request, env, ctx) =>
+    isApiRequest(request) ? dispatchApi(request, env, ctx) : frontend.fetch(request, env, ctx),
 });
 
 /** Development: Hono only; `vite dev` serves the frontend and proxies `/api`. */
-export const createDevWorker = (): Worker => ({ fetch: (request, env, ctx) => dispatchDevApi(request, env, ctx) });
+export const createDevWorker = (): Worker => ({
+  fetch: (request, env, ctx) => dispatchDevApi(request, env, ctx),
+});

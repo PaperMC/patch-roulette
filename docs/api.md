@@ -16,8 +16,8 @@ Response:
 
 ```json
 {
-    "id": "user-id",
-    "username": "brave-glow-squid"
+  "id": "user-id",
+  "username": "brave-glow-squid"
 }
 ```
 
@@ -43,12 +43,12 @@ The first returns patch objects. The second returns available patch paths.
 
 ```json
 {
-    "minecraftVersion": "1.21.4",
-    "path": "foo.patch",
-    "status": "AVAILABLE",
-    "responsibleUser": null,
-    "updatedAt": 1787116168152,
-    "duration": null
+  "minecraftVersion": "1.21.4",
+  "path": "foo.patch",
+  "status": "AVAILABLE",
+  "responsibleUser": null,
+  "updatedAt": 1787116168152,
+  "duration": null
 }
 ```
 
@@ -94,21 +94,21 @@ GET /api/stats?minecraftVersion=1.21.4
 
 ```json
 {
-    "total": 42,
-    "available": 8,
-    "wip": 4,
-    "done": 30,
-    "timeSpent": 123456,
-    "leaderboard": [
-        {
-            "userId": "018f6ac5-…",
-            "username": "redstone-wizard",
-            "rank": 1,
-            "wip": 1,
-            "done": 12,
-            "timeSpent": 45678
-        }
-    ]
+  "total": 42,
+  "available": 8,
+  "wip": 4,
+  "done": 30,
+  "timeSpent": 123456,
+  "leaderboard": [
+    {
+      "userId": "018f6ac5-…",
+      "username": "redstone-wizard",
+      "rank": 1,
+      "wip": 1,
+      "done": 12,
+      "timeSpent": 45678
+    }
+  ]
 }
 ```
 

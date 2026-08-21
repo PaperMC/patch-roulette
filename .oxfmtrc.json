@@ -1,18 +1,16 @@
 {
-    "$schema": "./node_modules/oxfmt/configuration_schema.json",
-    "endOfLine": "lf",
-    "useTabs": false,
-    "tabWidth": 4,
-    "printWidth": 160,
-    "svelte": true,
-    "sortTailwindcss": {
-        "stylesheet": "./src/app.css"
-    },
-    "ignorePatterns": [
-        "bun.lock",
-        ".agents/skills/kumo-design/**",
-        ".agents/skills/svelte-code-writer/**",
-        ".agents/skills/svelte-core-bestpractices/**",
-        "skills-lock.json"
-    ]
+  "$schema": "./node_modules/oxfmt/configuration_schema.json",
+  "endOfLine": "lf",
+  "printWidth": 120,
+  "svelte": true,
+  "sortTailwindcss": {
+    "stylesheet": "./src/app.css"
+  },
+  "ignorePatterns": [
+    "bun.lock",
+    ".agents/skills/kumo-design/**",
+    ".agents/skills/svelte-code-writer/**",
+    ".agents/skills/svelte-core-bestpractices/**",
+    "skills-lock.json"
+  ]
 }

@@ -1,20 +1,20 @@
 export class ApiError extends Error {
-    readonly status: number;
+  readonly status: number;
 
-    constructor(status: number, message: string) {
-        super(message);
-        this.name = "ApiError";
-        this.status = status;
-    }
+  constructor(status: number, message: string) {
+    super(message);
+    this.name = "ApiError";
+    this.status = status;
+  }
 }
 
 export interface FetchApiOptions {
-    method?: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
-    /** JSON body; serialized and sent with Content-Type: application/json. */
-    body?: unknown;
-    /** Query string parameters. */
-    params?: Record<string, string>;
-    signal?: AbortSignal;
+  method?: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
+  /** JSON body; serialized and sent with Content-Type: application/json. */
+  body?: unknown;
+  /** Query string parameters. */
+  params?: Record<string, string>;
+  signal?: AbortSignal;
 }
 
 /**
@@ -25,29 +25,29 @@ export interface FetchApiOptions {
  * (e.g. text/plain) responses.
  */
 export async function fetchApi<T>(path: string, options: FetchApiOptions = {}): Promise<T> {
-    const { method = "GET", body, params, signal } = options;
+  const { method = "GET", body, params, signal } = options;
 
-    const query = params ? new URLSearchParams(params).toString() : "";
-    const url = `/api${path}${query ? `?${query}` : ""}`;
+  const query = params ? new URLSearchParams(params).toString() : "";
+  const url = `/api${path}${query ? `?${query}` : ""}`;
 
-    const headers: Record<string, string> = {};
-    if (body !== undefined) headers["Content-Type"] = "application/json";
+  const headers: Record<string, string> = {};
+  if (body !== undefined) headers["Content-Type"] = "application/json";
 
-    const response = await fetch(url, {
-        method,
-        headers,
-        body: body !== undefined ? JSON.stringify(body) : undefined,
-        signal,
-    });
+  const response = await fetch(url, {
+    method,
+    headers,
+    body: body !== undefined ? JSON.stringify(body) : undefined,
+    signal,
+  });
 
-    if (!response.ok) {
-        const message = (await response.text()) || response.statusText || `Request failed with status ${response.status}`;
-        throw new ApiError(response.status, message);
-    }
+  if (!response.ok) {
+    const message = (await response.text()) || response.statusText || `Request failed with status ${response.status}`;
+    throw new ApiError(response.status, message);
+  }
 
-    const contentType = response.headers.get("content-type") ?? "";
-    if (contentType.includes("application/json")) {
-        return (await response.json()) as T;
-    }
-    return undefined as T;
+  const contentType = response.headers.get("content-type") ?? "";
+  if (contentType.includes("application/json")) {
+    return (await response.json()) as T;
+  }
+  return undefined as T;
 }

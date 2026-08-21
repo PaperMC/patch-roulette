@@ -1,312 +1,312 @@
 {
-    "version": "7",
-    "dialect": "sqlite",
-    "id": "3e2057d9-8e82-44c7-941f-d27f9295bb45",
-    "prevIds": ["00000000-0000-0000-0000-000000000000"],
-    "ddl": [
+  "version": "7",
+  "dialect": "sqlite",
+  "id": "3e2057d9-8e82-44c7-941f-d27f9295bb45",
+  "prevIds": ["00000000-0000-0000-0000-000000000000"],
+  "ddl": [
+    {
+      "name": "identities",
+      "entityType": "tables"
+    },
+    {
+      "name": "legacy_credentials",
+      "entityType": "tables"
+    },
+    {
+      "name": "patches",
+      "entityType": "tables"
+    },
+    {
+      "name": "users",
+      "entityType": "tables"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "issuer",
+      "entityType": "columns",
+      "table": "identities"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "subject",
+      "entityType": "columns",
+      "table": "identities"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "user_id",
+      "entityType": "columns",
+      "table": "identities"
+    },
+    {
+      "type": "text",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "username",
+      "entityType": "columns",
+      "table": "legacy_credentials"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "user_id",
+      "entityType": "columns",
+      "table": "legacy_credentials"
+    },
+    {
+      "type": "text",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "password_hash",
+      "entityType": "columns",
+      "table": "legacy_credentials"
+    },
+    {
+      "type": "integer",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "disabled_at",
+      "entityType": "columns",
+      "table": "legacy_credentials"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "minecraft_version",
+      "entityType": "columns",
+      "table": "patches"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "path",
+      "entityType": "columns",
+      "table": "patches"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "status",
+      "entityType": "columns",
+      "table": "patches"
+    },
+    {
+      "type": "text",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "responsible_user_id",
+      "entityType": "columns",
+      "table": "patches"
+    },
+    {
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "updated_at",
+      "entityType": "columns",
+      "table": "patches"
+    },
+    {
+      "type": "integer",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "duration",
+      "entityType": "columns",
+      "table": "patches"
+    },
+    {
+      "type": "text",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "id",
+      "entityType": "columns",
+      "table": "users"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "username",
+      "entityType": "columns",
+      "table": "users"
+    },
+    {
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "created_at",
+      "entityType": "columns",
+      "table": "users"
+    },
+    {
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "updated_at",
+      "entityType": "columns",
+      "table": "users"
+    },
+    {
+      "columns": ["user_id"],
+      "tableTo": "users",
+      "columnsTo": ["id"],
+      "onUpdate": "NO ACTION",
+      "onDelete": "NO ACTION",
+      "nameExplicit": false,
+      "name": "fk_identities_user_id_users_id_fk",
+      "entityType": "fks",
+      "table": "identities"
+    },
+    {
+      "columns": ["user_id"],
+      "tableTo": "users",
+      "columnsTo": ["id"],
+      "onUpdate": "NO ACTION",
+      "onDelete": "NO ACTION",
+      "nameExplicit": false,
+      "name": "fk_legacy_credentials_user_id_users_id_fk",
+      "entityType": "fks",
+      "table": "legacy_credentials"
+    },
+    {
+      "columns": ["responsible_user_id"],
+      "tableTo": "users",
+      "columnsTo": ["id"],
+      "onUpdate": "NO ACTION",
+      "onDelete": "NO ACTION",
+      "nameExplicit": false,
+      "name": "fk_patches_responsible_user_id_users_id_fk",
+      "entityType": "fks",
+      "table": "patches"
+    },
+    {
+      "columns": ["issuer", "subject"],
+      "nameExplicit": false,
+      "name": "identities_pk",
+      "entityType": "pks",
+      "table": "identities"
+    },
+    {
+      "columns": ["minecraft_version", "path"],
+      "nameExplicit": false,
+      "name": "patches_pk",
+      "entityType": "pks",
+      "table": "patches"
+    },
+    {
+      "columns": ["username"],
+      "nameExplicit": false,
+      "name": "legacy_credentials_pk",
+      "table": "legacy_credentials",
+      "entityType": "pks"
+    },
+    {
+      "columns": ["id"],
+      "nameExplicit": false,
+      "name": "users_pk",
+      "table": "users",
+      "entityType": "pks"
+    },
+    {
+      "columns": [
         {
-            "name": "identities",
-            "entityType": "tables"
-        },
-        {
-            "name": "legacy_credentials",
-            "entityType": "tables"
-        },
-        {
-            "name": "patches",
-            "entityType": "tables"
-        },
-        {
-            "name": "users",
-            "entityType": "tables"
-        },
-        {
-            "type": "text",
-            "notNull": true,
-            "autoincrement": false,
-            "default": null,
-            "generated": null,
-            "name": "issuer",
-            "entityType": "columns",
-            "table": "identities"
-        },
-        {
-            "type": "text",
-            "notNull": true,
-            "autoincrement": false,
-            "default": null,
-            "generated": null,
-            "name": "subject",
-            "entityType": "columns",
-            "table": "identities"
-        },
-        {
-            "type": "text",
-            "notNull": true,
-            "autoincrement": false,
-            "default": null,
-            "generated": null,
-            "name": "user_id",
-            "entityType": "columns",
-            "table": "identities"
-        },
-        {
-            "type": "text",
-            "notNull": false,
-            "autoincrement": false,
-            "default": null,
-            "generated": null,
-            "name": "username",
-            "entityType": "columns",
-            "table": "legacy_credentials"
-        },
-        {
-            "type": "text",
-            "notNull": true,
-            "autoincrement": false,
-            "default": null,
-            "generated": null,
-            "name": "user_id",
-            "entityType": "columns",
-            "table": "legacy_credentials"
-        },
-        {
-            "type": "text",
-            "notNull": false,
-            "autoincrement": false,
-            "default": null,
-            "generated": null,
-            "name": "password_hash",
-            "entityType": "columns",
-            "table": "legacy_credentials"
-        },
-        {
-            "type": "integer",
-            "notNull": false,
-            "autoincrement": false,
-            "default": null,
-            "generated": null,
-            "name": "disabled_at",
-            "entityType": "columns",
-            "table": "legacy_credentials"
-        },
-        {
-            "type": "text",
-            "notNull": true,
-            "autoincrement": false,
-            "default": null,
-            "generated": null,
-            "name": "minecraft_version",
-            "entityType": "columns",
-            "table": "patches"
-        },
-        {
-            "type": "text",
-            "notNull": true,
-            "autoincrement": false,
-            "default": null,
-            "generated": null,
-            "name": "path",
-            "entityType": "columns",
-            "table": "patches"
-        },
-        {
-            "type": "text",
-            "notNull": true,
-            "autoincrement": false,
-            "default": null,
-            "generated": null,
-            "name": "status",
-            "entityType": "columns",
-            "table": "patches"
-        },
-        {
-            "type": "text",
-            "notNull": false,
-            "autoincrement": false,
-            "default": null,
-            "generated": null,
-            "name": "responsible_user_id",
-            "entityType": "columns",
-            "table": "patches"
-        },
-        {
-            "type": "integer",
-            "notNull": true,
-            "autoincrement": false,
-            "default": null,
-            "generated": null,
-            "name": "updated_at",
-            "entityType": "columns",
-            "table": "patches"
-        },
-        {
-            "type": "integer",
-            "notNull": false,
-            "autoincrement": false,
-            "default": null,
-            "generated": null,
-            "name": "duration",
-            "entityType": "columns",
-            "table": "patches"
-        },
-        {
-            "type": "text",
-            "notNull": false,
-            "autoincrement": false,
-            "default": null,
-            "generated": null,
-            "name": "id",
-            "entityType": "columns",
-            "table": "users"
-        },
-        {
-            "type": "text",
-            "notNull": true,
-            "autoincrement": false,
-            "default": null,
-            "generated": null,
-            "name": "username",
-            "entityType": "columns",
-            "table": "users"
-        },
-        {
-            "type": "integer",
-            "notNull": true,
-            "autoincrement": false,
-            "default": null,
-            "generated": null,
-            "name": "created_at",
-            "entityType": "columns",
-            "table": "users"
-        },
-        {
-            "type": "integer",
-            "notNull": true,
-            "autoincrement": false,
-            "default": null,
-            "generated": null,
-            "name": "updated_at",
-            "entityType": "columns",
-            "table": "users"
-        },
-        {
-            "columns": ["user_id"],
-            "tableTo": "users",
-            "columnsTo": ["id"],
-            "onUpdate": "NO ACTION",
-            "onDelete": "NO ACTION",
-            "nameExplicit": false,
-            "name": "fk_identities_user_id_users_id_fk",
-            "entityType": "fks",
-            "table": "identities"
-        },
-        {
-            "columns": ["user_id"],
-            "tableTo": "users",
-            "columnsTo": ["id"],
-            "onUpdate": "NO ACTION",
-            "onDelete": "NO ACTION",
-            "nameExplicit": false,
-            "name": "fk_legacy_credentials_user_id_users_id_fk",
-            "entityType": "fks",
-            "table": "legacy_credentials"
-        },
-        {
-            "columns": ["responsible_user_id"],
-            "tableTo": "users",
-            "columnsTo": ["id"],
-            "onUpdate": "NO ACTION",
-            "onDelete": "NO ACTION",
-            "nameExplicit": false,
-            "name": "fk_patches_responsible_user_id_users_id_fk",
-            "entityType": "fks",
-            "table": "patches"
-        },
-        {
-            "columns": ["issuer", "subject"],
-            "nameExplicit": false,
-            "name": "identities_pk",
-            "entityType": "pks",
-            "table": "identities"
-        },
-        {
-            "columns": ["minecraft_version", "path"],
-            "nameExplicit": false,
-            "name": "patches_pk",
-            "entityType": "pks",
-            "table": "patches"
-        },
-        {
-            "columns": ["username"],
-            "nameExplicit": false,
-            "name": "legacy_credentials_pk",
-            "table": "legacy_credentials",
-            "entityType": "pks"
-        },
-        {
-            "columns": ["id"],
-            "nameExplicit": false,
-            "name": "users_pk",
-            "table": "users",
-            "entityType": "pks"
-        },
-        {
-            "columns": [
-                {
-                    "value": "user_id",
-                    "isExpression": false
-                }
-            ],
-            "isUnique": false,
-            "where": null,
-            "origin": "manual",
-            "name": "identities_user_id_idx",
-            "entityType": "indexes",
-            "table": "identities"
-        },
-        {
-            "columns": [
-                {
-                    "value": "user_id",
-                    "isExpression": false
-                }
-            ],
-            "isUnique": false,
-            "where": null,
-            "origin": "manual",
-            "name": "legacy_credentials_user_id_idx",
-            "entityType": "indexes",
-            "table": "legacy_credentials"
-        },
-        {
-            "columns": [
-                {
-                    "value": "responsible_user_id",
-                    "isExpression": false
-                }
-            ],
-            "isUnique": false,
-            "where": null,
-            "origin": "manual",
-            "name": "patches_responsible_user_id_idx",
-            "entityType": "indexes",
-            "table": "patches"
-        },
-        {
-            "columns": [
-                {
-                    "value": "username",
-                    "isExpression": false
-                }
-            ],
-            "isUnique": false,
-            "where": null,
-            "origin": "manual",
-            "name": "users_username_idx",
-            "entityType": "indexes",
-            "table": "users"
+          "value": "user_id",
+          "isExpression": false
         }
-    ],
-    "renames": []
+      ],
+      "isUnique": false,
+      "where": null,
+      "origin": "manual",
+      "name": "identities_user_id_idx",
+      "entityType": "indexes",
+      "table": "identities"
+    },
+    {
+      "columns": [
+        {
+          "value": "user_id",
+          "isExpression": false
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "origin": "manual",
+      "name": "legacy_credentials_user_id_idx",
+      "entityType": "indexes",
+      "table": "legacy_credentials"
+    },
+    {
+      "columns": [
+        {
+          "value": "responsible_user_id",
+          "isExpression": false
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "origin": "manual",
+      "name": "patches_responsible_user_id_idx",
+      "entityType": "indexes",
+      "table": "patches"
+    },
+    {
+      "columns": [
+        {
+          "value": "username",
+          "isExpression": false
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "origin": "manual",
+      "name": "users_username_idx",
+      "entityType": "indexes",
+      "table": "users"
+    }
+  ],
+  "renames": []
 }

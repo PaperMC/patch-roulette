@@ -1,19 +1,19 @@
 {
-    "$schema": "./node_modules/oxlint/configuration_schema.json",
-    "env": {
-        "browser": true,
-        "node": true
-    },
-    "categories": {
-        "correctness": "error"
-    },
-    "options": {
-        "typeAware": true
-    },
-    "ignorePatterns": [
-        ".agents/skills/kumo-design/**",
-        ".agents/skills/svelte-code-writer/**",
-        ".agents/skills/svelte-core-bestpractices/**",
-        "skills-lock.json"
-    ]
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "env": {
+    "browser": true,
+    "node": true
+  },
+  "categories": {
+    "correctness": "error"
+  },
+  "options": {
+    "typeAware": true
+  },
+  "ignorePatterns": [
+    ".agents/skills/kumo-design/**",
+    ".agents/skills/svelte-code-writer/**",
+    ".agents/skills/svelte-core-bestpractices/**",
+    "skills-lock.json"
+  ]
 }

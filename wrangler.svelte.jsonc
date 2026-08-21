@@ -1,10 +1,10 @@
 {
-    // Build/emit target only. The adapter reads this at `vite build` time to decide
-    // where to write the generated `_worker.js` and static assets. With no `main` and
-    // no `assets.binding`, the adapter emits to the default `.svelte-kit/cloudflare/_worker.js`.
-    "$schema": "node_modules/wrangler/config-schema.json",
-    "name": "patch-roulette-build",
-    "assets": {
-        "directory": ".svelte-kit/cloudflare",
-    },
+  // Build/emit target only. The adapter reads this at `vite build` time to decide
+  // where to write the generated `_worker.js` and static assets. With no `main` and
+  // no `assets.binding`, the adapter emits to the default `.svelte-kit/cloudflare/_worker.js`.
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "patch-roulette-build",
+  "assets": {
+    "directory": ".svelte-kit/cloudflare",
+  },
 }

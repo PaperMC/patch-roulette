@@ -8,7 +8,9 @@
    default sans stack refers to "Inter". Keep the stack aligned so the bundled
    font is actually selected instead of falling back to a system font. */
 @theme {
-    --font-sans: "Inter Variable", ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+  --font-sans:
+    "Inter Variable", ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol",
+    "Noto Color Emoji";
 }
 
 /* Kumo only switches to dark mode via data-mode="dark" on <html>, and it does
@@ -17,9 +19,9 @@
    app.html also sets an inline color-scheme before first paint; these rules
    keep it consistent for any element the inline style does not cover. */
 :root {
-    color-scheme: light;
+  color-scheme: light;
 }
 
 :root[data-mode="dark"] {
-    color-scheme: dark;
+  color-scheme: dark;
 }
