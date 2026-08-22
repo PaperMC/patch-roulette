@@ -1,5 +1,5 @@
 <script lang="ts">
-  import Gear from "phosphor-svelte/lib/Gear";
+  import { GearIcon } from "phosphor-svelte";
   import { Button, Label, Popover, Radio, Switch, Text } from "kumo-svelte";
   import { autoRefresh, setAutoRefresh } from "$lib/settings.svelte";
   import { setTheme, theme, type Theme } from "$lib/theme.svelte";
@@ -9,7 +9,7 @@
   <Popover.Trigger>
     {#snippet child({ props })}
       <Button {...props} variant="ghost" shape="square" aria-label="Settings">
-        <Gear class="size-4" aria-hidden="true" />
+        <GearIcon class="size-4" aria-hidden="true" />
       </Button>
     {/snippet}
   </Popover.Trigger>

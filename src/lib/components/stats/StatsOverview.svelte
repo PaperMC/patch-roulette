@@ -1,6 +1,7 @@
 <script lang="ts">
   import { createQuery } from "@tanstack/svelte-query";
-  import { Banner, Button, LayerCard, SkeletonLine, Text } from "kumo-svelte";
+  import { WarningCircleIcon } from "phosphor-svelte";
+  import { Banner, LayerCard, SkeletonLine, Text } from "kumo-svelte";
   import { fetchApi } from "$lib/api";
   import { formatDuration } from "$lib/format";
   import { baseQueryOptions, queryKeys, refreshInterval } from "$lib/queries";
@@ -66,9 +67,15 @@
 </script>
 
 {#if statsQuery.isError}
-  <Banner class="max-w-xl" variant="error" title="Couldn't load stats" description={statsQuery.error.message}>
+  <Banner
+    class="max-w-xl"
+    variant="error"
+    icon={WarningCircleIcon}
+    title="Couldn't load stats"
+    description={statsQuery.error.message}
+  >
     {#snippet action()}
-      <Button size="sm" onclick={() => statsQuery.refetch()}>Retry</Button>
+      <Banner.Action onclick={() => statsQuery.refetch()}>Retry</Banner.Action>
     {/snippet}
   </Banner>
 {:else}

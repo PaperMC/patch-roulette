@@ -1,8 +1,5 @@
 <script lang="ts">
-  import ArrowDown from "phosphor-svelte/lib/ArrowDown";
-  import ArrowUp from "phosphor-svelte/lib/ArrowUp";
-  import ArrowsDownUp from "phosphor-svelte/lib/ArrowsDownUp";
-  import X from "phosphor-svelte/lib/X";
+  import { ArrowDownIcon, ArrowsDownUpIcon, ArrowUpIcon, WarningCircleIcon, XIcon } from "phosphor-svelte";
   import { createQuery } from "@tanstack/svelte-query";
   import {
     columnFilteringFeature,
@@ -159,11 +156,11 @@
   >
     {params.label}
     {#if params.column.getIsSorted() === "asc"}
-      <ArrowUp class="text-kumo-muted shrink-0" size={16} aria-hidden="true" />
+      <ArrowUpIcon class="text-kumo-muted shrink-0" size={16} aria-hidden="true" />
     {:else if params.column.getIsSorted() === "desc"}
-      <ArrowDown class="text-kumo-muted shrink-0" size={16} aria-hidden="true" />
+      <ArrowDownIcon class="text-kumo-muted shrink-0" size={16} aria-hidden="true" />
     {:else}
-      <ArrowsDownUp
+      <ArrowsDownUpIcon
         class="text-kumo-muted shrink-0 opacity-0 group-hover/sort-button:opacity-100"
         size={16}
         aria-hidden="true"
@@ -262,7 +259,7 @@
               description="Try adjusting the filters."
             >
               <Button size="sm" onclick={() => table.resetColumnFilters()}>
-                <X size={16} aria-hidden="true" />
+                <XIcon size={16} aria-hidden="true" />
                 Clear filters
               </Button>
             </Empty>
@@ -285,9 +282,14 @@
 
 <div class="flex min-h-0 flex-1 flex-col">
   {#if patchesQuery.isError}
-    <Banner variant="error" title="Couldn't load patches" description={patchesQuery.error.message}>
+    <Banner
+      variant="error"
+      icon={WarningCircleIcon}
+      title="Couldn't load patches"
+      description={patchesQuery.error.message}
+    >
       {#snippet action()}
-        <Button size="sm" onclick={() => patchesQuery.refetch()}>Retry</Button>
+        <Banner.Action onclick={() => patchesQuery.refetch()}>Retry</Banner.Action>
       {/snippet}
     </Banner>
   {:else}

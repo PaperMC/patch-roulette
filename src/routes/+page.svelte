@@ -1,6 +1,7 @@
 <script lang="ts">
   import { createQuery, useQueryClient } from "@tanstack/svelte-query";
-  import { Banner, Button, Empty, Tabs } from "kumo-svelte";
+  import { WarningCircleIcon } from "phosphor-svelte";
+  import { Banner, Empty, Tabs } from "kumo-svelte";
   import { fetchApi } from "$lib/api";
   import AppBar from "$lib/components/header/AppBar.svelte";
   import RefreshButton from "$lib/components/header/RefreshButton.svelte";
@@ -96,9 +97,14 @@
 
   <main class="mx-auto flex min-h-0 w-full max-w-7xl flex-1 flex-col gap-4 px-4 py-4">
     {#if versionsQuery.isError}
-      <Banner variant="error" title="Couldn't load Minecraft versions" description={versionsQuery.error.message}>
+      <Banner
+        variant="error"
+        icon={WarningCircleIcon}
+        title="Couldn't load Minecraft versions"
+        description={versionsQuery.error.message}
+      >
         {#snippet action()}
-          <Button size="sm" onclick={() => versionsQuery.refetch()}>Retry</Button>
+          <Banner.Action onclick={() => versionsQuery.refetch()}>Retry</Banner.Action>
         {/snippet}
       </Banner>
     {:else if versionsQuery.data?.length === 0}

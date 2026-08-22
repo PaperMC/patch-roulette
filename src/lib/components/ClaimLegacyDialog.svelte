@@ -2,6 +2,7 @@
   import { useQueryClient } from "@tanstack/svelte-query";
   import { ApiError, fetchApi } from "$lib/api";
   import { queryKeys } from "$lib/queries";
+  import { WarningCircleIcon, WarningIcon } from "phosphor-svelte";
   import { Banner, Button, Dialog, Input, Tabs, type TabsItem, useKumoToastManager } from "kumo-svelte";
 
   type ClaimMethod = "encoded" | "credentials";
@@ -181,9 +182,21 @@
       />
     {/if}
     {#if alreadyClaimed}
-      <Banner variant="alert" size="sm" text="You have already claimed this legacy account." role="status" />
+      <Banner
+        variant="alert"
+        icon={WarningIcon}
+        title="Already claimed"
+        description="You have already claimed this legacy account."
+        role="status"
+      />
     {:else if claimError}
-      <Banner variant="error" size="sm" text={claimError} role="alert" />
+      <Banner
+        variant="error"
+        icon={WarningCircleIcon}
+        title="Couldn't claim account"
+        description={claimError}
+        role="alert"
+      />
     {/if}
     <div class="flex justify-end gap-2">
       <Button type="button" variant="secondary" onclick={close} disabled={claiming}>Cancel</Button>

@@ -1,7 +1,7 @@
 <script lang="ts">
-  import Users from "phosphor-svelte/lib/Users";
   import { createQuery } from "@tanstack/svelte-query";
-  import { Banner, Button, Empty, LayerCard, SkeletonLine, Table } from "kumo-svelte";
+  import { UsersIcon, WarningCircleIcon } from "phosphor-svelte";
+  import { Banner, Empty, LayerCard, SkeletonLine, Table } from "kumo-svelte";
   import { fetchApi } from "$lib/api";
   import { formatDuration } from "$lib/format";
   import { baseQueryOptions, queryKeys, refreshInterval } from "$lib/queries";
@@ -27,9 +27,15 @@
 </script>
 
 {#if statsQuery.isError}
-  <Banner class="max-w-xl" variant="error" title="Couldn't load stats" description={statsQuery.error.message}>
+  <Banner
+    class="max-w-xl"
+    variant="error"
+    icon={WarningCircleIcon}
+    title="Couldn't load stats"
+    description={statsQuery.error.message}
+  >
     {#snippet action()}
-      <Button size="sm" onclick={() => statsQuery.refetch()}>Retry</Button>
+      <Banner.Action onclick={() => statsQuery.refetch()}>Retry</Banner.Action>
     {/snippet}
   </Banner>
 {:else if statsQuery.isPending || stats}
@@ -111,7 +117,7 @@
           description="User progress will show here once patches are picked up."
         >
           {#snippet icon()}
-            <Users class="text-kumo-inactive size-8" aria-hidden="true" />
+            <UsersIcon class="text-kumo-inactive size-8" aria-hidden="true" />
           {/snippet}
         </Empty>
       </LayerCard.Primary>

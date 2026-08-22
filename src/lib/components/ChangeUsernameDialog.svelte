@@ -4,6 +4,7 @@
   import { getAuth } from "$lib/auth.svelte";
   import { type UserProfile } from "$lib/domain";
   import { queryKeys } from "$lib/queries";
+  import { WarningCircleIcon } from "phosphor-svelte";
   import { Banner, Button, Dialog, Input } from "kumo-svelte";
 
   const auth = getAuth();
@@ -84,7 +85,13 @@
       oninput={() => (saveError = null)}
     />
     {#if saveError}
-      <Banner variant="error" size="sm" text={saveError} role="alert" />
+      <Banner
+        variant="error"
+        icon={WarningCircleIcon}
+        title="Couldn't update username"
+        description={saveError}
+        role="alert"
+      />
     {/if}
     <div class="flex justify-end gap-2">
       <Button type="button" variant="secondary" onclick={close} disabled={saving}>Cancel</Button>

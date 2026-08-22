@@ -1,5 +1,5 @@
 <script lang="ts">
-  import User from "phosphor-svelte/lib/User";
+  import { UserIcon } from "phosphor-svelte";
   import { Button, DropdownMenu } from "kumo-svelte";
   import { getAuth } from "$lib/auth.svelte";
   import ClaimLegacyDialog from "$lib/components/ClaimLegacyDialog.svelte";
@@ -15,7 +15,7 @@
   <DropdownMenu.Trigger>
     {#snippet child({ props })}
       <Button {...props} variant="ghost" shape="square" aria-label="User menu">
-        <User class="size-4" aria-hidden="true" />
+        <UserIcon class="size-4" aria-hidden="true" />
       </Button>
     {/snippet}
   </DropdownMenu.Trigger>
