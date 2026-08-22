@@ -95,18 +95,13 @@
   <AppBar />
 
   <main class="mx-auto flex min-h-0 w-full max-w-7xl flex-1 flex-col gap-4 px-4 py-4">
-    {#if versionsQuery.isPending}
-      <!-- Skeleton pass: with version === "" the leaf queries are
-                 disabled (pending), so each leaf renders its own skeleton —
-                 progress card, leaderboard, and table rows. -->
-      {@render dashboard()}
-    {:else if versionsQuery.isError}
+    {#if versionsQuery.isError}
       <Banner variant="error" title="Couldn't load Minecraft versions" description={versionsQuery.error.message}>
         {#snippet action()}
           <Button size="sm" onclick={() => versionsQuery.refetch()}>Retry</Button>
         {/snippet}
       </Banner>
-    {:else if (versionsQuery.data?.length ?? 0) === 0}
+    {:else if versionsQuery.data?.length === 0}
       <Empty title="No Minecraft versions" description="The backend didn't return any versions." />
     {:else}
       {@render dashboard()}
