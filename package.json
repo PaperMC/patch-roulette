@@ -54,11 +54,6 @@
     "vitest": "^4.1.10",
     "wrangler": "^4.125.0"
   },
-  "bunrc": {
-    "run": {
-      "bun": true
-    }
-  },
   "patchedDependencies": {
     "kumo-svelte@0.9.1": "patches/kumo-svelte@0.9.1.patch"
   }
