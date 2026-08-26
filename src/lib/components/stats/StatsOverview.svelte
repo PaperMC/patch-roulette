@@ -132,10 +132,10 @@
                 <Text variant="secondary" size="sm" class="leading-4 whitespace-nowrap">{status.label}</Text>
               </div>
               {#if statsQuery.isPending}
-                <SkeletonLine class="h-6 w-7" aria-hidden="true" />
+                <SkeletonLine class="h-5 w-7" aria-hidden="true" />
                 <SkeletonLine class="h-4 w-10" aria-hidden="true" />
               {:else if stats}
-                <Text variant="heading2" as="span" class={`leading-none tabular-nums ${status.valueClass}`}
+                <Text variant="heading" size="lg" as="span" class={`leading-none tabular-nums ${status.valueClass}`}
                   >{status.getCount(stats)}</Text
                 >
                 <Text variant="secondary" size="sm" class="leading-4 tabular-nums"

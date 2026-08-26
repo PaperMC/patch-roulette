@@ -170,7 +170,7 @@
 {/snippet}
 
 {#snippet pathCell(params: { path: string })}
-  <span class="block max-w-full truncate font-mono text-sm" title={params.path}>{params.path}</span>
+  <span class="block max-w-full truncate font-mono" title={params.path}>{params.path}</span>
 {/snippet}
 
 {#snippet ownerCell(params: { owner: string | undefined })}
@@ -268,7 +268,7 @@
       </Table.Row>
     {:else}
       {#each table.getRowModel().rows as row (row.id)}
-        <Table.Row class="hover:bg-kumo-tint">
+        <Table.Row>
           {#each row.getAllCells() as cell (cell.id)}
             <Table.Cell>
               <FlexRender {cell} />

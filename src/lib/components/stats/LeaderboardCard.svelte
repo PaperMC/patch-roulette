@@ -43,7 +43,7 @@
     <LayerCard.Secondary>Leaderboard</LayerCard.Secondary>
     {#if statsQuery.isPending || (stats && stats.leaderboard.length > 0)}
       <LayerCard.Primary class="p-0">
-        <Table layout="fixed" class="text-sm [&_th]:text-sm">
+        <Table layout="fixed">
           <colgroup>
             <col style:width="3rem" />
             <col />

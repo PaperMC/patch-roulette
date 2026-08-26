@@ -1,7 +1,7 @@
 <script lang="ts">
   import "../app.css";
   import { QueryClient, QueryClientProvider } from "@tanstack/svelte-query";
-  import { Toasty, TooltipProvider } from "kumo-svelte";
+  import { provideKumoRandom, Toasty, TooltipProvider } from "kumo-svelte";
   import { initAuth } from "$lib/auth.svelte";
   import { initTheme } from "$lib/theme.svelte";
 
@@ -18,6 +18,7 @@
 
   initTheme();
   initAuth();
+  provideKumoRandom();
 </script>
 
 <svelte:head>
