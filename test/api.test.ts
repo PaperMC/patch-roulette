@@ -105,20 +105,34 @@ describe("Patch Roulette API", () => {
     const conflict = responses.find((response) => response.status === 409);
     expect(successful).toBeDefined();
     expect(conflict).toBeDefined();
-    expect(await conflict!.text()).toBe("None of the requested patches are available.");
     expect(await successful!.json()).toMatchObject([{ path: "race.patch" }]);
   });
 
-  it("does not partially claim when a requested path is missing", async () => {
+  it("rejects the whole claim when a requested patch is unavailable", async () => {
+    await initPatches(["available.patch", "claimed.patch"]);
+    expect(
+      (await api("/patches/start", json({ minecraftVersion: "1.21.4", paths: ["claimed.patch"] }, "bob"))).status,
+    ).toBe(200);
+
+    const response = await api(
+      "/patches/start",
+      json({ minecraftVersion: "1.21.4", paths: ["available.patch", "claimed.patch"] }),
+    );
+    expect(response.status).toBe(409);
+    expect(await (await api("/patches/available?minecraftVersion=1.21.4", { headers: access() })).json()).toEqual([
+      "available.patch",
+    ]);
+  });
+
+  it("rejects the whole claim when a requested patch does not exist", async () => {
     await initPatches(["known.patch"]);
     const response = await api(
       "/patches/start",
       json({ minecraftVersion: "1.21.4", paths: ["known.patch", "missing.patch"] }),
     );
-    expect(response.status).toBe(404);
-    expect(await response.text()).toBe("Patch 1.21.4/missing.patch was not found.");
-    expect(await (await api("/patches?minecraftVersion=1.21.4", { headers: access() })).json()).toMatchObject([
-      { path: "known.patch", status: "AVAILABLE" },
+    expect(response.status).toBe(409);
+    expect(await (await api("/patches/available?minecraftVersion=1.21.4", { headers: access() })).json()).toEqual([
+      "known.patch",
     ]);
   });
 

@@ -98,8 +98,6 @@ const createApi = ({ localIdentity, enforceSameOrigin = true }: ApiOptions = {})
   api.post("/patches/start", vValidator("json", patchListSchema), async (c) => {
     const input = c.req.valid("json");
     const result = await database(c.env).start(input.minecraftVersion, input.paths, currentUser(c).id);
-    if (result.status === "missing")
-      return c.text(`${patchDescription(input.minecraftVersion, result.path)} was not found.`, 404);
     if (result.status === "conflict") return c.text(result.message, 409);
     return c.json(result.patches);
   });

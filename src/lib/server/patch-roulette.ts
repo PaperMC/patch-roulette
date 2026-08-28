@@ -15,10 +15,7 @@ export type PatchActionResult =
   | { status: "ok"; patch: Patch }
   | { status: "missing" }
   | { status: "conflict"; message: string };
-type StartResult =
-  | { status: "ok"; patches: Patch[] }
-  | { status: "missing"; path: string }
-  | { status: "conflict"; message: string };
+type StartResult = { status: "ok"; patches: Patch[] } | { status: "conflict"; message: string };
 type LegacyUserImport = { username: string; passwordHash: string };
 
 export const patchDescription = (minecraftVersion: string, path: string) => `Patch ${minecraftVersion}/${path}`;
@@ -88,34 +85,27 @@ export class PatchRoulette extends DurableObject {
   }
 
   async start(minecraftVersion: string, paths: string[], userId: string): Promise<StartResult> {
-    const existing = this.db
-      .select({ path: patches.path })
-      .from(patches)
-      .where(eq(patches.minecraftVersion, minecraftVersion))
-      .all();
-    const known = new Set(existing.map((patch) => patch.path));
-    const missingPath = paths.find((path) => !known.has(path));
-    if (missingPath) return { status: "missing", path: missingPath };
-
+    const requestedPaths = [...new Set(paths)];
     const timestamp = Date.now();
-    const claimed: string[] = [];
-    this.db.transaction((tx) => {
-      for (const path of paths) {
+    const claimed = this.db.transaction((tx) => {
+      for (const path of requestedPaths) {
         const patch = tx
           .select({ status: patches.status })
           .from(patches)
           .where(and(eq(patches.minecraftVersion, minecraftVersion), eq(patches.path, path)))
           .get();
-        if (patch?.status !== "AVAILABLE") continue;
+        if (patch?.status !== "AVAILABLE") return false;
+      }
+
+      for (const path of requestedPaths)
         tx.update(patches)
           .set({ status: "WIP", responsibleUserId: userId, updatedAt: timestamp })
           .where(and(eq(patches.minecraftVersion, minecraftVersion), eq(patches.path, path)))
           .run();
-        claimed.push(path);
-      }
+      return true;
     });
-    if (!claimed.length) return { status: "conflict", message: "None of the requested patches are available." };
-    return { status: "ok", patches: this.patchesForPaths(minecraftVersion, claimed) };
+    if (!claimed) return { status: "conflict", message: "One or more requested patches are not available." };
+    return { status: "ok", patches: this.patchesForPaths(minecraftVersion, requestedPaths) };
   }
 
   async complete(minecraftVersion: string, path: string, userId: string): Promise<PatchActionResult> {
