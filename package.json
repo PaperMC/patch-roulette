@@ -43,7 +43,7 @@
     "@tailwindcss/vite": "^4.3.3",
     "concurrently": "^10.0.5",
     "drizzle-kit": "rc",
-    "oxfmt": "^0.64.0",
+    "oxfmt": "^0.66.0",
     "oxlint": "^1.79.0",
     "oxlint-tsgolint": "^7.0.2001",
     "svelte": "^5.56.10",
