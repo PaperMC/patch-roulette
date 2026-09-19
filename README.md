@@ -65,3 +65,5 @@ bun run deploy
 ```
 
 Configure Cloudflare Access separately for the actual hostname used by the deployment. Protect the entire hostname, including `/api/*` and the Managed OAuth discovery endpoints. If both a `workers.dev` hostname and a custom hostname are reachable, protect both or disable the unused hostname.
+
+<img src="https://papermc.io/assets/misc/namespace-oss-badge.svg?project=patch-roulette" alt="CI powered by namespace badge" />
