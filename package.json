@@ -31,7 +31,7 @@
     "kumo-svelte": "^0.13.0",
     "phosphor-svelte": "^3.1.0",
     "runed": "^0.37.1",
-    "svelte-toolbelt": "^0.10.6",
+    "svelte-toolbelt": "^0.13.0",
     "valibot": "^1.4.2"
   },
   "devDependencies": {
