@@ -37,7 +37,7 @@
   "devDependencies": {
     "@cloudflare/vitest-plugin": "^1.0.0",
     "@cloudflare/workers-types": "^5.20260820.1",
-    "@sveltejs/adapter-cloudflare": "^7.2.9",
+    "@sveltejs/adapter-cloudflare": "^8.0.0",
     "@sveltejs/kit": "^2.70.3",
     "@sveltejs/vite-plugin-svelte": "^7.3.0",
     "@tailwindcss/vite": "^4.3.3",
